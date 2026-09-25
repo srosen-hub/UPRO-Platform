@@ -12,6 +12,7 @@ const sub = (s) => { const e = ENV(); return s.replace(/\{(\w+)\}/g, (_, k) => e
 const DB_ICON = `<svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
 const logo = (k) => {
   if (!LOGOS[k]) return DB_ICON;
+  if (LOGOS[k].body) return `<svg class="logo" viewBox="${LOGOS[k].vb}" aria-hidden="true">${LOGOS[k].body}</svg>`;
   const c = k === "aws" ? "#232F3E" : LOGOS[k].c; // AWS mark is dark on light backgrounds
   return `<svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="${c}" d="${LOGOS[k].d}"/></svg>`;
 };
