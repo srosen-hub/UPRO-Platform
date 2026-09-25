@@ -94,15 +94,15 @@ const NODES = {
     desc: "Computes deeper insights into usage habits, inefficiencies and savings opportunities." },
 
   // Interfaces
-  "i-api":   { band: "access", name: "CX APIs", sub: "14 REST endpoints", kind: "Bidgely interface",
+  "i-api":   { band: "engines", group: "APIs, MCPs & apps", name: "CX APIs", sub: "14 REST endpoints", kind: "Bidgely interface",
     desc: "Ratepayer-scoped REST endpoints: usage and disaggregation, bill itemization, bill projection, rate comparison, similar homes, recommendations, surveys, program participation, billing history and Hyper Insights. Served from a thin data-access layer behind your identity and API gateway." },
-  "i-mcp":   { band: "access", name: "MCP servers", sub: "Energy Assistant · Agentic Tools · IVR", kind: "Bidgely interface",
+  "i-mcp":   { band: "engines", group: "APIs, MCPs & apps", name: "MCP servers", sub: "Energy Assistant · Agentic Tools · IVR", kind: "Bidgely interface",
     desc: "Model Context Protocol servers expose standardized tools any agent platform can call: Energy Assistant, Analyze My Bill, Find the Best Rate, EV ROI, PV ROI, Home Bill Optimizer and IVR Agent." },
-  "i-awb":   { band: "access", name: "Analytics Workbench", sub: "{bi}", kind: "Bidgely application",
+  "i-awb":   { band: "engines", group: "APIs, MCPs & apps", name: "Analytics Workbench", sub: "{bi}", kind: "Bidgely application",
     desc: "Segmentation and targeting for DSM, marketing and grid teams: build and publish segments, compare demand curves, map EV, solar and LMI concentration, simulate programs and export lists. Reads directly from the Complete Data Layer." },
-  "i-ea":    { band: "access", name: "Energy Analyst agent", sub: "on {agentsInt}", kind: "Bidgely agent",
+  "i-ea":    { band: "engines", group: "APIs, MCPs & apps", name: "Energy Analyst agent", sub: "on {agentsInt}", kind: "Bidgely agent",
     desc: "A GenAI agent that answers plain-language questions with governed queries over the Complete Data Layer, and returns explained, data-grounded answers." },
-  "i-cc":    { band: "access", name: "Control Center", sub: "config · triggers · content", kind: "Bidgely interface",
+  "i-cc":    { band: "engines", group: "APIs, MCPs & apps", name: "Control Center", sub: "config · triggers · content", kind: "Bidgely interface",
     desc: "Configure each component, manage tips and program content, set schedules and alert thresholds, and update the rate catalog." },
 
   // Channels & agents
@@ -128,8 +128,7 @@ const NODES = {
 
 const BANDS = [ // top to bottom
   { id: "out", name: "Applications, agents & automations", tag: "you build and own" },
-  { id: "access", name: "APIs · MCPs · Apps", tag: "how every channel reaches the intelligence" },
-  { id: "engines", name: "Engines", tag: "turn model outputs into use-case-ready answers" },
+  { id: "engines", name: "Engines · APIs · MCPs", tag: "answers, and how every channel and agent reaches them" },
   { id: "models", name: "Core ML models", tag: "26 patents · 10+ years of labeled data · 38M+ meters" },
   { id: "found", name: "Utility data foundation", tag: "your systems of record and your {lakeLabel}" },
 ];

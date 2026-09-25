@@ -1,5 +1,12 @@
-/* ---------- use cases: tabs, visuals, MCP connect + Claude chat ---------- */
-let ucId = "highbill", mcpTab = "app", chatTimer = null;
+/* ---------- use cases: tabs, visuals, MCP connect + assistant chat ---------- */
+const ASSISTANTS = {
+  claude:  { name: "Claude", dot: "#d97757" },
+  chatgpt: { name: "ChatGPT", dot: "#10a37f" },
+  copilot: { name: "Microsoft Copilot", dot: "#0078d4" },
+  gemini:  { name: "Gemini", dot: "#4285f4" },
+  dev:     { name: "Your agent", dot: "#04121f" },
+};
+let ucId = "highbill", mcpTab = "claude", chatTimer = null;
 const UC_ORDER = ["highbill", "forecast", "flex", "nws", "trend", "rates", "assistant", "alert", "web", "targeting", "analyst", "revenue"];
 const UCW = (host) => Math.max(280, Math.round(host.clientWidth || 600));
 const CHECK = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -36,15 +43,15 @@ function renderUC() {
 
     <div class="mcp">
       <div class="mcp-setup">
-        <span class="eyebrow">Connect it to Claude</span>
+        <span class="eyebrow">Connect it to your AI assistant</span>
         <div class="srv"><span class="srv-ic"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7h12M4 13h12M7 4v12M13 4v12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
           <div><b>${esc(S.name)}</b><span>MCP server in ${esc(ENV().tenant)} · for ${esc(S.who)}</span></div></div>
         <div class="tool-chips">${S.tools.map(t => `<code class="${used.has(t) ? "used" : ""}">${t}</code>`).join("")}</div>
-        <div class="seg" role="group" aria-label="Where to connect"><button type="button" data-t="app" aria-pressed="${mcpTab === "app"}">Claude app</button><button type="button" data-t="code" aria-pressed="${mcpTab === "code"}">Claude Code</button><button type="button" data-t="other" aria-pressed="${mcpTab === "other"}">Other agents</button></div>
+        <div class="seg" role="group" aria-label="Where to connect" style="flex-wrap:wrap">${Object.entries(ASSISTANTS).map(([k, v]) => `<button type="button" data-t="${k}" aria-pressed="${mcpTab === k}">${k === "dev" ? "Developers" : k === "copilot" ? "Copilot" : v.name}</button>`).join("")}</div>
         <div class="howto" id="howto"></div>
       </div>
       <div class="chat">
-        <div class="chat-top"><span class="who"><i aria-hidden="true"></i>Claude · connected to ${esc(S.id)}</span><button type="button" class="btn sm" id="chat-replay">Replay</button></div>
+        <div class="chat-top"><span class="who"><i aria-hidden="true" id="chat-dot"></i><span id="chat-name">Claude</span> · connected to ${esc(S.id)}</span><button type="button" class="btn sm" id="chat-replay">Replay</button></div>
         <div class="chat-body" id="chat-body" aria-live="polite"></div>
       </div>
     </div>
@@ -68,9 +75,13 @@ function renderUC() {
 
   const setup = () => {
     const h = $("#howto");
-    if (mcpTab === "app") h.innerHTML = `<ol><li>In Claude, open <b>Settings → Connectors</b> and choose <b>Add custom connector</b>.</li><li>Name it <b>${esc(S.name)}</b> and paste the server URL.</li><li>Sign in with your company SSO. Tools and data follow your existing roles.</li><li>Ask a question like the one on the right.</li></ol>${cmd(url)}`;
-    else if (mcpTab === "code") h.innerHTML = `<p>Add the server from your terminal, then run <b>/mcp</b> in Claude Code to sign in.</p>${cmd(`claude mcp add --transport http ${S.id} ${url}`)}`;
-    else h.innerHTML = `<p>The same server works with any MCP-compatible agent, including ${esc(ENV().agentsInt)}, ${esc(ENV().agentsExt)}, Copilot Studio and agents you build yourself. Customer-scoped tools can also run as a sub-agent behind your web chat and IVR.</p>${cmd(url)}`;
+    const e = ENV();
+    if (mcpTab === "claude") h.innerHTML = `<ol><li>In Claude, open <b>Settings → Connectors</b> and choose <b>Add custom connector</b>.</li><li>Name it <b>${esc(S.name)}</b> and paste the server URL.</li><li>Sign in with your company SSO. Tools and data follow your existing roles.</li><li>Ask a question like the one on the right.</li></ol>${cmd(url)}`;
+    else if (mcpTab === "chatgpt") h.innerHTML = `<ol><li>In ChatGPT (Business or Enterprise), an admin turns on developer mode under <b>Settings → Apps &amp; Connectors</b>.</li><li>Create a connector named <b>${esc(S.name)}</b> with the MCP server URL.</li><li>Authenticate with your company SSO, then enable the connector in a chat.</li></ol>${cmd(url)}`;
+    else if (mcpTab === "copilot") h.innerHTML = `<ol><li>In <b>Microsoft Copilot Studio</b>, open your agent and go to <b>Tools → Add a tool</b>.</li><li>Choose <b>Model Context Protocol</b> and enter the server URL, with OAuth through Entra ID.</li><li>Publish the agent to Teams or Microsoft 365 Copilot.</li></ol>${cmd(url)}`;
+    else if (mcpTab === "gemini") h.innerHTML = `<ol><li>In <b>Gemini Enterprise</b> or <b>Vertex AI Agent Builder</b>, add the server as an MCP tool for your agent.</li><li>Use Google Cloud identity or your SSO for authentication.</li><li>Share the agent with your teams in Gemini.</li></ol>${cmd(url)}`;
+    else h.innerHTML = `<p>Any MCP client can connect, including ${esc(e.agentsInt)}, ${esc(e.agentsExt)} and agents you build yourself. Customer-scoped tools can also run as a sub-agent behind your web chat and IVR.</p>${cmd(`claude mcp add --transport http ${S.id} ${url}`)}${cmd(`{"mcpServers":{"${S.id}":{"type":"http","url":"${url}"}}}`)}`;
+    const A = ASSISTANTS[mcpTab]; $("#chat-name").textContent = A.name; $("#chat-dot").style.background = A.dot;
     h.querySelectorAll(".cmd button").forEach(b => b.addEventListener("click", () => copyText(b.previousElementSibling.textContent, b)));
     document.querySelectorAll(".mcp .seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.t === mcpTab));
   };
@@ -299,7 +310,7 @@ const UCV = {
   },
 
   analyst(host) {
-    ucHead(host, "New EV homes this year, top networks", "The answer Claude returned, with the governed query it ran.");
+    ucHead(host, "New EV homes this year, top networks", "The answer the assistant returned, with the governed query it ran.");
     const rows = [["N-18", 1204], ["N-04", 988], ["N-12", 760], ["N-07", 512]];
     const w = UCW(host), h = 200, ml = 40, mr = 10, mt = 20, mb = 26, hi = 1400, bw = (w - ml - mr) / rows.length, y = (v) => mt + (hi - v) / hi * (h - mt - mb);
     const s = mkSvg(w, h, "Bar chart of new EV homes by network"); yAxis(s, ml, w - mr, y, [0, 400, 800, 1200]);

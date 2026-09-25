@@ -91,7 +91,7 @@ section.block.first{border-top:0;padding-top:clamp(24px,4vw,40px)}
 .stage .slab{cursor:pointer;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
 .stage .slab:hover{transform:translateY(-5px)}
 .stage .slab.sel{transform:translateY(-9px)}
-.slab-labels{position:absolute;left:10px;right:10px;top:10px;pointer-events:none;aspect-ratio:640/604}
+.slab-labels{position:absolute;left:10px;right:10px;top:10px;pointer-events:none;aspect-ratio:640/580}
 .slab-label{position:absolute;pointer-events:auto;transform:translateY(-50%);display:grid;gap:1px;text-align:left;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:10px;padding:5px 10px;cursor:pointer;box-shadow:0 1px 2px rgba(4,18,31,.05);max-width:41%}
 .slab-label b{font-family:var(--f-display);font-weight:600;font-size:var(--fs-3);white-space:nowrap}
 .slab-label span{font-size:var(--fs-3);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -286,7 +286,6 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
       <a href="#platform">Platform</a>
       <a href="#models">Models</a>
       <a href="#usecases">Use cases &amp; MCP</a>
-      <a href="#deploy">Deployment</a>
     </div>
   </div>
 </nav>
@@ -306,7 +305,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
     </div>
     <div class="plat-grid">
       <div class="stage" id="stage">
-        <svg id="stack-svg" viewBox="0 0 640 604" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
+        <svg id="stack-svg" viewBox="0 0 640 580" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
         <div class="slab-labels" id="slab-labels"></div>
         <span class="tenant-chip" id="tenant-chip"></span>
         <div class="egress"><span><i></i>No customer data leaves the boundary</span><span>Only key attestation + operational counts cross, over <b id="egress-net">Private Link</b></span></div>
@@ -332,30 +331,14 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
   <div class="wrap">
     <div class="sec-head">
       <span class="eyebrow">Use cases &amp; MCP</span>
-      <h2>Put it to work in Claude in minutes</h2>
-      <p class="lede">Each use case combines model outputs, engines and your own data. Every one is also reachable through a UtilityAI Pro MCP server in your tenant, so your teams can connect it to Claude or any MCP-compatible agent and ask questions right away.</p>
+      <h2>Put it to work in any AI assistant in minutes</h2>
+      <p class="lede">Each use case combines model outputs, engines and your own data. Every one is also reachable through a UtilityAI Pro MCP server in your tenant, so your teams can connect it to Claude, ChatGPT, Microsoft Copilot, Gemini or any MCP-compatible agent and start asking questions right away.</p>
     </div>
     <div class="uc-tabs" id="uc-tabs" role="group" aria-label="Use cases"></div>
     <div id="uc-card"></div>
   </div>
 </section>
 
-<section class="block" id="deploy">
-  <div class="wrap">
-    <div class="sec-head">
-      <span class="eyebrow">Deployment</span>
-      <h2>How it maps to <span id="dep-env">your environment</span></h2>
-      <p class="lede">UtilityAI Pro ships as encrypted containers, pipelines and reference code that install into the cloud and data lake you already run. Change the environment at the top of the page to update this mapping.</p>
-    </div>
-    <div class="dep-grid">
-      <div>
-        <table class="map-table" id="map-table"></table>
-        <p class="xs muted" style="margin-top:8px">Reference mapping. Final services and topology are confirmed with your architects during the Define phase.</p>
-      </div>
-      <div class="sec-list" id="sec-list"></div>
-    </div>
-  </div>
-</section>
 
 <footer>
   <div class="wrap">
@@ -464,15 +447,15 @@ const NODES = {
     desc: "Computes deeper insights into usage habits, inefficiencies and savings opportunities." },
 
   // Interfaces
-  "i-api":   { band: "access", name: "CX APIs", sub: "14 REST endpoints", kind: "Bidgely interface",
+  "i-api":   { band: "engines", group: "APIs, MCPs & apps", name: "CX APIs", sub: "14 REST endpoints", kind: "Bidgely interface",
     desc: "Ratepayer-scoped REST endpoints: usage and disaggregation, bill itemization, bill projection, rate comparison, similar homes, recommendations, surveys, program participation, billing history and Hyper Insights. Served from a thin data-access layer behind your identity and API gateway." },
-  "i-mcp":   { band: "access", name: "MCP servers", sub: "Energy Assistant · Agentic Tools · IVR", kind: "Bidgely interface",
+  "i-mcp":   { band: "engines", group: "APIs, MCPs & apps", name: "MCP servers", sub: "Energy Assistant · Agentic Tools · IVR", kind: "Bidgely interface",
     desc: "Model Context Protocol servers expose standardized tools any agent platform can call: Energy Assistant, Analyze My Bill, Find the Best Rate, EV ROI, PV ROI, Home Bill Optimizer and IVR Agent." },
-  "i-awb":   { band: "access", name: "Analytics Workbench", sub: "{bi}", kind: "Bidgely application",
+  "i-awb":   { band: "engines", group: "APIs, MCPs & apps", name: "Analytics Workbench", sub: "{bi}", kind: "Bidgely application",
     desc: "Segmentation and targeting for DSM, marketing and grid teams: build and publish segments, compare demand curves, map EV, solar and LMI concentration, simulate programs and export lists. Reads directly from the Complete Data Layer." },
-  "i-ea":    { band: "access", name: "Energy Analyst agent", sub: "on {agentsInt}", kind: "Bidgely agent",
+  "i-ea":    { band: "engines", group: "APIs, MCPs & apps", name: "Energy Analyst agent", sub: "on {agentsInt}", kind: "Bidgely agent",
     desc: "A GenAI agent that answers plain-language questions with governed queries over the Complete Data Layer, and returns explained, data-grounded answers." },
-  "i-cc":    { band: "access", name: "Control Center", sub: "config · triggers · content", kind: "Bidgely interface",
+  "i-cc":    { band: "engines", group: "APIs, MCPs & apps", name: "Control Center", sub: "config · triggers · content", kind: "Bidgely interface",
     desc: "Configure each component, manage tips and program content, set schedules and alert thresholds, and update the rate catalog." },
 
   // Channels & agents
@@ -498,8 +481,7 @@ const NODES = {
 
 const BANDS = [ // top to bottom
   { id: "out", name: "Applications, agents & automations", tag: "you build and own" },
-  { id: "access", name: "APIs · MCPs · Apps", tag: "how every channel reaches the intelligence" },
-  { id: "engines", name: "Engines", tag: "turn model outputs into use-case-ready answers" },
+  { id: "engines", name: "Engines · APIs · MCPs", tag: "answers, and how every channel and agent reaches them" },
   { id: "models", name: "Core ML models", tag: "26 patents · 10+ years of labeled data · 38M+ meters" },
   { id: "found", name: "Utility data foundation", tag: "your systems of record and your {lakeLabel}" },
 ];
@@ -1041,15 +1023,14 @@ function buildEnvChips() {
 function setEnv(kind, k) {
   if (kind === "cloud") { cloud = k; store.set("upro-cloud", k); } else { lake = k; store.set("upro-lake", k); }
   document.querySelectorAll("[data-kind]").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === (b.dataset.kind === "cloud" ? cloud : lake)));
-  renderStack(); renderLayer(); renderDeploy(); renderUC();
+  renderStack(); renderLayer(); renderUC();
 }
 
 /* ---------- isometric platform stack ---------- */
-const STACK = { W: 640, H: 604, cx: 196, a: 168, b: 40, t: 14, top: 100, gap: 100 };
+const STACK = { W: 640, H: 580, cx: 196, a: 168, b: 44, t: 14, top: 104, gap: 124 };
 const LAYER_COPY = {
   out: "Your apps, agents and automations. Built by your team or SI from Bidgely reference implementations and run on your own platforms.",
-  access: "The interfaces every channel uses: ratepayer-scoped REST APIs, MCP servers any agent can call, the Analytics Workbench and the Control Center.",
-  engines: "Calculation services that turn raw model outputs into use-case-ready answers for grid planning and customer experience.",
+  engines: "Engines turn raw model outputs into use-case-ready answers for grid planning and customer experience. APIs, MCP servers and apps carry those answers to every channel, dashboard and AI agent.",
   models: "Bidgely's patented models, delivered as encrypted containers on confidential compute. Select a model to see what it detects.",
   found: "What you already run. UtilityAI Pro reads your systems of record and keeps all of its data in your {lakeLabel}.",
 };
@@ -1093,10 +1074,10 @@ function renderStack() {
     svgEl("polygon", { points: [P(...T), P(...R), P(...Bt), P(...L)].join(" "), fill: sel ? "url(#gTopSel)" : "url(#gTop)", stroke, "stroke-width": sel ? 1.6 : 1 }, g);
     // component tiles laid out on the top face: map (u,v) in the unit square onto the diamond
     const ids = bandIds(B.id);
-    const rows = B.id === "found" ? [ids.filter(k => NODES[k].row === "src"), ids.filter(k => NODES[k].row === "lake")] : ids.length > 6 ? [ids.slice(0, Math.ceil(ids.length / 2)), ids.slice(Math.ceil(ids.length / 2))] : [ids];
+    const rows = B.id === "found" ? [ids.filter(k => NODES[k].row === "src"), ids.filter(k => NODES[k].row === "lake")] : ids.length > 12 ? [ids.slice(0, 5), ids.slice(5, 10), ids.slice(10)] : ids.length > 6 ? [ids.slice(0, Math.ceil(ids.length / 2)), ids.slice(Math.ceil(ids.length / 2))] : [ids];
     const map = (u, v) => [T[0] + u * (R[0] - T[0]) + v * (L[0] - T[0]), T[1] + u * (R[1] - T[1]) + v * (L[1] - T[1])];
     rows.forEach((row, ri) => {
-      const v0 = rows.length === 1 ? 0.36 : 0.16 + ri * 0.42, vh = rows.length === 1 ? 0.3 : 0.28;
+      const nr = rows.length, v0 = nr === 1 ? 0.36 : nr === 2 ? 0.16 + ri * 0.42 : 0.1 + ri * 0.29, vh = nr === 1 ? 0.3 : nr === 2 ? 0.28 : 0.21;
       row.forEach((id, ci) => {
         const cw = 0.84 / row.length, u0 = 0.08 + ci * cw, u1 = u0 + cw * 0.78;
         const pts = [map(u0, v0), map(u1, v0), map(u1, v0 + vh), map(u0, v0 + vh)].map(p => P(...p)).join(" ");
@@ -1135,7 +1116,7 @@ function renderLayer(focusId) {
     grid = `<div class="lbl group-h">Your systems of record</div>${ids.filter(k => NODES[k].row === "src").map(card).join("")}
       <div class="lbl group-h" style="display:flex;align-items:center;gap:6px">${logo(lake === "native" ? "" : lake)}UtilityAI Pro data layer, inside your ${esc(e.lakeLabel)}</div>${ids.filter(k => NODES[k].row === "lake").map(card).join("")}`;
   } else if (B.id === "engines") {
-    grid = ["Grid & analytics", "Customer experience"].map(gn => `<div class="lbl group-h">${gn}</div>` + ids.filter(k => NODES[k].group === gn).map(card).join("")).join("");
+    grid = ["Grid & analytics", "Customer experience", "APIs, MCPs & apps"].map(gn => `<div class="lbl group-h">${gn}</div>` + ids.filter(k => NODES[k].group === gn).map(card).join("")).join("");
   } else grid = ids.map(card).join("");
   const idx = BANDS.length - BANDS.indexOf(B);
   $("#layer-panel").innerHTML = `<div class="layer-top"><span class="eyebrow">Layer ${idx} of ${BANDS.length}</span><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div><div class="comp-grid">${grid}</div>`;
@@ -1514,8 +1495,15 @@ function mRev() {
   v.append(el("div", { class: "kpis" }, `<div class="kpi"><b>Priority 1</b><span>Ranked for field investigation</span></div><div class="kpi"><b>~410 kWh</b><span>estimated unbilled per month</span></div><div class="kpi"><b>Tampering</b><span>Category, with meter event match</span></div>`));
 }
 
-/* ---------- use cases: tabs, visuals, MCP connect + Claude chat ---------- */
-let ucId = "highbill", mcpTab = "app", chatTimer = null;
+/* ---------- use cases: tabs, visuals, MCP connect + assistant chat ---------- */
+const ASSISTANTS = {
+  claude:  { name: "Claude", dot: "#d97757" },
+  chatgpt: { name: "ChatGPT", dot: "#10a37f" },
+  copilot: { name: "Microsoft Copilot", dot: "#0078d4" },
+  gemini:  { name: "Gemini", dot: "#4285f4" },
+  dev:     { name: "Your agent", dot: "#04121f" },
+};
+let ucId = "highbill", mcpTab = "claude", chatTimer = null;
 const UC_ORDER = ["highbill", "forecast", "flex", "nws", "trend", "rates", "assistant", "alert", "web", "targeting", "analyst", "revenue"];
 const UCW = (host) => Math.max(280, Math.round(host.clientWidth || 600));
 const CHECK = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -1552,15 +1540,15 @@ function renderUC() {
 
     <div class="mcp">
       <div class="mcp-setup">
-        <span class="eyebrow">Connect it to Claude</span>
+        <span class="eyebrow">Connect it to your AI assistant</span>
         <div class="srv"><span class="srv-ic"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7h12M4 13h12M7 4v12M13 4v12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
           <div><b>${esc(S.name)}</b><span>MCP server in ${esc(ENV().tenant)} · for ${esc(S.who)}</span></div></div>
         <div class="tool-chips">${S.tools.map(t => `<code class="${used.has(t) ? "used" : ""}">${t}</code>`).join("")}</div>
-        <div class="seg" role="group" aria-label="Where to connect"><button type="button" data-t="app" aria-pressed="${mcpTab === "app"}">Claude app</button><button type="button" data-t="code" aria-pressed="${mcpTab === "code"}">Claude Code</button><button type="button" data-t="other" aria-pressed="${mcpTab === "other"}">Other agents</button></div>
+        <div class="seg" role="group" aria-label="Where to connect" style="flex-wrap:wrap">${Object.entries(ASSISTANTS).map(([k, v]) => `<button type="button" data-t="${k}" aria-pressed="${mcpTab === k}">${k === "dev" ? "Developers" : k === "copilot" ? "Copilot" : v.name}</button>`).join("")}</div>
         <div class="howto" id="howto"></div>
       </div>
       <div class="chat">
-        <div class="chat-top"><span class="who"><i aria-hidden="true"></i>Claude · connected to ${esc(S.id)}</span><button type="button" class="btn sm" id="chat-replay">Replay</button></div>
+        <div class="chat-top"><span class="who"><i aria-hidden="true" id="chat-dot"></i><span id="chat-name">Claude</span> · connected to ${esc(S.id)}</span><button type="button" class="btn sm" id="chat-replay">Replay</button></div>
         <div class="chat-body" id="chat-body" aria-live="polite"></div>
       </div>
     </div>
@@ -1584,9 +1572,13 @@ function renderUC() {
 
   const setup = () => {
     const h = $("#howto");
-    if (mcpTab === "app") h.innerHTML = `<ol><li>In Claude, open <b>Settings → Connectors</b> and choose <b>Add custom connector</b>.</li><li>Name it <b>${esc(S.name)}</b> and paste the server URL.</li><li>Sign in with your company SSO. Tools and data follow your existing roles.</li><li>Ask a question like the one on the right.</li></ol>${cmd(url)}`;
-    else if (mcpTab === "code") h.innerHTML = `<p>Add the server from your terminal, then run <b>/mcp</b> in Claude Code to sign in.</p>${cmd(`claude mcp add --transport http ${S.id} ${url}`)}`;
-    else h.innerHTML = `<p>The same server works with any MCP-compatible agent, including ${esc(ENV().agentsInt)}, ${esc(ENV().agentsExt)}, Copilot Studio and agents you build yourself. Customer-scoped tools can also run as a sub-agent behind your web chat and IVR.</p>${cmd(url)}`;
+    const e = ENV();
+    if (mcpTab === "claude") h.innerHTML = `<ol><li>In Claude, open <b>Settings → Connectors</b> and choose <b>Add custom connector</b>.</li><li>Name it <b>${esc(S.name)}</b> and paste the server URL.</li><li>Sign in with your company SSO. Tools and data follow your existing roles.</li><li>Ask a question like the one on the right.</li></ol>${cmd(url)}`;
+    else if (mcpTab === "chatgpt") h.innerHTML = `<ol><li>In ChatGPT (Business or Enterprise), an admin turns on developer mode under <b>Settings → Apps &amp; Connectors</b>.</li><li>Create a connector named <b>${esc(S.name)}</b> with the MCP server URL.</li><li>Authenticate with your company SSO, then enable the connector in a chat.</li></ol>${cmd(url)}`;
+    else if (mcpTab === "copilot") h.innerHTML = `<ol><li>In <b>Microsoft Copilot Studio</b>, open your agent and go to <b>Tools → Add a tool</b>.</li><li>Choose <b>Model Context Protocol</b> and enter the server URL, with OAuth through Entra ID.</li><li>Publish the agent to Teams or Microsoft 365 Copilot.</li></ol>${cmd(url)}`;
+    else if (mcpTab === "gemini") h.innerHTML = `<ol><li>In <b>Gemini Enterprise</b> or <b>Vertex AI Agent Builder</b>, add the server as an MCP tool for your agent.</li><li>Use Google Cloud identity or your SSO for authentication.</li><li>Share the agent with your teams in Gemini.</li></ol>${cmd(url)}`;
+    else h.innerHTML = `<p>Any MCP client can connect, including ${esc(e.agentsInt)}, ${esc(e.agentsExt)} and agents you build yourself. Customer-scoped tools can also run as a sub-agent behind your web chat and IVR.</p>${cmd(`claude mcp add --transport http ${S.id} ${url}`)}${cmd(`{"mcpServers":{"${S.id}":{"type":"http","url":"${url}"}}}`)}`;
+    const A = ASSISTANTS[mcpTab]; $("#chat-name").textContent = A.name; $("#chat-dot").style.background = A.dot;
     h.querySelectorAll(".cmd button").forEach(b => b.addEventListener("click", () => copyText(b.previousElementSibling.textContent, b)));
     document.querySelectorAll(".mcp .seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.t === mcpTab));
   };
@@ -1815,7 +1807,7 @@ const UCV = {
   },
 
   analyst(host) {
-    ucHead(host, "New EV homes this year, top networks", "The answer Claude returned, with the governed query it ran.");
+    ucHead(host, "New EV homes this year, top networks", "The answer the assistant returned, with the governed query it ran.");
     const rows = [["N-18", 1204], ["N-04", 988], ["N-12", 760], ["N-07", 512]];
     const w = UCW(host), h = 200, ml = 40, mr = 10, mt = 20, mb = 26, hi = 1400, bw = (w - ml - mr) / rows.length, y = (v) => mt + (hi - v) / hi * (h - mt - mb);
     const s = mkSvg(w, h, "Bar chart of new EV homes by network"); yAxis(s, ml, w - mr, y, [0, 400, 800, 1200]);
@@ -1839,36 +1831,10 @@ const UCV = {
   },
 };
 
-/* ---------- deployment ---------- */
-const ICONS = {
-  lock: `<svg viewBox="0 0 20 20"><path d="M6 9V6.5a4 4 0 0 1 8 0V9" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="4" y="9" width="12" height="8.5" rx="2" fill="currentColor"/></svg>`,
-  db: `<svg viewBox="0 0 20 20"><ellipse cx="10" cy="5" rx="6" ry="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 5v10c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V5M4 10c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`,
-  key: `<svg viewBox="0 0 20 20"><circle cx="7" cy="10" r="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 10H18M15 10v3M17.5 10v2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`,
-  check: `<svg viewBox="0 0 20 20"><path d="M10 2 3.5 5v5c0 4 2.8 6.8 6.5 8 3.7-1.2 6.5-4 6.5-8V5Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m7 10 2 2 4-4.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`,
-  arrow: `<svg viewBox="0 0 20 20"><path d="M3 10h11M10 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`,
-};
-function renderDeploy() {
-  const c = ENV();
-  $("#dep-env").textContent = `${c.cloudLabel} + ${c.lakeLabel}`;
-  $("#map-table").innerHTML = `<tbody>
-    <tr><th>Model runtime</th><td>${esc(c.compute)}<div class="xs muted">Encrypted containers, attested before keys are released</div></td></tr>
-    <tr><th>Data layer</th><td>${esc(c.data)}<div class="xs muted">Input builders, output tables, Complete Data Layer</div></td></tr>
-    <tr><th>Engines &amp; pipelines</th><td>${esc(c.jobs)}<div class="xs muted">Provisioned from your catalog, scheduled in the Control Center</div></td></tr>
-    <tr><th>CX APIs &amp; MCP servers</th><td>Application tier in your tenant, behind your API gateway<div class="xs muted">${esc(c.identity)}</div></td></tr>
-    <tr><th>Analytics Workbench</th><td>${esc(c.bi)}</td></tr>
-    <tr><th>Internal agents</th><td>${esc(c.agentsInt)}</td></tr>
-    <tr><th>Customer-facing agents</th><td>${esc(c.agentsExt)}<div class="xs muted">Evals and guardrails in your platform</div></td></tr>
-    <tr><th>Boundary egress</th><td>${esc(c.network)}<div class="xs muted">Key attestation and operational counts only</div></td></tr>
-    <tr><th>Environments</th><td>Dev, UAT and Prod</td></tr>
-  </tbody>`;
-  $("#sec-list").innerHTML = SECURITY.map(s => `<div class="sec-item"><div class="ic">${ICONS[s.ic]}</div><div><h4>${esc(s.h)}</h4><p>${esc(sub(s.p))}</p></div></div>`).join("");
-}
-
 /* ---------- init ---------- */
 buildEnvChips(); renderStack(); renderLayer();
 buildModelTabs(); renderModel();
 buildUCTabs(); renderUC();
-renderDeploy();
 
 let rz, lastVW = VW();
 addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (Math.abs(VW() - lastVW) > 8) { lastVW = VW(); renderModel(); } drawUCViz(); }, 140); });

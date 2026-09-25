@@ -6,16 +6,15 @@ so it can be shown to any utility.
 
 ## What's on the page
 
-1. **Platform stack** (top of page): an isometric stack of the five layers (data foundation in your
-   lake, core ML models, engines, APIs/MCPs/apps, applications and agents) standing on your cloud
+1. **Platform stack** (top of page): an isometric stack of four layers (data foundation in your lake,
+   core ML models, engines + APIs + MCPs, applications and agents) standing on your cloud
    tenant. Pick the cloud (Azure, Google Cloud, AWS, Oracle Cloud) and data lake (Databricks,
    Snowflake, cloud-native) to relabel it. Click a layer to list its components; click a model to
    open its deep dive.
 2. **Model deep dives**: eight tabs with interactive visuals on a synthetic household.
-3. **Use cases & MCP**: twelve use cases, each with its own interactive visual, a "Connect it to
-   Claude" panel (Claude app, Claude Code, other agents) with copyable server URL and command, a
-   replayable Claude conversation showing the MCP tool call, the recipe, and how it runs.
-4. **Deployment**: cloud + data lake service mapping and the security model.
+3. **Use cases & MCP**: twelve use cases, each with its own interactive visual, a "Connect it to your
+   AI assistant" panel (Claude, ChatGPT, Copilot Studio, Gemini, developers) with copyable server URL and command, a
+   replayable assistant conversation showing the MCP tool call, the recipe, and how it runs.
 
 Light theme with Bidgely navy #04121f and Bidgely blue #29abe2, Sora + Manrope, and three text
 sizes (`--fs-1`, `--fs-2`, `--fs-3` in `src/styles.css`).
@@ -32,7 +31,6 @@ src/core.js      helpers, synthetic household data, SVG chart helpers
 src/stack.js     environment picker and the isometric platform stack
 src/models.js    model deep dives
 src/usecases.js  use case tabs, per-use-case visuals, MCP connect panel and chat replay
-src/deploy.js    deployment mapping
 src/init.js      startup and resize handling
 scripts/build.sh assembles src/ into index.html and dist/upro-platform.html
 ```

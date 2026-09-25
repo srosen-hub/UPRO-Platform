@@ -30,15 +30,14 @@ function buildEnvChips() {
 function setEnv(kind, k) {
   if (kind === "cloud") { cloud = k; store.set("upro-cloud", k); } else { lake = k; store.set("upro-lake", k); }
   document.querySelectorAll("[data-kind]").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === (b.dataset.kind === "cloud" ? cloud : lake)));
-  renderStack(); renderLayer(); renderDeploy(); renderUC();
+  renderStack(); renderLayer(); renderUC();
 }
 
 /* ---------- isometric platform stack ---------- */
-const STACK = { W: 640, H: 604, cx: 196, a: 168, b: 40, t: 14, top: 100, gap: 100 };
+const STACK = { W: 640, H: 580, cx: 196, a: 168, b: 44, t: 14, top: 104, gap: 124 };
 const LAYER_COPY = {
   out: "Your apps, agents and automations. Built by your team or SI from Bidgely reference implementations and run on your own platforms.",
-  access: "The interfaces every channel uses: ratepayer-scoped REST APIs, MCP servers any agent can call, the Analytics Workbench and the Control Center.",
-  engines: "Calculation services that turn raw model outputs into use-case-ready answers for grid planning and customer experience.",
+  engines: "Engines turn raw model outputs into use-case-ready answers for grid planning and customer experience. APIs, MCP servers and apps carry those answers to every channel, dashboard and AI agent.",
   models: "Bidgely's patented models, delivered as encrypted containers on confidential compute. Select a model to see what it detects.",
   found: "What you already run. UtilityAI Pro reads your systems of record and keeps all of its data in your {lakeLabel}.",
 };
@@ -82,10 +81,10 @@ function renderStack() {
     svgEl("polygon", { points: [P(...T), P(...R), P(...Bt), P(...L)].join(" "), fill: sel ? "url(#gTopSel)" : "url(#gTop)", stroke, "stroke-width": sel ? 1.6 : 1 }, g);
     // component tiles laid out on the top face: map (u,v) in the unit square onto the diamond
     const ids = bandIds(B.id);
-    const rows = B.id === "found" ? [ids.filter(k => NODES[k].row === "src"), ids.filter(k => NODES[k].row === "lake")] : ids.length > 6 ? [ids.slice(0, Math.ceil(ids.length / 2)), ids.slice(Math.ceil(ids.length / 2))] : [ids];
+    const rows = B.id === "found" ? [ids.filter(k => NODES[k].row === "src"), ids.filter(k => NODES[k].row === "lake")] : ids.length > 12 ? [ids.slice(0, 5), ids.slice(5, 10), ids.slice(10)] : ids.length > 6 ? [ids.slice(0, Math.ceil(ids.length / 2)), ids.slice(Math.ceil(ids.length / 2))] : [ids];
     const map = (u, v) => [T[0] + u * (R[0] - T[0]) + v * (L[0] - T[0]), T[1] + u * (R[1] - T[1]) + v * (L[1] - T[1])];
     rows.forEach((row, ri) => {
-      const v0 = rows.length === 1 ? 0.36 : 0.16 + ri * 0.42, vh = rows.length === 1 ? 0.3 : 0.28;
+      const nr = rows.length, v0 = nr === 1 ? 0.36 : nr === 2 ? 0.16 + ri * 0.42 : 0.1 + ri * 0.29, vh = nr === 1 ? 0.3 : nr === 2 ? 0.28 : 0.21;
       row.forEach((id, ci) => {
         const cw = 0.84 / row.length, u0 = 0.08 + ci * cw, u1 = u0 + cw * 0.78;
         const pts = [map(u0, v0), map(u1, v0), map(u1, v0 + vh), map(u0, v0 + vh)].map(p => P(...p)).join(" ");
@@ -124,7 +123,7 @@ function renderLayer(focusId) {
     grid = `<div class="lbl group-h">Your systems of record</div>${ids.filter(k => NODES[k].row === "src").map(card).join("")}
       <div class="lbl group-h" style="display:flex;align-items:center;gap:6px">${logo(lake === "native" ? "" : lake)}UtilityAI Pro data layer, inside your ${esc(e.lakeLabel)}</div>${ids.filter(k => NODES[k].row === "lake").map(card).join("")}`;
   } else if (B.id === "engines") {
-    grid = ["Grid & analytics", "Customer experience"].map(gn => `<div class="lbl group-h">${gn}</div>` + ids.filter(k => NODES[k].group === gn).map(card).join("")).join("");
+    grid = ["Grid & analytics", "Customer experience", "APIs, MCPs & apps"].map(gn => `<div class="lbl group-h">${gn}</div>` + ids.filter(k => NODES[k].group === gn).map(card).join("")).join("");
   } else grid = ids.map(card).join("");
   const idx = BANDS.length - BANDS.indexOf(B);
   $("#layer-panel").innerHTML = `<div class="layer-top"><span class="eyebrow">Layer ${idx} of ${BANDS.length}</span><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div><div class="comp-grid">${grid}</div>`;
