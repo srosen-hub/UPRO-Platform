@@ -2190,8 +2190,9 @@ const ASK_SUGG = [
   { q: "Which homes may have a failing AC?", src: [["flame", "Appliance inefficiency"]],
     rows: [["Degrading", 14800], ["Saturating on hot days", 9300], ["Short cycling", 4100]], unit: " homes",
     text: "14,800 homes show AC degradation: energy per cooling degree up more than 15% over two summers. 9,300 hit a ceiling on the hottest days. These are good tune-up and replacement targets.\nLINKS: model:ineff, uc:targeting" },
-  { q: "Does any customer data leave our cloud?", src: [["shield", "Platform security"]], rows: [], unit: "",
-    text: "No. Models run as encrypted containers on confidential compute inside your tenant and read and write your data lake directly. Only the key attestation handshake and operational counts cross the boundary, with no PII or consumption data.\nLINKS: layer:found, layer:models" },
+  { q: "Can flexible load defer the Feeder F-2231 upgrade?", src: [["gear", "Flexible load calculation"], ["pin", "Meter-to-asset aggregation"]],
+    rows: [["EV managed charging", 1.4], ["Smart thermostats", 0.9], ["Pool pumps", 0.3], ["Home batteries", 0.2]], unit: " MW",
+    text: "Likely yes. F-2231 is forecast to run 2.1 MW over its rating at 6pm by 2029, and homes on the feeder can shift 2.8 MW in that window, led by EV managed charging at 1.4 MW. Enrolling about 60% of it covers the gap and defers the upgrade roughly three years.\nLINKS: uc:nws, uc:flex" },
 ];
 const DEMO_DATA = ASK_SUGG.filter(d => d.rows.length).map(d => `Q: ${d.q}\nData: ${d.rows.map(r => `${r[0]} = ${r[1].toLocaleString()}${d.unit}`).join("; ")}\nContext: ${d.text.split("\nLINKS")[0]}`).join("\n\n");
 let askTurns = [], askCtl = null, askSample;
