@@ -33,7 +33,7 @@ h1,h2{font-size:var(--fs-1);line-height:1.08;font-weight:500;letter-spacing:-.03
 h3,h4,h5,h6{font-size:var(--fs-2);line-height:1.35;font-weight:600}
 p{margin:0}
 small,.small,.xs{font-size:var(--fs-3)}
-.grad{color:var(--muted)}
+.grad{background:linear-gradient(90deg,#0a74a8 0%,#29abe2 45%,#14b8a6 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:var(--fs-3);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
 .eyebrow::before{content:"";width:6px;height:6px;background:var(--accent);display:inline-block}
 .spark{display:none}
