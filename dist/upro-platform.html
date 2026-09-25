@@ -400,17 +400,6 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;height:min(880px,calc(100vh - 48px));overflow:hidden}
 #model-panels,.eng-wrap{flex:1;min-height:0;overflow:auto}
 .model-tabs,.dlg-head{flex:none}
-
-.case-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));border-top:1px solid var(--line-2);border-left:1px solid var(--line-2)}
-.case{display:grid;gap:14px;align-content:start;padding:20px;border-right:1px solid var(--line-2);border-bottom:1px solid var(--line-2);background:var(--surface);color:var(--ink);text-decoration:none}
-.case:hover{background:var(--bg)}
-.case-mark{font-size:var(--fs-2);font-weight:700;letter-spacing:-.01em;min-height:28px;display:flex;align-items:center}
-.case b{font-weight:500;font-size:var(--fs-2)}
-.case-stats{display:grid;gap:10px}
-.case-stats span{display:grid;gap:2px}
-.case-stats strong{font-size:1.5rem;font-weight:500;letter-spacing:-.02em;background:linear-gradient(90deg,#0a74a8,#29abe2 45%,#14b8a6);-webkit-background-clip:text;background-clip:text;color:transparent;justify-self:start}
-.case-stats em{font-style:normal;font-family:var(--f-mono);font-size:var(--fs-3);color:var(--muted)}
-.case .go{font-family:var(--f-mono);font-size:var(--fs-3);color:var(--accent-text,var(--accent))}
 </style>
 <header class="nav" aria-label="Bidgely UtilityAI Pro">
   <div class="wrap">
@@ -473,15 +462,6 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
     </div>
     <div class="uc-groups" id="uc-grid"></div>
     <div id="uc-card"></div>
-  </div>
-</section>
-
-<section class="block" id="cases">
-  <div class="wrap">
-    <div class="sec-head">
-      <h2>Proven at <span class="grad">leading utilities</span></h2>
-    </div>
-    <div class="case-grid" id="case-grid"></div>
   </div>
 </section>
 
@@ -2148,29 +2128,6 @@ const UCV = {
   },
 };
 
-/* ---------- case studies (published Bidgely results) ---------- */
-const CASES = [
-  { name: "APS", full: "Arizona Public Service", program: "High Bill Analyzer in the call center",
-    stats: [["+7%", "CX score on calls using it"], ["68%", "CSR utilization"], ["82%", "advisor like rate"]],
-    url: "https://www.bidgely.com/pdf/aps-high-bill-advisor-snapshot" },
-  { name: "PSEG Long Island", full: "PSEG Long Island", program: "Time-of-Day rate transition",
-    stats: [["~900k", "customers moved to TOD rates"], ["98%", "retention"], ["250k+", "personalized rate comparisons"]],
-    url: "https://www.bidgely.com/podcast/pseg-long-island-tod-rate-rollout" },
-  { name: "Southern Company", full: "Southern Company", program: "Modernized HERs, CX and TOU coaching",
-    stats: [["124%", "of year-one savings target"], ["85%+", "CSAT in year one"]],
-    url: "https://www.bidgely.com/webinar/cx-dsm-modernization-customer-snapshot" },
-  { name: "Dominion Energy", full: "Dominion Energy South Carolina", program: "Targeted DSM and Home Energy Reports",
-    stats: [["+27%", "above HER savings forecast"]],
-    url: "https://www.bidgely.com/webinar/how-dominion-and-oge-turn-data-into-action-with-targeted-customer-programs" },
-];
-function buildCases() {
-  $("#case-grid").innerHTML = CASES.map(c => `<a class="case" href="${c.url}" target="_blank" rel="noopener">
-    <span class="case-mark">${esc(c.name)}</span>
-    <b>${esc(c.program)}</b>
-    <span class="case-stats">${c.stats.map(([v, l]) => `<span><strong>${esc(v)}</strong><em>${esc(l)}</em></span>`).join("")}</span>
-    <span class="go">Read the story →</span></a>`).join("");
-}
-
 /* ---------- Ask UtilityAI Pro: a chat grounded in this page's content ---------- */
 // Demo questions answered from (synthetic) model outputs. Each has a short answer, the outputs it
 // queried, and a small result table.
@@ -2300,7 +2257,7 @@ function initAsk() {
 /* ---------- init ---------- */
 buildEnvChips(); renderStack(); renderLayer();
 buildModelTabs();
-buildUCTabs(); renderUC(); buildCases(); initAsk();
+buildUCTabs(); renderUC(); initAsk();
 $("#brand-logo").src = BIDGELY_LOGO;
 $("#model-close").addEventListener("click", () => $("#model-dlg").close());
 $("#model-dlg").addEventListener("click", (e) => { if (e.target.id === "model-dlg") e.target.close(); });
