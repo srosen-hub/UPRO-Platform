@@ -104,7 +104,7 @@ section.block.first{border-top:0;padding-top:clamp(24px,4vw,40px)}
 .slab-label[aria-pressed="true"]{border-color:var(--ink);border-left-color:var(--accent)}
 .ai-row{position:absolute;display:flex;gap:6px;align-items:center;transform:translate(-50%,-50%);pointer-events:auto}
 .ai-pill{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line-2);border-radius:3px;padding:3px 8px 3px 6px;font-size:var(--fs-3);font-weight:500;white-space:nowrap}
-.full-btn{position:absolute;top:12px;right:12px;z-index:3;font-family:var(--f-mono)}
+.full-btn{position:absolute;bottom:44px;right:12px;z-index:3;font-family:var(--f-mono)}
 .tenant-chip{display:inline-flex;align-items:center;gap:6px;margin-right:auto;font-family:var(--f-mono);font-size:var(--fs-3);color:var(--ink-2);background:#fff;border:1px dashed var(--line-3);border-radius:3px;padding:3px 8px}
 .egress{position:relative;padding:6px 4px 2px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;justify-content:flex-end;font-family:var(--f-mono);font-size:var(--fs-3);color:var(--muted)}
 .egress span{display:inline-flex;align-items:center;gap:6px}
@@ -407,3 +407,9 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
 .vendor-row .lbl{min-width:104px;white-space:nowrap}
 .vendor{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border:1px solid var(--line-2);border-radius:2px;background:var(--surface);font-size:var(--fs-3);font-weight:500}
 .vendor .logo{width:14px;height:14px}
+
+.app-cluster{position:absolute;left:60%;right:0;top:1%;display:grid;gap:6px;pointer-events:auto}
+.app-pills{display:flex;flex-wrap:wrap;gap:4px}
+.app-pills .ai-pill{padding:3px 7px}
+.app-pills .logo{width:12px;height:12px}
+@media (max-width:620px){.app-cluster{display:none}}

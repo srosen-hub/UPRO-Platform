@@ -36,7 +36,7 @@ function setEnv(kind, k) {
 /* ---------- isometric platform stack ---------- */
 const STACK = { W: 640, H: 620, cx: 196, a: 168, b: 44, t: 16, top: 160, gap: 116 };
 const LAYER_COPY = {
-  out: "Apps, agents and automations you build and own.",
+  out: "Pre-built or custom apps, agents and automations, feeding the systems you already run.",
   engines: "Engines are services that translate ML model outputs into use case-ready insights. APIs and MCPs deliver them to every channel and agent.",
   models: "Patented models, encrypted, running in your cloud. Click one.",
   found: "Your systems of record, with all UtilityAI Pro data kept in your {lakeLabel}.",
@@ -87,6 +87,7 @@ function renderStack() {
   if (!reduce) AIX.forEach((x, i) => { const c = svgEl("circle", { cx: x, cy: S.top - S.b + 20, r: 2.6, fill: cssv("--accent") }, flowG); c.innerHTML = `<animate attributeName="cy" from="${S.top - S.b + 20}" to="${AIY[i] + 12}" dur="1.8s" begin="${-i * 0.45}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="1.8s" begin="${-i * 0.45}s" repeatCount="indefinite"/>`; });
 
   const labels = $("#slab-labels"); labels.innerHTML = "";
+  labels.append(el("div", { class: "app-cluster" }, `<span class="lbl">Your applications</span><span class="app-pills">${APP_TARGETS.flatMap(([, vs]) => vs).map(([n, k]) => `<span class="ai-pill">${k ? logo(k) : ""}<span>${esc(n)}</span></span>`).join("")}</span>`));
   AI_TOOLS.forEach(([k, name], i) => labels.append(el("span", { class: "ai-row", style: `left:${AIX[i] / S.W * 100}%;top:${AIY[i] / S.H * 100}%` }, `<span class="ai-pill">${logoAI(k)}<span>${name}</span></span>`)));
 
   [...BANDS].reverse().forEach((B) => {
@@ -147,6 +148,13 @@ function renderStack() {
   tc.innerHTML = `${logo(cloud)}${logo(lake === "native" ? "" : lake)}<span>${esc(e.tenant)}</span>`;
 }
 
+const APP_TARGETS = [
+  ["Customer & billing", [["Oracle CC&B", "oracle"], ["SAP", "sap"], ["Salesforce", "salesforce"]]],
+  ["Contact center", [["Genesys"], ["NICE"]]],
+  ["Grid operations", [["ADMS"], ["DERMS"]]],
+  ["Assets & work", [["IBM Maximo", "ibm"]]],
+];
+const vendorRows = (rows) => `<div class="vendors">${rows.map(([g, vs]) => `<div class="vendor-row"><span class="lbl">${g}</span>${vs.map(([n, k]) => `<span class="vendor">${k ? logo(k) : ""}${esc(n)}</span>`).join("")}</div>`).join("")}</div>`;
 const SRC_VENDORS = [
   ["AMI & MDM", [["Itron"], ["Landis+Gyr"], ["Sensus"], ["Aclara"], ["Siemens EnergyIP", "siemens"]]],
   ["CIS & billing", [["SAP", "sap"], ["Oracle Utilities", "oracle"], ["Salesforce", "salesforce"]]],
@@ -163,9 +171,11 @@ function renderLayer(focusId) {
   if (B.id === "found") {
     grid = `<div class="lbl group-h">Your systems of record</div>${ids.filter(k => NODES[k].row === "src").map(card).join("")}
       <div class="lbl group-h">Connects to the systems you already run</div>
-      <div class="vendors">${SRC_VENDORS.map(([g, vs]) => `<div class="vendor-row"><span class="lbl">${g}</span>${vs.map(([n, k]) => `<span class="vendor">${k ? logo(k) : ""}${esc(n)}</span>`).join("")}</div>`).join("")}</div>`;
+      ${vendorRows(SRC_VENDORS)}`;
   } else if (B.id === "engines") {
     grid = ["Grid & analytics engines", "Customer experience engines", "APIs, MCPs & apps"].map(gn => `<div class="lbl group-h">${gn}</div>` + ids.filter(k => NODES[k].group === gn).map(card).join("")).join("");
+  } else if (B.id === "out") {
+    grid = ids.map(card).join("") + `<div class="lbl group-h">Feeds the applications you already run</div>${vendorRows(APP_TARGETS)}`;
   } else grid = ids.map(card).join("");
   const stats = B.id === "models" ? `<div class="layer-stats">${[["38 Million", "meters"], ["45+", "utilities"], ["15 years", "of labeled ground truth"]].map(([v, l]) => `<span><strong>${v}</strong><em>${l}</em></span>`).join("")}</div>` : "";
   $("#layer-panel").innerHTML = `<div class="layer-top"><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div>${stats}<div class="comp-grid">${grid}</div>`;
