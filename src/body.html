@@ -1,98 +1,49 @@
 <nav class="nav" aria-label="Sections">
   <div class="wrap">
-    <a class="brand" href="#top" aria-label="Bidgely UtilityAI Pro">
+    <a class="brand" href="#platform" aria-label="Bidgely UtilityAI Pro">
       <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="3" height="8" rx="1.5" fill="currentColor"/><rect x="8" y="7" width="3" height="13" rx="1.5" fill="currentColor"/><rect x="13" y="4" width="3" height="16" rx="1.5" fill="currentColor"/><rect x="18" y="9" width="3" height="11" rx="1.5" fill="currentColor"/></svg>
       <span class="brand-word">bidgely</span><span class="brand-sep"></span><span class="brand-prod">UtilityAI Pro</span>
     </a>
     <div class="nav-links">
       <a href="#platform">Platform</a>
       <a href="#models">Models</a>
-      <a href="#usecases">Use cases</a>
+      <a href="#usecases">Use cases &amp; MCP</a>
       <a href="#deploy">Deployment</a>
     </div>
-    <span class="pill"><span class="dot"></span>Runs in your cloud</span>
   </div>
 </nav>
 
-<header class="hero" id="top">
-  <div class="wrap hero-grid">
-    <div class="hero-copy">
-      <span class="eyebrow">The energy intelligence platform</span>
-      <h1>Appliance-level intelligence for every meter, <em>running inside your cloud.</em></h1>
-      <p class="lede">UtilityAI Pro turns AMI interval data into hourly appliance, DER and customer profiles. The models, engines, APIs and MCP servers deploy into your own cloud and data platform, so customer data never leaves your environment and every team builds on the same governed outputs.</p>
-      <div class="stats">
-        <div class="stat"><b>38M+</b><span>meters on platform</span></div>
-        <div class="stat"><b>45+</b><span>utility customers</span></div>
-        <div class="stat"><b>26</b><span>patents</span></div>
-              </div>
-      <div class="cta-row">
-        <a class="btn primary" href="#platform">Explore the platform</a>
-        <a class="btn" href="#usecases">See use case recipes</a>
-      </div>
-    </div>
-
-    <div class="meter-card" aria-label="Sample household meter data">
-      <div class="meter-top">
-        <div>
-          <h4>One year of one meter</h4>
-          <div class="meter-id">Sample premise · 8,760 hourly reads · Oct 2025 to Sep 2026</div>
-        </div>
-        <div class="seg" role="group" aria-label="Heatmap view">
-          <button type="button" id="hero-raw" aria-pressed="true">Raw AMI</button>
-          <button type="button" id="hero-dis" aria-pressed="false">Disaggregated</button>
-        </div>
-      </div>
-      <div class="hero-canvas-wrap">
-        <canvas id="hero-hm" width="730" height="240" aria-label="Heatmap of hourly usage by day"></canvas>
-      </div>
-      <div class="hm-axis"><span>Oct</span><span>Jan</span><span>Apr</span><span>Jul</span><span>Sep</span></div>
-      <div class="legend-scale" id="hero-legend"></div>
-      <div class="callouts">
-        <div class="callout"><div class="k"><span class="sw" style="background:var(--c-ev)"></span>EV detected</div><div class="v">14 Jan · L2 · 7.2 kW</div></div>
-        <div class="callout"><div class="k"><span class="sw" style="background:var(--c-solar)"></span>Solar installed</div><div class="v">30 Mar · ~6.5 kW DC</div></div>
-        <div class="callout"><div class="k"><span class="sw" style="background:var(--c-heat)"></span>Heat pump</div><div class="v">Cycling signature · aux strip &lt;32°F</div></div>
-      </div>
-    </div>
-  </div>
-</header>
-
-<section class="block" id="platform">
+<section class="block first" id="platform">
   <div class="wrap">
-    <div class="sec-head">
-      <span class="eyebrow">01 · The platform</span>
-      <h2>One governed intelligence layer, inside your tenant</h2>
-      <p class="lede">UtilityAI Pro stacks on top of the data foundation you already run. Models read from your data lake and write back to it, engines turn outputs into answers, and APIs and MCP servers carry them to every channel and agent. The whole stack sits inside your cloud boundary. Pick your cloud and data lake, then select any component to see what it does.</p>
-    </div>
-
-    <div class="env-bar">
-      <div class="uc-strip"><span class="lbl">Cloud</span><div class="chips" id="cloud-chips" role="group" aria-label="Cloud"></div></div>
-      <div class="uc-strip"><span class="lbl">Data lake</span><div class="chips" id="lake-chips" role="group" aria-label="Data lake"></div></div>
-    </div>
-    <div class="trace-bar" id="trace-bar" aria-live="polite"></div>
-
-    <div class="platform" id="platform-map">
-      <svg class="plat-svg" id="plat-svg" aria-hidden="true"></svg>
-      <div class="tenant" id="tenant">
-        <div class="tenant-tag"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 7V5a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="7" width="11" height="7.5" rx="1.5" fill="currentColor"/></svg><span id="tenant-label">Your Azure tenant + Databricks</span></div>
-        <div class="tenant-sub">Everything below runs in your environment</div>
-        <div class="stack" id="stack"></div>
-        <div class="boundary-x">
-          <div class="bx"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 2.5 4v4c0 3.3 2.4 5.7 5.5 6.5 3.1-.8 5.5-3.2 5.5-6.5V4Z" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span><b>Crosses the boundary:</b> attestation handshake for model key release, over <span data-env="network">Private Link</span>.</span></div>
-          <div class="bx"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 12h3l2-7 2 9 2-5h3" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span><b>Also crosses:</b> operational telemetry only (job counts, row counts, key events). No PII, no consumption data.</span></div>
-        </div>
+    <div class="plat-head">
+      <div class="sec-head">
+        <span class="eyebrow">The platform</span>
+        <h2>UtilityAI Pro, stacked on your data</h2>
+        <p class="lede">Every layer runs inside your cloud and reads from and writes to your data lake. Pick your environment, then select a layer to see what's in it.</p>
+      </div>
+      <div class="env-picker" aria-label="Environment">
+        <div class="env-row"><span class="lbl">Cloud</span><div class="chips" id="cloud-chips" role="group" aria-label="Cloud"></div></div>
+        <div class="env-row"><span class="lbl">Data lake</span><div class="chips" id="lake-chips" role="group" aria-label="Data lake"></div></div>
       </div>
     </div>
-
-    <div class="detail" id="plat-detail" aria-live="polite"></div>
+    <div class="plat-grid">
+      <div class="stage" id="stage">
+        <svg id="stack-svg" viewBox="0 0 640 604" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
+        <div class="slab-labels" id="slab-labels"></div>
+        <span class="tenant-chip" id="tenant-chip"></span>
+        <div class="egress"><span><i></i>No customer data leaves the boundary</span><span>Only key attestation + operational counts cross, over <b id="egress-net">Private Link</b></span></div>
+      </div>
+      <div class="layer-panel" id="layer-panel" aria-live="polite"></div>
+    </div>
   </div>
 </section>
 
 <section class="block" id="models">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">02 · The models</span>
-      <h2>What the models see in a single meter</h2>
-      <p class="lede">Bidgely filed the first AMI disaggregation patent in 2011. The models below run as containerized images in your environment and write per-meter outputs back to your data platform on every run. The sample home is synthetic but follows the signatures the models detect in production data.</p>
+      <span class="eyebrow">Core ML models</span>
+      <h2>What each model does</h2>
+      <p class="lede">Eight containerized models run in your environment and write per-meter outputs to your data lake on every run. The examples use a synthetic home with the signatures the models detect in production data.</p>
     </div>
     <div class="model-tabs" role="tablist" id="model-tabs" aria-label="Models"></div>
     <div id="model-panels"></div>
@@ -102,25 +53,22 @@
 <section class="block" id="usecases">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">03 · Use case recipes</span>
-      <h2>Models + engines + your data = a use case</h2>
-      <p class="lede">Every use case is a recipe. Your own data sets (GIS, program history, rates, CIS) combine with Bidgely model outputs and engines, then reach people through APIs, MCP servers or dashboards. Bidgely ships a reference implementation and orchestration guide for each one; your team or SI tailors and runs it.</p>
+      <span class="eyebrow">Use cases &amp; MCP</span>
+      <h2>Put it to work in Claude in minutes</h2>
+      <p class="lede">Each use case combines model outputs, engines and your own data. Every one is also reachable through a UtilityAI Pro MCP server in your tenant, so your teams can connect it to Claude or any MCP-compatible agent and ask questions right away.</p>
     </div>
-    <div class="uc-layout">
-      <div class="uc-nav" id="uc-nav" role="group" aria-label="Use cases"></div>
-      <div id="uc-card"></div>
-    </div>
+    <div class="uc-tabs" id="uc-tabs" role="group" aria-label="Use cases"></div>
+    <div id="uc-card"></div>
   </div>
 </section>
 
 <section class="block" id="deploy">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">04 · Deployment</span>
-      <h2>Your cloud. Your data platform. Your control.</h2>
-      <p class="lede">UtilityAI Pro is delivered as encrypted containers, pipelines and reference code that install into the cloud and data platform you already run. Pick a cloud to see how the layers map.</p>
+      <span class="eyebrow">Deployment</span>
+      <h2>How it maps to <span id="dep-env">your environment</span></h2>
+      <p class="lede">UtilityAI Pro ships as encrypted containers, pipelines and reference code that install into the cloud and data lake you already run. Change the environment at the top of the page to update this mapping.</p>
     </div>
-    <div class="env-bar"><div class="uc-strip"><span class="lbl">Cloud</span><div class="chips" id="dep-chips" role="group" aria-label="Cloud"></div></div><div class="uc-strip"><span class="lbl">Data lake</span><div class="chips" id="dep-lake-chips" role="group" aria-label="Data lake"></div></div></div>
     <div class="dep-grid">
       <div>
         <table class="map-table" id="map-table"></table>
@@ -128,17 +76,13 @@
       </div>
       <div class="sec-list" id="sec-list"></div>
     </div>
-
-
   </div>
 </section>
 
-
-
 <footer>
   <div class="wrap">
-    <span>Bidgely UtilityAI Pro · Platform overview · Proprietary and confidential</span>
-    <span>Sample household data on this page is synthetic.</span>
+    <span>Bidgely UtilityAI Pro · Proprietary and confidential</span>
+    <span>Household, network and customer examples are synthetic. MCP tool names are illustrative.</span>
   </div>
 </footer>
 <div class="tip" id="tip" hidden></div>

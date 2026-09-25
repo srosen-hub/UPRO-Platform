@@ -6,21 +6,19 @@ so it can be shown to any utility.
 
 ## What's on the page
 
-1. **Stacked platform**: utility data foundation (sources + the UtilityAI Pro data layer in your
-   Databricks, Snowflake or cloud-native lake), core ML models, engines, APIs/MCPs/apps, and the
-   applications and agents on top, all inside a dashed "your cloud tenant" boundary. Pick the cloud
-   (Azure, Google Cloud, AWS, Oracle Cloud) and data lake to relabel services; trace any use case.
-2. **Model deep dives**: eight tabs with interactive visuals on a synthetic household
-   (heatmap small multiples, hourly stacked breakdown, published accuracy table, attributes,
-   HVAC inefficiency, lifestyle archetypes, DER propensity, premise-level income, similar-home
-   comparison, revenue loss).
-3. **Use case recipes**: twelve use cases, each shown as your data + models + engines +
-   APIs/MCPs/apps, with orchestration steps, value, and the Bidgely vs. utility/SI split.
-4. **Deployment**: cloud + data lake service mapping and the security model (what does and does
-   not cross the boundary).
+1. **Platform stack** (top of page): an isometric stack of the five layers (data foundation in your
+   lake, core ML models, engines, APIs/MCPs/apps, applications and agents) standing on your cloud
+   tenant. Pick the cloud (Azure, Google Cloud, AWS, Oracle Cloud) and data lake (Databricks,
+   Snowflake, cloud-native) to relabel it. Click a layer to list its components; click a model to
+   open its deep dive.
+2. **Model deep dives**: eight tabs with interactive visuals on a synthetic household.
+3. **Use cases & MCP**: twelve use cases, each with its own interactive visual, a "Connect it to
+   Claude" panel (Claude app, Claude Code, other agents) with copyable server URL and command, a
+   replayable Claude conversation showing the MCP tool call, the recipe, and how it runs.
+4. **Deployment**: cloud + data lake service mapping and the security model.
 
-Theme follows the Bidgely company overview deck: navy #04121f, Bidgely blue #29abe2, Sora +
-Manrope, and three text sizes (`--fs-1`, `--fs-2`, `--fs-3` in `src/styles.css`).
+Light theme with Bidgely navy #04121f and Bidgely blue #29abe2, Sora + Manrope, and three text
+sizes (`--fs-1`, `--fs-2`, `--fs-3` in `src/styles.css`).
 
 ## Structure
 
@@ -28,8 +26,14 @@ Manrope, and three text sizes (`--fs-1`, `--fs-2`, `--fs-3` in `src/styles.css`)
 src/styles.css   design tokens (light + dark) and layout
 src/body.html    static page structure
 src/logos.js     cloud and data platform marks (Simple Icons)
-src/data.js      all content: nodes, clouds, use cases, accuracy table, plan
-src/app.js       synthetic meter data, interactions and charts (no libraries)
+src/data.js      content: environments, platform nodes and layers, use cases, accuracy table
+src/mcp.js       MCP servers and the sample Claude conversation for each use case
+src/core.js      helpers, synthetic household data, SVG chart helpers
+src/stack.js     environment picker and the isometric platform stack
+src/models.js    model deep dives
+src/usecases.js  use case tabs, per-use-case visuals, MCP connect panel and chat replay
+src/deploy.js    deployment mapping
+src/init.js      startup and resize handling
 scripts/build.sh assembles src/ into index.html and dist/upro-platform.html
 ```
 
@@ -41,4 +45,5 @@ claude.ai artifact.
 
 - Household data on the page is synthetic and generated deterministically in the browser.
 - Pricing and business-case figures from the proposals are intentionally left out.
+- MCP server URLs are placeholders (`upro.your-utility.com`) and tool names are illustrative.
 - Cloud service mappings for GCP, OCI and AWS are reference mappings, to be confirmed per deployment.
