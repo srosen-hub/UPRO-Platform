@@ -74,8 +74,8 @@ function renderStack() {
   // data rising from the lake through every layer, and on up to the AI tools
   const flowG = svgEl("g", { "aria-hidden": "true" }, svg);
   const yTop = 70, yBot = S.top + (n - 1) * S.gap;
-  const AIX = [70, 154, 238, 322], AIY = [40, 78, 40, 78];
-  AIX.forEach((x, i) => svgEl("path", { d: `M${x},${AIY[i] + 12} L${x},${S.top - S.b + 20}`, stroke: cssv("--accent-line"), "stroke-width": 1.2, "stroke-dasharray": "3 4", fill: "none" }, flowG));
+  const AIX = [72, 196, 320], AIY = [52, 52, 52];
+  AIX.forEach((x, i) => svgEl("path", { d: `M${x},${AIY[i] + 26} L${x},${S.top - S.b + 20}`, stroke: cssv("--accent-line"), "stroke-width": 1.2, "stroke-dasharray": "3 4", fill: "none" }, flowG));
   [-96, 0, 96].forEach((dx, i) => {
     svgEl("line", { x1: S.cx + dx, x2: S.cx + dx, y1: S.top, y2: yBot, stroke: cssv("--accent-line"), "stroke-width": 1.2, "stroke-dasharray": "3 5" }, flowG);
     if (!reduce) for (let k = 0; k < 3; k++) {
@@ -84,11 +84,15 @@ function renderStack() {
       c.innerHTML = `<animate attributeName="cy" from="${yBot}" to="${S.top - S.b}" dur="3.4s" begin="${beg}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;1;0" dur="3.4s" begin="${beg}s" repeatCount="indefinite"/>`;
     }
   });
-  if (!reduce) AIX.forEach((x, i) => { const c = svgEl("circle", { cx: x, cy: S.top - S.b + 20, r: 2.6, fill: cssv("--accent") }, flowG); c.innerHTML = `<animate attributeName="cy" from="${S.top - S.b + 20}" to="${AIY[i] + 12}" dur="1.8s" begin="${-i * 0.45}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="1.8s" begin="${-i * 0.45}s" repeatCount="indefinite"/>`; });
+  if (!reduce) AIX.forEach((x, i) => { const c = svgEl("circle", { cx: x, cy: S.top - S.b + 20, r: 2.6, fill: cssv("--accent") }, flowG); c.innerHTML = `<animate attributeName="cy" from="${S.top - S.b + 20}" to="${AIY[i] + 26}" dur="1.8s" begin="${-i * 0.45}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="1.8s" begin="${-i * 0.45}s" repeatCount="indefinite"/>`; });
 
   const labels = $("#slab-labels"); labels.innerHTML = "";
-  labels.append(el("div", { class: "app-cluster" }, `<span class="lbl">Your applications</span><span class="app-pills">${APP_TARGETS.flatMap(([, vs]) => vs).map(([n, k]) => `<span class="ai-pill">${k ? logo(k) : ""}<span>${esc(n)}</span></span>`).join("")}</span>`));
-  AI_TOOLS.forEach(([k, name], i) => labels.append(el("span", { class: "ai-row", style: `left:${AIX[i] / S.W * 100}%;top:${AIY[i] / S.H * 100}%` }, `<span class="ai-pill">${logoAI(k)}<span>${name}</span></span>`)));
+  const DEST = [
+    ["AI tools", `<span class="dest-logos">${AI_TOOLS.map(([k, n]) => `<span title="${n}">${logoAI(k)}</span>`).join("")}</span>`],
+    ["Existing applications", "IVR · CRM · DERMS · ADMS"],
+    ["BI & analytics", "Power BI · Tableau · Looker"],
+  ];
+  DEST.forEach(([t, body], i) => labels.append(el("div", { class: "dest-box", style: `left:${AIX[i] / S.W * 100}%;top:${AIY[i] / S.H * 100}%` }, `<b>${t}</b><span>${body}</span>`)));
 
   [...BANDS].reverse().forEach((B) => {
     const i = BANDS.indexOf(B), yc = S.top + i * S.gap, sel = B.id === selBand, st = bandStyle(B.id);
@@ -156,7 +160,7 @@ const APP_TARGETS = [
 ];
 const vendorRows = (rows) => `<div class="vendors">${rows.map(([g, vs]) => `<div class="vendor-row"><span class="lbl">${g}</span>${vs.map(([n, k]) => `<span class="vendor">${k ? logo(k) : ""}${esc(n)}</span>`).join("")}</div>`).join("")}</div>`;
 const SRC_VENDORS = [
-  ["AMI & MDM", [["Itron"], ["Landis+Gyr"], ["Sensus"], ["Aclara"], ["Siemens EnergyIP", "siemens"]]],
+  ["AMI & MDM", [["Itron"], ["Landis+Gyr"], ["Sensus"]]],
   ["CIS & billing", [["SAP", "sap"], ["Oracle Utilities", "oracle"], ["Salesforce", "salesforce"]]],
   ["GIS", [["Esri ArcGIS", "esri"]]],
 ];

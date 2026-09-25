@@ -110,7 +110,7 @@ section.block.first{border-top:0;padding-top:clamp(24px,4vw,40px)}
 .slab-label[aria-pressed="true"]{border-color:var(--ink);border-left-color:var(--accent)}
 .ai-row{position:absolute;display:flex;gap:6px;align-items:center;transform:translate(-50%,-50%);pointer-events:auto}
 .ai-pill{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line-2);border-radius:3px;padding:3px 8px 3px 6px;font-size:var(--fs-3);font-weight:500;white-space:nowrap}
-.full-btn{position:absolute;bottom:44px;right:12px;z-index:3;font-family:var(--f-mono)}
+.full-btn{position:absolute;top:12px;right:12px;z-index:3;font-family:var(--f-mono)}
 .tenant-chip{display:inline-flex;align-items:center;gap:6px;margin-right:auto;font-family:var(--f-mono);font-size:var(--fs-3);color:var(--ink-2);background:#fff;border:1px dashed var(--line-3);border-radius:3px;padding:3px 8px}
 .egress{position:relative;padding:6px 4px 2px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;justify-content:flex-end;font-family:var(--f-mono);font-size:var(--fs-3);color:var(--muted)}
 .egress span{display:inline-flex;align-items:center;gap:6px}
@@ -414,11 +414,12 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
 .vendor{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border:1px solid var(--line-2);border-radius:2px;background:var(--surface);font-size:var(--fs-3);font-weight:500}
 .vendor .logo{width:14px;height:14px}
 
-.app-cluster{position:absolute;left:60%;right:0;top:1%;display:grid;gap:6px;pointer-events:auto}
-.app-pills{display:flex;flex-wrap:wrap;gap:4px}
-.app-pills .ai-pill{padding:3px 7px}
-.app-pills .logo{width:12px;height:12px}
-@media (max-width:620px){.app-cluster{display:none}}
+.dest-box{position:absolute;transform:translate(-50%,-50%);width:18.5%;height:12.5%;display:grid;gap:5px;justify-items:center;align-content:center;text-align:center;background:#fff;border:1px solid var(--line-2);border-radius:3px;padding:7px 6px;pointer-events:auto}
+.dest-box b{font-size:var(--fs-3);font-weight:600;line-height:1.2}
+.dest-box span{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);line-height:1.3}
+.dest-logos{display:flex;gap:7px;align-items:center}
+.dest-logos svg,.dest-logos img{width:14px;height:14px}
+@media (max-width:620px){.dest-box{padding:4px 3px}.dest-box span:not(.dest-logos){display:none}.dest-box b{font-size:10px}}
 </style>
 <header class="nav" aria-label="Bidgely UtilityAI Pro">
   <div class="wrap">
@@ -1285,8 +1286,8 @@ function renderStack() {
   // data rising from the lake through every layer, and on up to the AI tools
   const flowG = svgEl("g", { "aria-hidden": "true" }, svg);
   const yTop = 70, yBot = S.top + (n - 1) * S.gap;
-  const AIX = [70, 154, 238, 322], AIY = [40, 78, 40, 78];
-  AIX.forEach((x, i) => svgEl("path", { d: `M${x},${AIY[i] + 12} L${x},${S.top - S.b + 20}`, stroke: cssv("--accent-line"), "stroke-width": 1.2, "stroke-dasharray": "3 4", fill: "none" }, flowG));
+  const AIX = [72, 196, 320], AIY = [52, 52, 52];
+  AIX.forEach((x, i) => svgEl("path", { d: `M${x},${AIY[i] + 26} L${x},${S.top - S.b + 20}`, stroke: cssv("--accent-line"), "stroke-width": 1.2, "stroke-dasharray": "3 4", fill: "none" }, flowG));
   [-96, 0, 96].forEach((dx, i) => {
     svgEl("line", { x1: S.cx + dx, x2: S.cx + dx, y1: S.top, y2: yBot, stroke: cssv("--accent-line"), "stroke-width": 1.2, "stroke-dasharray": "3 5" }, flowG);
     if (!reduce) for (let k = 0; k < 3; k++) {
@@ -1295,11 +1296,15 @@ function renderStack() {
       c.innerHTML = `<animate attributeName="cy" from="${yBot}" to="${S.top - S.b}" dur="3.4s" begin="${beg}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;1;0" dur="3.4s" begin="${beg}s" repeatCount="indefinite"/>`;
     }
   });
-  if (!reduce) AIX.forEach((x, i) => { const c = svgEl("circle", { cx: x, cy: S.top - S.b + 20, r: 2.6, fill: cssv("--accent") }, flowG); c.innerHTML = `<animate attributeName="cy" from="${S.top - S.b + 20}" to="${AIY[i] + 12}" dur="1.8s" begin="${-i * 0.45}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="1.8s" begin="${-i * 0.45}s" repeatCount="indefinite"/>`; });
+  if (!reduce) AIX.forEach((x, i) => { const c = svgEl("circle", { cx: x, cy: S.top - S.b + 20, r: 2.6, fill: cssv("--accent") }, flowG); c.innerHTML = `<animate attributeName="cy" from="${S.top - S.b + 20}" to="${AIY[i] + 26}" dur="1.8s" begin="${-i * 0.45}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="1.8s" begin="${-i * 0.45}s" repeatCount="indefinite"/>`; });
 
   const labels = $("#slab-labels"); labels.innerHTML = "";
-  labels.append(el("div", { class: "app-cluster" }, `<span class="lbl">Your applications</span><span class="app-pills">${APP_TARGETS.flatMap(([, vs]) => vs).map(([n, k]) => `<span class="ai-pill">${k ? logo(k) : ""}<span>${esc(n)}</span></span>`).join("")}</span>`));
-  AI_TOOLS.forEach(([k, name], i) => labels.append(el("span", { class: "ai-row", style: `left:${AIX[i] / S.W * 100}%;top:${AIY[i] / S.H * 100}%` }, `<span class="ai-pill">${logoAI(k)}<span>${name}</span></span>`)));
+  const DEST = [
+    ["AI tools", `<span class="dest-logos">${AI_TOOLS.map(([k, n]) => `<span title="${n}">${logoAI(k)}</span>`).join("")}</span>`],
+    ["Existing applications", "IVR · CRM · DERMS · ADMS"],
+    ["BI & analytics", "Power BI · Tableau · Looker"],
+  ];
+  DEST.forEach(([t, body], i) => labels.append(el("div", { class: "dest-box", style: `left:${AIX[i] / S.W * 100}%;top:${AIY[i] / S.H * 100}%` }, `<b>${t}</b><span>${body}</span>`)));
 
   [...BANDS].reverse().forEach((B) => {
     const i = BANDS.indexOf(B), yc = S.top + i * S.gap, sel = B.id === selBand, st = bandStyle(B.id);
@@ -1367,7 +1372,7 @@ const APP_TARGETS = [
 ];
 const vendorRows = (rows) => `<div class="vendors">${rows.map(([g, vs]) => `<div class="vendor-row"><span class="lbl">${g}</span>${vs.map(([n, k]) => `<span class="vendor">${k ? logo(k) : ""}${esc(n)}</span>`).join("")}</div>`).join("")}</div>`;
 const SRC_VENDORS = [
-  ["AMI & MDM", [["Itron"], ["Landis+Gyr"], ["Sensus"], ["Aclara"], ["Siemens EnergyIP", "siemens"]]],
+  ["AMI & MDM", [["Itron"], ["Landis+Gyr"], ["Sensus"]]],
   ["CIS & billing", [["SAP", "sap"], ["Oracle Utilities", "oracle"], ["Salesforce", "salesforce"]]],
   ["GIS", [["Esri ArcGIS", "esri"]]],
 ];
