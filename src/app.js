@@ -137,7 +137,7 @@ function drawHero() {
   const cv = $("#hero-hm"); const ctx = cv.getContext("2d");
   const cw = cv.width / DAYS, ch = cv.height / H;
   const zero = cssv("--hm-zero"), blue = cssv("--c-cool"), sol = cssv("--c-solar");
-  const deep = mix(blue, "#0a2a55", 0.35).map(v => v.toString(16).padStart(2, "0")).join("");
+  const deep = mix(blue, "#ffffff", 0.5).map(v => v.toString(16).padStart(2, "0")).join("");
   const img = ctx.createImageData(cv.width, cv.height);
   const catCols = CATS.map(k => cssv(k.v));
   const px = (x, y, rgb) => { const o = (y * cv.width + x) * 4; img.data[o] = rgb[0]; img.data[o + 1] = rgb[1]; img.data[o + 2] = rgb[2]; img.data[o + 3] = 255; };
@@ -191,26 +191,39 @@ $("#hero-hm").addEventListener("mouseleave", hideTip);
 /* ---------- platform map ---------- */
 let cloud = store.get("upro-cloud") || "azure";
 if (!CLOUDS[cloud]) cloud = "azure";
+let lake = store.get("upro-lake") || "databricks";
+if (!LAKES[lake]) lake = "databricks";
 let selNode = "m-disagg", traceId = null;
-const sub = (s) => s.replace(/\{(\w+)\}/g, (_, k) => CLOUDS[cloud][k] ?? "");
+const ENV = () => {
+  const c = CLOUDS[cloud], l = lake === "native" ? c.native : LAKES[lake];
+  return { ...c, ...l, lakeLabel: l.label, cloudLabel: c.label, tenant: `Your ${c.label} tenant + ${l.label}`,
+    compute: c.compute + (l.computeAlt ? `, ${l.computeAlt}` : "") };
+};
+const sub = (s) => { const e = ENV(); return s.replace(/\{(\w+)\}/g, (_, k) => e[k] ?? ""); };
 
 function buildPlatform() {
-  const src = $("#col-src"), out = $("#col-out"), grid = $("#tenant-grid");
-  for (const id in NODES) {
-    const n = NODES[id];
-    if (n.col === "src") src.append(nodeBtn(id));
-    if (n.col === "out") out.append(nodeBtn(id));
-  }
-  for (const L of LAYERS) {
-    const col = el("div", { class: "layer" });
-    col.append(el("div", { class: "layer-h" }, `${L.name}<small>${L.tag}</small>`));
-    let lastGroup = null;
-    for (const id in NODES) {
-      const n = NODES[id]; if (n.layer !== L.id) continue;
-      if (n.group && n.group !== lastGroup) { col.append(el("div", { class: "sublabel" }, n.group)); lastGroup = n.group; }
-      col.append(nodeBtn(id));
+  const stack = $("#stack"); stack.innerHTML = "";
+  for (const B of BANDS) {
+    const band = el("div", { class: "band " + B.id, "data-band": B.id });
+    band.append(el("div", { class: "band-h" }, `<b>${esc(B.name)}</b><span data-tag>${esc(sub(B.tag))}</span>`));
+    const body = el("div", { class: "band-body" });
+    const ids = Object.keys(NODES).filter(id => NODES[id].band === B.id);
+    if (B.id === "engines") {
+      ["Grid & analytics", "Customer experience"].forEach(g => {
+        const grp = el("div", { class: "band-group" }, `<div class="sublabel">${g}</div>`);
+        const row = el("div", { class: "band-nodes" }); ids.filter(id => NODES[id].group === g).forEach(id => row.append(nodeBtn(id)));
+        grp.append(row); body.append(grp);
+      });
+    } else if (B.id === "found") {
+      const row = el("div", { class: "band-nodes" }); ids.filter(id => NODES[id].row === "src").forEach(id => row.append(nodeBtn(id)));
+      body.append(row);
+      const lk = el("div", { class: "lake-row" }, `<div class="sublabel" data-lake-label></div>`);
+      const row2 = el("div", { class: "band-nodes" }); ids.filter(id => NODES[id].row === "lake").forEach(id => row2.append(nodeBtn(id)));
+      lk.append(row2); body.append(lk);
+    } else {
+      const row = el("div", { class: "band-nodes" }); ids.forEach(id => row.append(nodeBtn(id))); body.append(row);
     }
-    grid.append(col);
+    band.append(body); stack.append(band);
   }
 }
 function nodeBtn(id) {
@@ -221,95 +234,90 @@ function nodeBtn(id) {
   return b;
 }
 function refreshNodeText() {
+  const e = ENV();
   document.querySelectorAll(".node").forEach(b => { b.querySelector("[data-sub]").textContent = sub(NODES[b.dataset.id].sub); });
-  $("#tenant-label").textContent = CLOUDS[cloud].tenant;
-  $("#cloud-note").textContent = `Compute: ${CLOUDS[cloud].compute}`;
+  document.querySelectorAll(".band").forEach(b => { const B = BANDS.find(x => x.id === b.dataset.band); b.querySelector("[data-tag]").textContent = sub(B.tag); });
+  const ll = $("[data-lake-label]"); if (ll) ll.textContent = `UtilityAI Pro data layer, inside your ${e.lakeLabel}`;
+  $("#tenant-label").textContent = e.tenant;
+  document.querySelectorAll('[data-env="network"]').forEach(x => x.textContent = e.network);
 }
 function selectNode(id) {
   selNode = id;
   document.querySelectorAll(".node").forEach(b => { const on = b.dataset.id === id; b.classList.toggle("sel", on); b.setAttribute("aria-pressed", on); });
   const n = NODES[id];
   const inUC = USE_CASES.filter(u => u.trace.includes(id));
-  const ucLinks = inUC.map(u => `<button type="button" class="chip sm" data-uc="${u.id}">${esc(u.short)}</button>`).join(" ");
+  const ucLinks = inUC.map(u => `<button type="button" class="chip sm" data-uc="${u.id}" aria-pressed="${u.id === traceId}">${esc(u.short)}</button>`).join(" ");
   let extra = "";
   if (n.tab) extra = `<p class="hint"><a href="#models" data-tab="${n.tab}">See the ${esc(n.name)} deep dive</a></p>`;
+  const where = n.band === "found" && n.row === "src" ? "Your systems of record" : n.band === "out" ? "Your channels and tools" : ENV().tenant;
   $("#plat-detail").innerHTML = `
-    <div><span class="eyebrow">${esc(n.kind)}</span><h3>${esc(n.name)}</h3><p class="small" style="color:var(--ink-2)">${esc(sub(n.desc))}</p>${extra}</div>
+    <div><span class="eyebrow">${esc(n.kind)}</span><h3>${esc(n.name)}</h3><p>${esc(sub(n.desc))}</p>${extra}</div>
     <dl class="kv">
       ${n.feeds ? `<dt>Feeds</dt><dd>${esc(n.feeds)}</dd>` : ""}
-      <dt>Runs in</dt><dd>${n.col === "src" ? "Your systems of record" : n.col === "out" ? "Your channels and tools" : esc(CLOUDS[cloud].tenant)}</dd>
-      <dt>Use cases</dt><dd><div class="chips">${ucLinks || '<span class="muted">Foundation for all</span>'}</div></dd>
+      <dt>Runs in</dt><dd>${esc(where)}</dd>
+      <dt>Trace</dt><dd><div class="chips">${ucLinks || '<span class="muted">Foundation for all use cases</span>'}</div></dd>
     </dl>`;
-  $("#plat-detail").querySelectorAll("[data-uc]").forEach(b => b.addEventListener("click", () => { setTrace(b.dataset.uc); }));
+  $("#plat-detail").querySelectorAll("[data-uc]").forEach(b => b.addEventListener("click", () => setTrace(b.dataset.uc)));
   const a = $("#plat-detail").querySelector("[data-tab]");
   if (a) a.addEventListener("click", () => setModelTab(a.dataset.tab));
 }
 function setTrace(id) {
   traceId = traceId === id ? null : id;
-  document.querySelectorAll("#trace-chips .chip").forEach(c => c.setAttribute("aria-pressed", c.dataset.uc === traceId));
   const map = $("#platform-map");
   map.classList.toggle("tracing", !!traceId);
-  const set = new Set(traceId ? USE_CASES.find(u => u.id === traceId).trace : []);
+  const uc = traceId ? USE_CASES.find(u => u.id === traceId) : null;
+  const set = new Set(uc ? uc.trace : []);
   document.querySelectorAll(".node").forEach(b => b.classList.toggle("on", set.has(b.dataset.id)));
+  document.querySelectorAll("#plat-detail [data-uc]").forEach(b => b.setAttribute("aria-pressed", b.dataset.uc === traceId));
+  const bar = $("#trace-bar");
+  bar.innerHTML = uc ? `<span>Tracing <b>${esc(uc.title)}</b> through the stack</span><button type="button" class="btn sm" id="trace-clear">Clear</button>` : `<span class="muted">Select a component for details, or trace any use case from its recipe below.</span>`;
+  const c = $("#trace-clear"); if (c) c.addEventListener("click", () => setTrace(traceId));
   drawLinks();
 }
-const COL_ORDER = (id) => { const n = NODES[id]; if (n.col === "src") return 0; if (n.col === "out") return 6; return { data: 1, models: 2, engines: 3, access: 5 }[n.layer]; };
+const BAND_ORDER = { found: 0, models: 1, engines: 2, access: 3, out: 4 };
 function drawLinks() {
   const svg = $("#plat-svg"); svg.innerHTML = "";
   if (!traceId) return;
   const map = $("#platform-map"), mr = map.getBoundingClientRect();
   const uc = USE_CASES.find(u => u.id === traceId);
-  const ids = uc.trace.filter(id => NODES[id]);
-  const byCol = {};
-  ids.forEach(id => {
-    const k = COL_ORDER(id);
-    (byCol[k] = byCol[k] || []).push(id);
-  });
-  const keys = Object.keys(byCol).map(Number).sort((a, b) => a - b);
-  const rect = (id) => { const r = map.querySelector(`.node[data-id="${id}"]`).getBoundingClientRect(); return { l: r.left - mr.left, r: r.right - mr.left, t: r.top - mr.top, b: r.bottom - mr.top, cx: (r.left + r.right) / 2 - mr.left, cy: (r.top + r.bottom) / 2 - mr.top }; };
+  const byBand = {};
+  uc.trace.filter(id => NODES[id] && !(NODES[id].band === "found" && NODES[id].row === "src")).forEach(id => { const k = BAND_ORDER[NODES[id].band]; (byBand[k] = byBand[k] || []).push(id); });
+  const keys = Object.keys(byBand).map(Number).sort((a, b) => a - b);
+  const rect = (id) => { const r = map.querySelector(`.node[data-id="${id}"]`).getBoundingClientRect(); return { t: r.top - mr.top, b: r.bottom - mr.top, cx: (r.left + r.right) / 2 - mr.left }; };
   svg.setAttribute("viewBox", `0 0 ${mr.width} ${mr.height}`);
   svg.setAttribute("width", mr.width); svg.setAttribute("height", mr.height);
   for (let i = 0; i < keys.length - 1; i++) {
-    const A = byCol[keys[i]], B = byCol[keys[i + 1]];
-    // connect each A to nearest B, and each B to nearest A, to keep the wiring readable
-    const pairs = new Set();
-    A.forEach(a => { const ra = rect(a); let best = B[0], bd = 1e9; B.forEach(b => { const d = Math.abs(rect(b).cy - ra.cy); if (d < bd) { bd = d; best = b; } }); pairs.add(a + "|" + best); });
-    B.forEach(b => { const rb = rect(b); let best = A[0], bd = 1e9; A.forEach(a => { const d = Math.abs(rect(a).cy - rb.cy); if (d < bd) { bd = d; best = a; } }); pairs.add(best + "|" + b); });
+    const A = byBand[keys[i]], B = byBand[keys[i + 1]], pairs = new Set();
+    const near = (x, list) => list.reduce((best, id) => Math.abs(rect(id).cx - x) < Math.abs(rect(best).cx - x) ? id : best, list[0]);
+    A.forEach(a => pairs.add(a + "|" + near(rect(a).cx, B)));
+    B.forEach(b => pairs.add(near(rect(b).cx, A) + "|" + b));
     pairs.forEach(p => {
       const [a, b] = p.split("|"); const ra = rect(a), rb = rect(b);
-      let x1 = ra.r, y1 = ra.cy, x2 = rb.l, y2 = rb.cy;
-      if (rb.l < ra.r) { x1 = ra.cx; y1 = ra.b; x2 = rb.cx; y2 = rb.t; } // same column (data layer): drop vertically
-      const dx = Math.max(24, (x2 - x1) / 2);
-      const path = document.createElementNS(NS, "path");
-      path.setAttribute("d", rb.l < ra.r ? `M${x1},${y1} C${x1},${y1 + 20} ${x2},${y2 - 20} ${x2},${y2}` : `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`);
-      svg.append(path);
+      const x1 = ra.cx, y1 = ra.t, x2 = rb.cx, y2 = rb.b, dy = Math.max(20, (y1 - y2) / 2);
+      svgEl("path", { d: `M${x1},${y1} C${x1},${y1 - dy} ${x2},${y2 + dy} ${x2},${y2}` }, svg);
     });
   }
 }
-function buildCloudChips(containerId) {
-  const c = $(containerId); c.innerHTML = "";
-  for (const k in CLOUDS) {
-    const b = el("button", { type: "button", class: "chip", "data-cloud": k, "aria-pressed": k === cloud }, esc(CLOUDS[k].label));
-    b.addEventListener("click", () => setCloud(k));
-    c.append(b);
-  }
-}
-function setCloud(k) {
-  cloud = k; store.set("upro-cloud", k);
-  document.querySelectorAll("[data-cloud]").forEach(b => b.setAttribute("aria-pressed", b.dataset.cloud === k));
-  refreshNodeText(); selectNode(selNode); renderDeploy(); renderUC(); drawLinks();
-}
-function buildTraceChips() {
-  const c = $("#trace-chips");
-  TRACE_CHIPS.forEach(id => {
-    const u = USE_CASES.find(x => x.id === id);
-    const b = el("button", { type: "button", class: "chip", "data-uc": id, "aria-pressed": "false" }, esc(u.short));
-    b.addEventListener("click", () => setTrace(id));
-    c.append(b);
+function buildEnvChips() {
+  [["#cloud-chips", CLOUDS, "cloud"], ["#dep-chips", CLOUDS, "cloud"], ["#lake-chips", LAKES, "lake"], ["#dep-lake-chips", LAKES, "lake"]].forEach(([sel, src, kind]) => {
+    const c = $(sel); if (!c) return; c.innerHTML = "";
+    for (const k in src) {
+      const lbl = kind === "lake" && k === "native" ? "Cloud-native" : src[k].label;
+      const b = el("button", { type: "button", class: "chip", "data-kind": kind, "data-k": k, "aria-pressed": k === (kind === "cloud" ? cloud : lake) }, esc(lbl));
+      b.addEventListener("click", () => setEnv(kind, k));
+      c.append(b);
+    }
   });
+}
+function setEnv(kind, k) {
+  if (kind === "cloud") { cloud = k; store.set("upro-cloud", k); } else { lake = k; store.set("upro-lake", k); }
+  document.querySelectorAll("[data-kind]").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === (b.dataset.kind === "cloud" ? cloud : lake)));
+  refreshNodeText(); selectNode(selNode); renderDeploy(); renderUC(); drawLinks();
 }
 
 /* ---------- SVG chart helpers ---------- */
+// Charts are drawn at their container's pixel width so SVG text renders at exactly --fs-3.
+const VW = () => { const v = document.querySelector("#model-panels .viz"); return v ? Math.max(280, Math.round(v.clientWidth - 36)) : 720; };
 function svgEl(tag, attrs, parent) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.append(n); return n; }
 function mkSvg(w, h, label) { const s = svgEl("svg", { viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": label }); return s; }
 function text(parent, x, y, str, attrs = {}) { const t = svgEl("text", { x, y, ...attrs }, parent); t.textContent = str; return t; }
@@ -387,7 +395,7 @@ function mDisagg() {
     let mx = 0; for (let i = 0; i < N; i++) mx = Math.max(mx, Math.abs(arr[i]));
     const ctx = cv.getContext("2d"); const img = ctx.createImageData(48, 365);
     const hue = s.id === "net" ? cssv("--c-cool") : cssv(s.v);
-    const deep = s.id === "net" ? mix(hue, "#0a2a55", 0.4) : null;
+    const deep = s.id === "net" ? mix(hue, "#ffffff", 0.5) : null;
     const deepHex = deep ? "#" + deep.map(x => x.toString(16).padStart(2, "0")).join("") : hue;
     const sol = cssv("--c-solar");
     for (let d = 0; d < DAYS; d++) for (let h = 0; h < H; h++) {
@@ -433,7 +441,7 @@ function mDisagg() {
 function drawDay() {
   const box = $("#day-box"); if (!box) return;
   const d = selDay;
-  const w = 720, h = 250, ml = 38, mr = 8, mt = 14, mb = 26;
+  const w = VW(), h = 250, ml = 38, mr = 8, mt = 14, mb = 26;
   let mxS = 0, mnS = 0;
   for (let hh = 0; hh < 24; hh++) { const i = d * 24 + hh; mxS = Math.max(mxS, HH.total[i]); mnS = Math.min(mnS, -HH.c.solar[i]); }
   const top = Math.max(4, Math.ceil(mxS)), bot = Math.floor(Math.min(0, mnS));
@@ -483,7 +491,7 @@ function mAttr() {
     ["Smart thermostat", "Detected · setback schedule", "--c-cool"], ["Battery", "Not detected", "--c-other"],
   ].map(([h, t, c]) => `<div class="det"><div class="h"><span class="sw" style="background:var(${c})"></span>${h}</div><div class="v">${t}</div></div>`).join("")));
   // heat pump vs resistance on a cold day
-  const w = 720, h = 240, ml = 38, mr = 90, mt = 16, mb = 26;
+  const w = VW(), h = 240, ml = 38, mr = 90, mt = 16, mb = 26;
   const temps = Array.from({ length: 24 }, (_, i) => 26 + 12 * Math.sin(2 * Math.PI * (i - 9) / 24));
   const hp = temps.map((t, i) => 0.6 + Math.max(0, 68 - t) * 0.07 + (i % 2 ? 0.25 : -0.1) + (t < 20 ? 1.5 : 0));
   const rs = temps.map((t, i) => Math.max(0, 68 - t) * 0.19 + (i % 3 === 0 ? 0.9 : 0));
@@ -514,7 +522,7 @@ function mIneff() {
     <p style="color:var(--ink-2)">The model tracks how much energy each home's HVAC needs per degree of weather, season after season. Rising energy per degree means degradation. A ceiling on the hottest days means the unit is saturated and cannot keep up. Frequent short on-off patterns point to short cycling.</p>`,
     [["Input", "Heating and cooling disaggregation, weather"], ["Output", "Degradation, short cycling and saturation flags per system"], ["Used for", "Tune-up and replacement offers, heat pump upgrades, EE program targeting"]]);
   const r = rng(77);
-  const w = 720, h = 280, ml = 42, mr = 16, mt = 16, mb = 34;
+  const w = VW(), h = 280, ml = 42, mr = 16, mt = 16, mb = 34;
   const xT = (t) => ml + (t - 72) / (104 - 72) * (w - ml - mr), yK = (k) => mt + (60 - k) / 60 * (h - mt - mb);
   const s = mkSvg(w, h, "Daily cooling energy versus daily high temperature, 2024 and 2026 seasons");
   yAxis(s, ml, w - mr, yK, [0, 15, 30, 45, 60]);
@@ -550,7 +558,7 @@ function mLife() {
     [["Input", "Annual, seasonal and daily usage patterns"], ["Output", "Archetype label per household"], ["Archetypes", "Dormant, Office Goer, Active, Weekend Warrior, Evening Consumer and more"], ["Used for", "Rate fit, message timing, DR availability"]]);
   const grid = el("div", { style: "display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px" });
   ARCH.forEach((a, j) => {
-    const w = 200, h = 110, ml = 6, mr = 6, mt = 8, mb = 16;
+    const w = 200, h = 96, ml = 2, mr = 2, mt = 6, mb = 4;
     const vals = Array.from({ length: 25 }, (_, i) => a.f(i)); const top = 3.2;
     const x = (i) => ml + i / 24 * (w - ml - mr), y = (vv) => mt + (top - vv) / top * (h - mt - mb);
     const s = mkSvg(w, h, `${a.n} average weekday load shape`);
@@ -559,10 +567,10 @@ function mLife() {
     const d = vals.map((vv, i) => `${i ? "L" : "M"}${x(i)},${y(vv)}`).join("");
     svgEl("path", { d: d + `L${x(24)},${y(0)}L${x(0)},${y(0)}Z`, fill: col, opacity: 0.14 }, s);
     svgEl("path", { d, fill: "none", stroke: col, "stroke-width": 2 }, s);
-    [0, 12, 24].forEach(t => text(s, x(t), h - 3, `${t}h`, { "text-anchor": t === 0 ? "start" : t === 24 ? "end" : "middle" }));
-    const card = el("div", { class: "det", style: j === 0 ? "border-color:var(--accent);background:var(--accent-soft)" : "" });
+    const card = el("div", { class: "det" });
     card.innerHTML = `<div class="h">${a.n}${j === 0 ? ' <span class="tag" style="margin-left:auto">sample home</span>' : ""}</div><div class="v">${a.d}</div>`;
-    card.append(s); grid.append(card);
+    if (j === 0) card.classList.add("hl");
+    card.append(s, el("div", { class: "hm-axis-row" }, "<span>0h</span><span>12h</span><span>24h</span>")); grid.append(card);
   });
   v.append(el("div", { class: "viz-h" }, `<h4>Average weekday load shape by archetype</h4><span class="xs muted mono">kWh per hour, illustrative</span>`), grid);
 }
@@ -581,7 +589,7 @@ function mProp() {
   const k = el("div", { class: "kpis" }); v.append(k);
   const draw = () => {
     const bins = 20, cnt = new Array(bins).fill(0); PROP.forEach(p => cnt[Math.min(bins - 1, Math.floor(p * bins))]++);
-    const w = 720, h = 200, ml = 44, mr = 8, mt = 10, mb = 26; const top = Math.ceil(Math.max(...cnt) / 1000) * 1000;
+    const w = VW(), h = 200, ml = 44, mr = 8, mt = 10, mb = 26; const top = Math.ceil(Math.max(...cnt) / 1000) * 1000;
     const bw = (w - ml - mr) / bins, y = (vv) => mt + (top - vv) / top * (h - mt - mb);
     const s = mkSvg(w, h, "Histogram of EV propensity scores");
     yAxis(s, ml, w - mr, y, [0, top / 2, top], (t) => t >= 1000 ? `${t / 1000}k` : t);
@@ -613,7 +621,7 @@ function mInc() {
   const k = el("div", { class: "kpis" }); v.append(k);
   const draw = () => {
     seg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === incMode));
-    const cols = 24, cs = 28, w = cols * cs + 2, rows = Math.ceil(INC.length / cols), h = rows * cs + 22;
+    const cols = 24, cs = Math.max(11, Math.floor((VW() - 2) / 24)), w = cols * cs + 2, rows = Math.ceil(INC.length / cols), h = rows * cs + 22;
     const s = mkSvg(w, h, "Grid of premises colored by income eligibility likelihood");
     const zero = cssv("--hm-zero"), hue = cssv("--c-wh");
     INC.forEach((c, i) => {
@@ -640,7 +648,7 @@ function mPI() {
     <p style="color:var(--ink-2)">Each home is compared with statistically similar homes nearby, by size, age, heating type and appliance mix, at the appliance level. The gap drives a ranked list of tips, so a customer sees the two things worth doing in their home instead of twenty generic ones.</p>`,
     [["Input", "Disaggregation, home profile, similar-home cohort"], ["Output", "Efficiency score per appliance, ranked tips"], ["Used for", "Home energy reports, bill explanations, EE program savings"]]);
   const rows = [["Cooling", 612, 430, 540], ["EV charging", 318, 250, 300], ["Pool pump", 205, 150, 240], ["Water heating", 180, 120, 160], ["Always on", 225, 170, 210], ["Lighting & other", 260, 220, 250]];
-  const w = 720, rh = 34, ml = 130, mr = 20, mt = 24, h = mt + rows.length * rh + 24;
+  const w = VW(), rh = 34, ml = 130, mr = 20, mt = 24, h = mt + rows.length * rh + 24;
   const mx = 700; const x = (vv) => ml + vv / mx * (w - ml - mr);
   const s = mkSvg(w, h, "July kWh by appliance: this home, similar homes average, efficient similar homes");
   [0, 175, 350, 525, 700].forEach(t => { svgEl("line", { x1: x(t), x2: x(t), y1: mt - 8, y2: h - 20, class: "grid-l" }, s); text(s, x(t), h - 6, t, { "text-anchor": "middle" }); });
@@ -668,7 +676,7 @@ function mRev() {
   const r = rng(5); const n = 180, drop = 118;
   const exp = [], act = [];
   for (let d = 0; d < n; d++) { const e = 34 + 16 * Math.sin(2 * Math.PI * (d + 40) / 365 * 2) + (r() - 0.5) * 6; exp.push(e); act.push(d < drop ? e * (0.93 + r() * 0.14) : e * (0.38 + r() * 0.1)); }
-  const w = 720, h = 240, ml = 38, mr = 12, mt = 14, mb = 26, top = 60;
+  const w = VW(), h = 240, ml = 38, mr = 12, mt = 14, mb = 26, top = 60;
   const x = (d) => ml + d / (n - 1) * (w - ml - mr), y = (vv) => mt + (top - vv) / top * (h - mt - mb);
   const s = mkSvg(w, h, "Daily consumption versus weather-expected consumption with flagged drop");
   yAxis(s, ml, w - mr, y, [0, 20, 40, 60]);
@@ -706,7 +714,7 @@ function renderUC() {
   const u = USE_CASES.find(x => x.id === ucId);
   const ing = (cls, title, dot, items) => `<div class="ing ${cls}"><h6><i style="background:${dot}"></i>${title}</h6><ul>${items.map(i => `<li>${esc(sub(i))}</li>`).join("")}</ul></div>`;
   $("#uc-card").innerHTML = `<article class="uc-card">
-    <div class="uc-top"><span class="eyebrow">${esc(u.group)}</span><h3 style="font-size:1.6rem">${esc(u.title)}</h3><div class="tags">${u.tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div><p style="color:var(--ink-2);max-width:72ch">${esc(u.need)}</p></div>
+    <div class="uc-top"><span class="eyebrow">${esc(u.group)}</span><h3>${esc(u.title)}</h3><div class="tags">${u.tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div><p style="color:var(--ink-2);max-width:72ch">${esc(u.need)}</p></div>
     <div><h4 style="margin-bottom:10px">The recipe</h4>
       <div class="recipe">
         ${ing("utility", "Your data", "var(--accent)", u.utility)}
@@ -723,7 +731,7 @@ function renderUC() {
         ${u.proof ? `<p class="proof">${esc(u.proof)}</p>` : ""}
         <div class="deploy-box"><h4>Deploying it</h4>
           <div class="split"><div><h6>Bidgely delivers</h6><ul>${u.bidgely.map(x => `<li>${esc(x)}</li>`).join("")}<li>Reference implementation and orchestration guide</li></ul></div>
-          <div><h6>You or your SI</h6><ul>${u.you.map(x => `<li>${esc(x)}</li>`).join("")}<li>Runs in ${esc(CLOUDS[cloud].tenant)}</li></ul></div></div>
+          <div><h6>You or your SI</h6><ul>${u.you.map(x => `<li>${esc(x)}</li>`).join("")}<li>Runs in ${esc(ENV().tenant)}</li></ul></div></div>
           <button type="button" class="btn" id="uc-trace" style="justify-self:start">Trace it on the platform map ↑</button>
         </div>
       </div>
@@ -741,11 +749,11 @@ const ICONS = {
   arrow: `<svg viewBox="0 0 20 20"><path d="M3 10h11M10 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`,
 };
 function renderDeploy() {
-  const c = CLOUDS[cloud];
+  const c = ENV();
   $("#map-table").innerHTML = `<tbody>
     <tr><th>Model runtime</th><td>${esc(c.compute)}<div class="xs muted">Encrypted containers, attested before keys are released</div></td></tr>
     <tr><th>Data layer</th><td>${esc(c.data)}<div class="xs muted">Input builders, output tables, Complete Data Layer</div></td></tr>
-    <tr><th>Engines &amp; pipelines</th><td>Batch jobs on your data platform<div class="xs muted">Provisioned from your catalog, scheduled in the Control Center</div></td></tr>
+    <tr><th>Engines &amp; pipelines</th><td>${esc(c.jobs)}<div class="xs muted">Provisioned from your catalog, scheduled in the Control Center</div></td></tr>
     <tr><th>CX APIs &amp; MCP servers</th><td>Application tier in your tenant, behind your API gateway<div class="xs muted">${esc(c.identity)}</div></td></tr>
     <tr><th>Analytics Workbench</th><td>${esc(c.bi)}</td></tr>
     <tr><th>Internal agents</th><td>${esc(c.agentsInt)}</td></tr>
@@ -765,16 +773,15 @@ function renderGantt() {
 }
 
 /* ---------- init ---------- */
-buildPlatform(); buildCloudChips("#cloud-chips"); buildCloudChips("#dep-chips"); buildTraceChips();
+buildPlatform(); buildEnvChips();
 refreshNodeText(); selectNode(selNode);
 buildModelTabs(); renderModel();
 buildUCNav(); renderUC();
-renderDeploy(); renderGantt();
+renderDeploy();
 drawHero();
-setTrace("highbill");
+setTrace(null);
 
-let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(drawLinks, 80); });
-$(".plat-scroll").addEventListener("scroll", () => {}, { passive: true });
+let rz, lastVW = VW(); addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { drawLinks(); if (Math.abs(VW() - lastVW) > 8) { lastVW = VW(); renderModel(); } }, 120); });
 const redraw = () => { drawHero(); renderModel(); drawLinks(); };
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
 new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });

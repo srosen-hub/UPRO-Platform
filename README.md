@@ -6,19 +6,21 @@ so it can be shown to any utility.
 
 ## What's on the page
 
-1. **Platform map**: your data sets, the UtilityAI Pro data layer, models, engines and interfaces
-   inside a dashed "your cloud tenant" boundary, and the channels and agents that consume them.
-   Click any component for details; pick a use case to trace its path; switch the target cloud
-   (Azure + Databricks, GCP, OCI, AWS) to relabel services.
+1. **Stacked platform**: utility data foundation (sources + the UtilityAI Pro data layer in your
+   Databricks, Snowflake or cloud-native lake), core ML models, engines, APIs/MCPs/apps, and the
+   applications and agents on top, all inside a dashed "your cloud tenant" boundary. Pick the cloud
+   (Azure, Google Cloud, AWS, Oracle Cloud) and data lake to relabel services; trace any use case.
 2. **Model deep dives**: eight tabs with interactive visuals on a synthetic household
    (heatmap small multiples, hourly stacked breakdown, published accuracy table, attributes,
    HVAC inefficiency, lifestyle archetypes, DER propensity, premise-level income, similar-home
    comparison, revenue loss).
 3. **Use case recipes**: twelve use cases, each shown as your data + models + engines +
    APIs/MCPs/apps, with orchestration steps, value, and the Bidgely vs. utility/SI split.
-4. **Deployment**: cloud service mapping, security model (what does and does not cross the
-   boundary), enterprise vs. SaaS options, and the reference implementation plan.
-5. **Results** at PSEG Long Island, APS and NV Energy.
+4. **Deployment**: cloud + data lake service mapping and the security model (what does and does
+   not cross the boundary).
+
+Theme follows the Bidgely company overview deck: navy #04121f, Bidgely blue #29abe2, Sora +
+Manrope, and three text sizes (`--fs-1`, `--fs-2`, `--fs-3` in `src/styles.css`).
 
 ## Structure
 
