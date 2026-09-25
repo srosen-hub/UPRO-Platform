@@ -129,7 +129,7 @@ const NODES = {
 const BANDS = [ // top to bottom
   { id: "out", name: "Apps & agents", tag: "you build and own" },
   { id: "engines", name: "Engines · APIs · MCPs", tag: "answers, delivered anywhere" },
-  { id: "models", name: "Core ML models", tag: "26 patents · 38M+ meters" },
+  { id: "models", name: "Core Machine Learning Models", tag: "38M meters · 45+ utilities" },
   { id: "found", name: "Your data foundation", tag: "in your {lakeLabel}" },
 ];
 

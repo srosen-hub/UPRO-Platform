@@ -401,6 +401,12 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;height:min(880px,calc(100vh - 48px));overflow:hidden}
 #model-panels,.eng-wrap{flex:1;min-height:0;overflow:auto}
 .model-tabs,.dlg-head{flex:none}
+
+.layer-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line-2);margin-bottom:16px;background:var(--surface)}
+.layer-stats span{display:grid;gap:2px;padding:12px 14px}
+.layer-stats span+span{border-left:1px solid var(--line-2)}
+.layer-stats strong{font-size:1.35rem;font-weight:500;letter-spacing:-.02em;background:linear-gradient(90deg,#0a74a8,#29abe2 45%,#14b8a6);-webkit-background-clip:text;background-clip:text;color:transparent;justify-self:start}
+.layer-stats em{font-style:normal;font-family:var(--f-mono);font-size:var(--fs-3);color:var(--muted)}
 </style>
 <header class="nav" aria-label="Bidgely UtilityAI Pro">
   <div class="wrap">
@@ -469,7 +475,7 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
 
 <dialog id="model-dlg" aria-labelledby="model-dlg-title">
   <div class="dlg-head">
-    <h3 id="model-dlg-title">Core ML models</h3>
+    <h3 id="model-dlg-title">Core Machine Learning Models</h3>
     <button type="button" class="btn sm" id="model-close">Close</button>
   </div>
   <div class="model-tabs" role="tablist" id="model-tabs" aria-label="Models"></div>
@@ -678,7 +684,7 @@ const NODES = {
 const BANDS = [ // top to bottom
   { id: "out", name: "Apps & agents", tag: "you build and own" },
   { id: "engines", name: "Engines · APIs · MCPs", tag: "answers, delivered anywhere" },
-  { id: "models", name: "Core ML models", tag: "26 patents · 38M+ meters" },
+  { id: "models", name: "Core Machine Learning Models", tag: "38M meters · 45+ utilities" },
   { id: "found", name: "Your data foundation", tag: "in your {lakeLabel}" },
 ];
 
@@ -1341,7 +1347,7 @@ function renderLayer(focusId) {
   const card = (id) => {
     const nd = NODES[id], click = !!nd.tab || nd.band === "engines", tag = click ? "button" : "div";
     return `<${tag}${click ? ' type="button"' : ""} class="comp${click ? " clickable" : ""}" data-id="${id}"${id === focusId ? ' style="border-color:var(--accent)"' : ""}>
-      <span class="ci">${icon(pickIcon(nd.name + " " + nd.sub))}</span><b>${esc(nd.name)}</b><span class="sub">${esc(sub(nd.sub))}</span>${click ? '<span class="go">Explore →</span>' : ""}</${tag}>`;
+      <span class="ci">${icon(pickIcon(nd.name + " " + nd.sub))}</span><b>${esc(nd.name)}</b>${click ? '<span class="go">Explore →</span>' : ""}</${tag}>`;
   };
   let grid;
   if (B.id === "found") {
@@ -1349,7 +1355,8 @@ function renderLayer(focusId) {
   } else if (B.id === "engines") {
     grid = ["Grid & analytics", "Customer experience", "APIs, MCPs & apps"].map(gn => `<div class="lbl group-h">${gn}</div>` + ids.filter(k => NODES[k].group === gn).map(card).join("")).join("");
   } else grid = ids.map(card).join("");
-  $("#layer-panel").innerHTML = `<div class="layer-top"><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div><div class="comp-grid">${grid}</div>`;
+  const stats = B.id === "models" ? `<div class="layer-stats">${[["38 Million", "meters"], ["45+", "utilities"], ["15 years", "of labeled ground truth"]].map(([v, l]) => `<span><strong>${v}</strong><em>${l}</em></span>`).join("")}</div>` : "";
+  $("#layer-panel").innerHTML = `<div class="layer-top"><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div>${stats}<div class="comp-grid">${grid}</div>`;
   $("#layer-panel").querySelectorAll(".comp[data-id]").forEach(c => {
     const nd = NODES[c.dataset.id];
     hoverable(c, () => `<b>${esc(nd.name)}</b><div>${esc(sub(nd.desc))}</div>`);

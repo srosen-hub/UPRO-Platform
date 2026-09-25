@@ -395,3 +395,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;height:min(880px,calc(100vh - 48px));overflow:hidden}
 #model-panels,.eng-wrap{flex:1;min-height:0;overflow:auto}
 .model-tabs,.dlg-head{flex:none}
+
+.layer-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line-2);margin-bottom:16px;background:var(--surface)}
+.layer-stats span{display:grid;gap:2px;padding:12px 14px}
+.layer-stats span+span{border-left:1px solid var(--line-2)}
+.layer-stats strong{font-size:1.35rem;font-weight:500;letter-spacing:-.02em;background:linear-gradient(90deg,#0a74a8,#29abe2 45%,#14b8a6);-webkit-background-clip:text;background-clip:text;color:transparent;justify-self:start}
+.layer-stats em{font-style:normal;font-family:var(--f-mono);font-size:var(--fs-3);color:var(--muted)}
