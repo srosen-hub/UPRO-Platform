@@ -160,7 +160,9 @@ body.plat-full .stage{position:relative;top:auto}
 @keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
 
 /* use case grid */
-.uc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0;border-top:1px solid var(--line-2);border-left:1px solid var(--line-2);background:var(--surface)}
+.uc-groups{display:grid;gap:28px}
+.uc-group h3{font-size:var(--fs-2);font-weight:500;margin-bottom:10px}
+.uc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0;border-top:1px solid var(--line-2);border-left:1px solid var(--line-2)}
 .uc-c{text-align:left;display:grid;gap:12px;align-content:space-between;padding:16px;border:0;border-right:1px solid var(--line-2);border-bottom:1px solid var(--line-2);background:var(--surface);cursor:pointer;min-height:148px;transition:background .15s}
 .uc-c:hover{background:var(--surface-2)}
 .uc-c[aria-pressed="true"]{background:var(--ink);color:#fff}

@@ -161,7 +161,7 @@ const ACCURACY = [
 const W = { b: "Bidgely", u: "Your team / SI", a: "Agent", p: "Platform" };
 
 const USE_CASES = [
-  { id: "forecast", group: "Grid & planning", short: "Load forecasting", title: "End-use localized load forecasting",
+  { id: "forecast", group: "Transform Grid Planning", short: "Load forecasting", title: "End-use localized load forecasting",
     tags: ["Grid planning", "Forecasting", "Regulatory"],
     need: "Planners need to know where, when and why load is growing as EVs, heat pumps, cooling and building electrification spread. System forecasts show growth but not which end uses stack into the peak hour of a specific network. Measured end-use evidence makes forecasts defensible to internal and regulatory reviewers.",
     utility: ["AMI interval history", "GIS meter-to-network mapping", "Existing forecast models", "Building permits & housing stock"],
@@ -180,7 +180,7 @@ const USE_CASES = [
     you: ["GIS and forecast model integration", "Feature selection in your forecast models"],
     trace: ["s-ami","s-gis","s-ext","s-wx","d-in","d-out","m-disagg","m-prop","m-attr","e-agg","e-fc","e-kw","d-cdl","i-ea","i-awb","o-fc","o-ai"] },
 
-  { id: "flex", group: "Grid & planning", short: "Flexibility targeting", title: "Load flexibility and VPP targeting",
+  { id: "flex", group: "Transform Customer and DER Programs", short: "Flexibility targeting", title: "Load flexibility and VPP targeting",
     tags: ["Demand response", "Managed charging", "VPP"],
     need: "Managed charging, dynamic load management and DR programs pay off only when they enroll customers whose flexible load sits in the right network, is available in the event window and is likely to respond. Broad outreach lowers kW per enrollee and raises acquisition cost.",
     utility: ["Program enrollment & event history", "GIS asset mapping", "DERMS dispatch results", "System and network peaks"],
@@ -200,7 +200,7 @@ const USE_CASES = [
     you: ["Event windows and program rules", "DERMS and implementer hand-off"],
     trace: ["s-ami","s-prog","s-gis","s-wx","d-in","d-out","m-disagg","m-attr","m-life","e-flex","e-agg","e-kw","d-cdl","i-awb","i-ea","o-derms","o-bi"] },
 
-  { id: "nws", group: "Grid & planning", short: "Non-wires solutions", title: "Non-wires solution evaluation",
+  { id: "nws", group: "Transform Grid Planning", short: "Non-wires solutions", title: "Non-wires solution evaluation",
     tags: ["Capital planning", "NWA", "Regulatory"],
     need: "Every load relief project has to answer two questions from staff and intervenors: is the forecast that triggered it real, and was a non-wires option properly evaluated before committing capital. The analysis should be faster and more defensible whether the answer is defer or build.",
     utility: ["Load relief project costs", "Network ratings & design criteria", "GIS topology", "Program cost assumptions"],
@@ -219,7 +219,7 @@ const USE_CASES = [
     you: ["Project cost and ratings data", "Filing workflow"],
     trace: ["s-ami","s-gis","s-prog","d-in","d-out","m-disagg","m-prop","m-attr","e-agg","e-flex","e-fc","d-cdl","i-mcp","i-ea","o-ai","o-fc"] },
 
-  { id: "trend", group: "Grid & planning", short: "DER trend monitor", title: "DER and electrification trend monitor",
+  { id: "trend", group: "Transform Grid Planning", short: "DER trend monitor", title: "DER and electrification trend monitor",
     tags: ["DER visibility", "Electrification", "Agent"],
     need: "EV, solar, battery and heat pump adoption is uneven, and much of it happens without an interconnection application or program enrollment. Planning and program teams need to see new adoption as it happens, network by network.",
     utility: ["GIS mapping", "Interconnection records", "Program enrollment"],
@@ -237,7 +237,7 @@ const USE_CASES = [
     you: ["Interconnection record join", "Alert thresholds and routing"],
     trace: ["s-ami","s-gis","s-prog","d-in","d-out","m-disagg","m-attr","m-prop","e-agg","e-fc","d-cdl","i-ea","i-awb","o-ai","o-bi"] },
 
-  { id: "highbill", group: "Customer experience", short: "High bill", title: "High bill resolution across every channel",
+  { id: "highbill", group: "Transform Customer Service and Experience", short: "High bill", title: "High bill resolution across every channel",
     tags: ["Web & mobile", "IVR", "Chat", "Call center"],
     need: "High bill inquiries arrive through every channel, but customers and agents rarely get a clear, consistent answer about which appliance usage changed. That limits self-service and drives calls, handle time and truck rolls.",
     utility: ["Billing history", "Rate catalog", "Weather", "Customer identity & SSO"],
@@ -257,7 +257,7 @@ const USE_CASES = [
     you: ["Portal, IVR and CSR integration", "Auth, API gateway and brand"],
     trace: ["s-ami","s-bill","s-rate","s-wx","d-in","d-out","m-disagg","m-pi","m-ineff","e-rate","e-cost","e-bp","e-hi","e-rec","d-cdl","d-promo","i-api","i-mcp","o-web","o-ivr","o-chat","o-csr"] },
 
-  { id: "alert", group: "Customer experience", short: "High bill alert", title: "Proactive high bill alert",
+  { id: "alert", group: "Transform Customer Service and Experience", short: "High bill alert", title: "Proactive high bill alert",
     tags: ["Email", "Alerts", "Reference recipe"],
     need: "Customers should hear that a bill is trending high while there is still time to act. The alert explains the likely cause and gives savings tips for the appliances driving it.",
     utility: ["Month-to-date AMI", "Rate catalog", "Bill cycle calendar", "Email distribution platform"],
@@ -276,7 +276,7 @@ const USE_CASES = [
     you: ["Template design and send", "Threshold policy"],
     trace: ["s-ami","s-rate","s-bill","d-in","d-out","m-disagg","e-bp","e-rate","e-rec","e-hi","d-cdl","d-promo","i-api","i-cc","o-email","o-web"] },
 
-  { id: "rates", group: "Customer experience", short: "Rate coaching", title: "TOU rate coaching and best rate",
+  { id: "rates", group: "Transform Customer Service and Experience", short: "Rate coaching", title: "TOU rate coaching and best rate",
     tags: ["Time-of-use", "Load shift", "Email", "Agent"],
     need: "Time-varying rates and load-shift programs work when customers can see which appliances fall in the peak window, what moving them would save and which rate fits their home.",
     utility: ["Rate catalog & TOU windows", "Billing history", "Your rate engine (optional)", "Rate enrollment records"],
@@ -295,7 +295,7 @@ const USE_CASES = [
     you: ["Rate catalog upkeep", "Channel integration"],
     trace: ["s-ami","s-rate","s-bill","s-prog","d-in","d-out","m-disagg","m-life","m-attr","e-rate","e-rc","e-cost","e-rec","d-cdl","d-promo","i-api","i-mcp","i-awb","o-web","o-email","o-chat"] },
 
-  { id: "assistant", group: "Customer experience", short: "Energy Assistant", title: "Energy Assistant with EV and solar what-ifs",
+  { id: "assistant", group: "Transform Customer Service and Experience", short: "Energy Assistant", title: "Energy Assistant with EV and solar what-ifs",
     tags: ["Chat", "MCP", "Agentic tools"],
     need: "Customers ask about bills, usage and savings in chat and expect answers grounded in their own data. A general-purpose chatbot cannot explain a specific home.",
     utility: ["Customer identity & SSO", "Rates, including EV plans", "Program catalog", "Your agent platform"],
@@ -314,7 +314,7 @@ const USE_CASES = [
     you: ["Agent host, evals and guardrails", "Sub-agent routing"],
     trace: ["s-ami","s-bill","s-rate","s-prog","d-in","d-out","m-disagg","m-pi","m-prop","m-attr","e-rate","e-rc","e-bp","e-rec","e-hi","d-cdl","d-promo","i-mcp","o-chat","o-web"] },
 
-  { id: "web", group: "Customer experience", short: "Appliance breakdown", title: "Appliance breakdown on web and mobile",
+  { id: "web", group: "Transform Customer Service and Experience", short: "Appliance breakdown", title: "Appliance breakdown on web and mobile",
     tags: ["Web & mobile", "Reference recipe"],
     need: "Customers who understand what drives their usage engage with every other program. They need appliance, cost and usage views across year, month and day.",
     utility: ["Customer portal & SSO", "Billing and rates"],
@@ -332,7 +332,7 @@ const USE_CASES = [
     you: ["Front-end design", "Portal integration"],
     trace: ["s-ami","s-bill","s-rate","d-in","d-out","m-disagg","e-cost","e-rate","d-cdl","d-promo","i-api","o-web"] },
 
-  { id: "targeting", group: "Analytics & programs", short: "Program targeting", title: "Program targeting for EE, DR and income-qualified",
+  { id: "targeting", group: "Transform Customer and DER Programs", short: "Program targeting", title: "Program targeting for EE, DR and income-qualified",
     tags: ["DSM", "Marketing", "Analytics Workbench"],
     need: "Program teams spend budget on broad outreach because they cannot see who owns which appliance, whose equipment is failing or who likely qualifies for assistance.",
     utility: ["Program participation & events", "Up to 10 custom data fields", "Marketing platform"],
@@ -350,7 +350,7 @@ const USE_CASES = [
     you: ["Program rules", "Campaign execution"],
     trace: ["s-ami","s-prog","s-ext","d-in","d-out","m-attr","m-ineff","m-inc","m-life","m-prop","e-cost","d-cdl","i-awb","i-ea","o-bi","o-derms"] },
 
-  { id: "analyst", group: "Analytics & programs", short: "Energy Analyst", title: "Energy Analyst agent for every department",
+  { id: "analyst", group: "Transform Customer and DER Programs", short: "Energy Analyst", title: "Energy Analyst agent for every department",
     tags: ["GenAI", "Internal MCP", "Self-service analytics"],
     need: "Analysts, load research and regulatory staff have ad-hoc questions that do not justify building a dashboard.",
     utility: ["Your data catalog", "Your internal AI tools", "Other enterprise data sets"],
@@ -368,7 +368,7 @@ const USE_CASES = [
     you: ["Access policies", "Enterprise AI tool connection"],
     trace: ["s-ami","s-gis","s-prog","d-out","m-disagg","m-prop","m-inc","e-agg","d-cdl","i-ea","i-mcp","o-ai"] },
 
-  { id: "revenue", group: "Analytics & programs", short: "Revenue protection", title: "Revenue protection",
+  { id: "revenue", group: "Transform Customer and DER Programs", short: "Revenue protection", title: "Revenue protection",
     tags: ["Theft", "Tamper", "Field operations"],
     need: "Theft, tampering and rate misuse cost revenue and create safety risk. Investigators need a short, ranked list with a reason for each case.",
     utility: ["Meter events & flags", "Billing & rate assignment", "Field investigation outcomes"],

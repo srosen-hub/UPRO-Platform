@@ -18,14 +18,20 @@ const CHECK = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 6.5 1
 const money = (v) => "$" + Math.round(v).toLocaleString();
 const firstSentence = (t) => (t.match(/^[^.]*\./) || [t])[0];
 
+const UC_GROUPS = ["Transform Customer Service and Experience", "Transform Grid Planning", "Transform Customer and DER Programs"];
 function buildUCTabs() {
   const c = $("#uc-grid"); c.innerHTML = "";
-  UC_ORDER.forEach(id => {
-    const u = USE_CASES.find(x => x.id === id), [ic, kind] = UC_META[id];
-    const b = el("button", { type: "button", class: "uc-c", "data-id": id, "aria-pressed": "false" },
-      `<span class="ico">${icon(ic)}</span><b>${esc(u.title)}</b><span class="meta"><span>${esc(u.group)}</span><span class="kind">${esc(kind)}</span></span>`);
-    b.addEventListener("click", () => openUC(id));
-    c.append(b);
+  UC_GROUPS.forEach(g => {
+    const grid = el("div", { class: "uc-grid" });
+    UC_ORDER.map(id => USE_CASES.find(x => x.id === id)).filter(u => u.group === g).forEach(u => {
+      const id = u.id, [ic, kind] = UC_META[id];
+      const b = el("button", { type: "button", class: "uc-c", "data-id": id, "aria-pressed": "false" },
+        `<span class="ico">${icon(ic)}</span><b>${esc(u.title)}</b><span class="meta"><span class="kind">${esc(kind)}</span></span>`);
+      b.addEventListener("click", () => openUC(id));
+      grid.append(b);
+    });
+    const sec = el("div", { class: "uc-group" }, `<h3>${esc(g)}</h3>`);
+    sec.append(grid); c.append(sec);
   });
 }
 function openUC(id) {
