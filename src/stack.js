@@ -158,6 +158,10 @@ const SRC_VENDORS = [
   ["CIS & billing", [["SAP", "sap"], ["Oracle Utilities", "oracle"], ["Salesforce", "salesforce"]]],
   ["GIS", [["Esri ArcGIS", "esri"]]],
 ];
+const OUTCOMES = [["phone", "Lower cost to serve"], ["user", "Higher customer satisfaction"], ["bolt", "Deferred grid capex"], ["target", "Stronger DER & EE programs"], ["shield", "Protected revenue"]];
+function buildOutcomes() {
+  $("#outcomes").innerHTML = `<span class="lbl">Business outcomes</span><div class="outcome-row">${OUTCOMES.map(([k, t]) => `<span class="outcome">${icon(k)}<b>${esc(t)}</b></span>`).join("")}</div>`;
+}
 function renderLayer(focusId) {
   const B = BANDS.find(b => b.id === selBand), ids = bandIds(B.id), e = ENV();
   const card = (id) => {

@@ -1,7 +1,7 @@
 /* ---------- init ---------- */
 buildEnvChips(); renderStack(); renderLayer();
 buildModelTabs();
-buildUCTabs(); renderUC(); initAsk();
+buildOutcomes(); buildUCTabs(); renderUC(); initAsk();
 $("#brand-logo").src = BIDGELY_LOGO;
 $("#model-close").addEventListener("click", () => $("#model-dlg").close());
 $("#model-dlg").addEventListener("click", (e) => { if (e.target.id === "model-dlg") e.target.close(); });

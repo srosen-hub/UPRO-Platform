@@ -101,7 +101,8 @@ section.block.first{border-top:0;padding-top:clamp(24px,4vw,40px)}
 .stage .slab{cursor:pointer;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
 .stage .slab:hover{transform:translateY(-4px)}
 .stage .slab.sel{transform:translateY(-8px)}
-.slab-labels{position:absolute;left:12px;right:12px;top:12px;pointer-events:none;aspect-ratio:640/620}
+.stack-box{position:relative}
+.slab-labels{position:absolute;left:0;right:0;top:0;pointer-events:none;aspect-ratio:640/620}
 .slab-label{position:absolute;pointer-events:auto;transform:translateY(-50%);display:grid;gap:0;text-align:left;background:#fff;border:1px solid var(--line-2);border-left:2px solid var(--line-3);border-radius:2px;padding:5px 10px;cursor:pointer;max-width:41%}
 .slab-label b{font-weight:600;font-size:var(--fs-3);white-space:nowrap}
 .slab-label span{font-family:var(--f-mono);font-size:var(--fs-3);color:var(--muted);white-space:normal;display:flex;align-items:center;gap:5px}
@@ -426,6 +427,13 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
 .egress .tenant-chip{font-family:inherit;font-size:13.5px;margin-right:0;font-weight:600;color:var(--ink);border:0;background:none;padding:0}
 .egress-lock{font-weight:600;color:var(--good)}
 .egress-lock svg{width:15px;height:15px}
+
+.outcomes{position:relative;display:grid;gap:12px;margin-bottom:6px;padding-right:118px;padding-top:2px}
+.outcome-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-right:-118px}
+.outcome{display:grid;justify-items:center;text-align:center;gap:6px;padding:10px 6px;background:var(--ink);color:#fff;border-radius:3px}
+.outcome .ic{width:16px;height:16px;color:var(--accent)}
+.outcome b{font-size:var(--fs-3);font-weight:600;line-height:1.25}
+@media (max-width:620px){.outcome-row{grid-template-columns:repeat(3,minmax(0,1fr))}.outcome b{font-size:10.5px}}
 </style>
 <header class="nav" aria-label="Bidgely UtilityAI Pro">
   <div class="wrap">
@@ -453,8 +461,11 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
       <div class="stage-wrap">
         <div class="stage" id="stage">
           <button type="button" class="btn sm full-btn" id="full-btn" aria-pressed="false">⤢ Full screen</button>
-          <svg id="stack-svg" viewBox="0 0 640 620" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
-          <div class="slab-labels" id="slab-labels"></div>
+          <div class="outcomes" id="outcomes"></div>
+          <div class="stack-box">
+            <svg id="stack-svg" viewBox="0 0 640 620" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
+            <div class="slab-labels" id="slab-labels"></div>
+          </div>
           <div class="egress"><span class="tenant-chip" id="tenant-chip"></span><span class="egress-lock"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>No customer data leaves your cloud</span></div>
         </div>
       </div>
@@ -1375,6 +1386,10 @@ const SRC_VENDORS = [
   ["CIS & billing", [["SAP", "sap"], ["Oracle Utilities", "oracle"], ["Salesforce", "salesforce"]]],
   ["GIS", [["Esri ArcGIS", "esri"]]],
 ];
+const OUTCOMES = [["phone", "Lower cost to serve"], ["user", "Higher customer satisfaction"], ["bolt", "Deferred grid capex"], ["target", "Stronger DER & EE programs"], ["shield", "Protected revenue"]];
+function buildOutcomes() {
+  $("#outcomes").innerHTML = `<span class="lbl">Business outcomes</span><div class="outcome-row">${OUTCOMES.map(([k, t]) => `<span class="outcome">${icon(k)}<b>${esc(t)}</b></span>`).join("")}</div>`;
+}
 function renderLayer(focusId) {
   const B = BANDS.find(b => b.id === selBand), ids = bandIds(B.id), e = ENV();
   const card = (id) => {
@@ -2301,7 +2316,7 @@ function initAsk() {
 /* ---------- init ---------- */
 buildEnvChips(); renderStack(); renderLayer();
 buildModelTabs();
-buildUCTabs(); renderUC(); initAsk();
+buildOutcomes(); buildUCTabs(); renderUC(); initAsk();
 $("#brand-logo").src = BIDGELY_LOGO;
 $("#model-close").addEventListener("click", () => $("#model-dlg").close());
 $("#model-dlg").addEventListener("click", (e) => { if (e.target.id === "model-dlg") e.target.close(); });

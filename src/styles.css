@@ -96,7 +96,8 @@ section.block.first{border-top:0;padding-top:clamp(24px,4vw,40px)}
 .stage .slab{cursor:pointer;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
 .stage .slab:hover{transform:translateY(-4px)}
 .stage .slab.sel{transform:translateY(-8px)}
-.slab-labels{position:absolute;left:12px;right:12px;top:12px;pointer-events:none;aspect-ratio:640/620}
+.stack-box{position:relative}
+.slab-labels{position:absolute;left:0;right:0;top:0;pointer-events:none;aspect-ratio:640/620}
 .slab-label{position:absolute;pointer-events:auto;transform:translateY(-50%);display:grid;gap:0;text-align:left;background:#fff;border:1px solid var(--line-2);border-left:2px solid var(--line-3);border-radius:2px;padding:5px 10px;cursor:pointer;max-width:41%}
 .slab-label b{font-weight:600;font-size:var(--fs-3);white-space:nowrap}
 .slab-label span{font-family:var(--f-mono);font-size:var(--fs-3);color:var(--muted);white-space:normal;display:flex;align-items:center;gap:5px}
@@ -421,3 +422,10 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
 .egress .tenant-chip{font-family:inherit;font-size:13.5px;margin-right:0;font-weight:600;color:var(--ink);border:0;background:none;padding:0}
 .egress-lock{font-weight:600;color:var(--good)}
 .egress-lock svg{width:15px;height:15px}
+
+.outcomes{position:relative;display:grid;gap:12px;margin-bottom:6px;padding-right:118px;padding-top:2px}
+.outcome-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-right:-118px}
+.outcome{display:grid;justify-items:center;text-align:center;gap:6px;padding:10px 6px;background:var(--ink);color:#fff;border-radius:3px}
+.outcome .ic{width:16px;height:16px;color:var(--accent)}
+.outcome b{font-size:var(--fs-3);font-weight:600;line-height:1.25}
+@media (max-width:620px){.outcome-row{grid-template-columns:repeat(3,minmax(0,1fr))}.outcome b{font-size:10.5px}}
