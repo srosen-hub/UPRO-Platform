@@ -412,10 +412,13 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
 
 .dest-box{position:absolute;transform:translate(-50%,-50%);width:18.5%;height:12.5%;display:grid;gap:5px;justify-items:center;align-content:center;text-align:center;background:#fff;border:1px solid var(--line-2);border-radius:3px;padding:7px 6px;pointer-events:auto}
 .dest-box b{font-size:var(--fs-3);font-weight:600;line-height:1.2}
-.dest-box span{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);line-height:1.3}
+.dest-box > span{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);line-height:1.3}
 .dest-logos{display:flex;gap:7px;align-items:center}
 .dest-logos svg,.dest-logos img{width:14px;height:14px}
-@media (max-width:620px){.dest-box{padding:4px 3px}.dest-box span:not(.dest-logos){display:none}.dest-box b{font-size:10px}}
+.dest-logos > span{display:grid;justify-items:center;gap:2px}
+.dest-apps .ic{width:14px;height:14px;color:var(--ink)}
+.dest-apps em{font-style:normal;font-family:var(--f-mono);font-size:9px;color:var(--muted);letter-spacing:.02em}
+@media (max-width:620px){.dest-box{padding:4px 3px}.dest-apps em{display:none}.dest-box b{font-size:10px}}
 
 /* egress bar: make the deployment boundary obvious */
 .egress{font-family:inherit;margin-top:8px;padding:10px 12px;background:#fff;border:1px solid var(--line-2);border-left:3px solid var(--good);border-radius:3px;font-size:13.5px;justify-content:space-between}

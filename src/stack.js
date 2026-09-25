@@ -89,8 +89,8 @@ function renderStack() {
   const labels = $("#slab-labels"); labels.innerHTML = "";
   const DEST = [
     ["AI tools", `<span class="dest-logos">${AI_TOOLS.map(([k, n]) => `<span title="${n}">${logoAI(k)}</span>`).join("")}</span>`],
-    ["Existing applications", "IVR · CRM · DERMS · ADMS"],
-    ["BI & analytics", "Power BI · Tableau · Looker"],
+    ["Existing applications", `<span class="dest-logos dest-apps">${[["phone", "IVR"], ["user", "CRM"], ["battery", "DERMS"], ["dash", "ADMS"]].map(([k, n]) => `<span title="${n}">${icon(k)}<em>${n}</em></span>`).join("")}</span>`],
+    ["BI & analytics", `<span class="dest-logos">${[["powerbi", "Power BI"], ["tableau", "Tableau"], ["looker", "Looker"]].map(([k, n]) => `<span title="${n}">${logo(k)}</span>`).join("")}</span>`],
   ];
   DEST.forEach(([t, body], i) => labels.append(el("div", { class: "dest-box", style: `left:${AIX[i] / S.W * 100}%;top:${AIY[i] / S.H * 100}%` }, `<b>${t}</b><span>${body}</span>`)));
 
