@@ -89,7 +89,6 @@ function renderStack() {
 
   const labels = $("#slab-labels"); labels.innerHTML = "";
   AI_TOOLS.forEach(([k, name], i) => labels.append(el("span", { class: "ai-row", style: `left:${AIX[i] / S.W * 100}%;top:${AIY[i] / S.H * 100}%` }, `<span class="ai-pill">${logoAI(k)}<span>${name}</span></span>`)));
-  labels.append(el("span", { class: "ai-row", style: `left:${(AIX[3] + 120) / S.W * 100}%;top:${(AIY[0] + 19) / S.H * 100}%` }, `<span class="lbl" style="white-space:nowrap">Your AI tools, via MCP</span>`));
 
   [...BANDS].reverse().forEach((B) => {
     const i = BANDS.indexOf(B), yc = S.top + i * S.gap, sel = B.id === selBand, st = bandStyle(B.id);
@@ -103,7 +102,7 @@ function renderStack() {
     const quad = (u0, v0, u1, v1) => [map(u0, v0), map(u1, v0), map(u1, v1), map(u0, v1)].map(p => P(...p)).join(" ");
     const ids = bandIds(B.id);
     const rows = B.id === "found" ? [ids.filter(k => NODES[k].row === "src"), ids.filter(k => NODES[k].row === "lake")] : ids.length > 12 ? [ids.slice(0, 5), ids.slice(5, 10), ids.slice(10)] : ids.length > 6 ? [ids.slice(0, Math.ceil(ids.length / 2)), ids.slice(Math.ceil(ids.length / 2))] : [ids];
-    const hook = (node, id) => { hoverable(node, () => `<b>${esc(NODES[id].name)}</b><div>${esc(sub(NODES[id].sub))}</div>`); node.addEventListener("click", (e) => { e.stopPropagation(); selBand = B.id; renderStack(); renderLayer(id); if (NODES[id].tab) openModel(NODES[id].tab); }); };
+    const hook = (node, id) => { hoverable(node, () => `<b>${esc(NODES[id].name)}</b><div>${esc(sub(NODES[id].sub))}</div>`); node.addEventListener("click", (e) => { e.stopPropagation(); selBand = B.id; renderStack(); renderLayer(id); if (NODES[id].tab) openModel(NODES[id].tab); else if (NODES[id].band === "engines") openEngine(id); }); };
     const centers = [];
     rows.forEach((row, ri) => {
       const nr = rows.length, v0 = nr === 1 ? 0.34 : nr === 2 ? 0.14 + ri * 0.44 : 0.08 + ri * 0.3, vh = nr === 1 ? 0.32 : nr === 2 ? 0.3 : 0.22;
@@ -153,7 +152,7 @@ function renderStack() {
 function renderLayer(focusId) {
   const B = BANDS.find(b => b.id === selBand), ids = bandIds(B.id), e = ENV();
   const card = (id) => {
-    const nd = NODES[id], click = !!nd.tab, tag = click ? "button" : "div";
+    const nd = NODES[id], click = !!nd.tab || nd.band === "engines", tag = click ? "button" : "div";
     return `<${tag}${click ? ' type="button"' : ""} class="comp${click ? " clickable" : ""}" data-id="${id}"${id === focusId ? ' style="border-color:var(--accent)"' : ""}>
       <span class="ci">${icon(pickIcon(nd.name + " " + nd.sub))}</span><b>${esc(nd.name)}</b><span class="sub">${esc(sub(nd.sub))}</span>${click ? '<span class="go">Explore →</span>' : ""}</${tag}>`;
   };
@@ -164,11 +163,12 @@ function renderLayer(focusId) {
   } else if (B.id === "engines") {
     grid = ["Grid & analytics", "Customer experience", "APIs, MCPs & apps"].map(gn => `<div class="lbl group-h">${gn}</div>` + ids.filter(k => NODES[k].group === gn).map(card).join("")).join("");
   } else grid = ids.map(card).join("");
-  $("#layer-panel").innerHTML = `<div class="layer-top"><span class="eyebrow">Layer ${BANDS.length - BANDS.indexOf(B)} of ${BANDS.length}</span><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div><div class="comp-grid">${grid}</div>`;
+  $("#layer-panel").innerHTML = `<div class="layer-top"><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div><div class="comp-grid">${grid}</div>`;
   $("#layer-panel").querySelectorAll(".comp[data-id]").forEach(c => {
     const nd = NODES[c.dataset.id];
     hoverable(c, () => `<b>${esc(nd.name)}</b><div>${esc(sub(nd.desc))}</div>`);
     if (nd.tab) c.addEventListener("click", () => openModel(nd.tab));
+    else if (nd.band === "engines") c.addEventListener("click", () => openEngine(c.dataset.id));
   });
 }
 function openModel(tab) {

@@ -1,16 +1,14 @@
-<nav class="nav" aria-label="Sections">
+<header class="nav" aria-label="Bidgely UtilityAI Pro">
   <div class="wrap">
-    <a class="brand" href="#platform" aria-label="Bidgely UtilityAI Pro">
-      <img id="brand-logo" alt="Bidgely" width="113" height="30">
-      <span class="brand-sep"></span><span class="brand-prod">UtilityAI Pro</span>
-    </a>
-    <div class="nav-links">
-      <a href="#platform">Platform</a>
-      <a href="#usecases">Use cases</a>
-      <a href="#ask" class="nav-ask"><span class="spark" aria-hidden="true"></span>Ask AI</a>
-    </div>
+    <a class="brand" href="#platform" aria-label="Bidgely UtilityAI Pro"><img id="brand-logo" alt="Bidgely" width="113" height="30"><span class="brand-sep"></span><span class="brand-prod">UtilityAI Pro</span></a>
+    <form class="top-search" id="top-search" role="search">
+      <span class="spark" aria-hidden="true"></span>
+      <label for="top-q" class="sr">Ask your data</label>
+      <input id="top-q" type="search" placeholder="Ask your data: which networks are adding EVs fastest?" autocomplete="off">
+      <button type="submit" aria-label="Ask"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </form>
   </div>
-</nav>
+</header>
 
 <section class="block first" id="platform">
   <div class="wrap">
@@ -18,16 +16,15 @@
       <div class="sec-head">
         <span class="eyebrow"><span class="spark" aria-hidden="true"></span>The AI platform for utilities</span>
         <h2>UtilityAI Pro, <span class="grad">stacked on your data</span></h2>
-        <p class="lede">Runs in your cloud. Click any layer.</p>
       </div>
       <div class="env-picker" aria-label="Environment">
-        <div class="env-row"><span class="lbl">Cloud</span><div class="chips" id="cloud-chips" role="group" aria-label="Cloud"></div></div>
-        <div class="env-row"><span class="lbl">Data lake</span><div class="chips" id="lake-chips" role="group" aria-label="Data lake"></div></div>
+        <div class="chips" id="cloud-chips" role="group" aria-label="Cloud"></div><span class="env-sep" aria-hidden="true"></span><div class="chips" id="lake-chips" role="group" aria-label="Data lake"></div>
       </div>
     </div>
     <div class="plat-grid">
       <div class="stage-wrap">
         <div class="stage" id="stage">
+          <button type="button" class="btn sm full-btn" id="full-btn" aria-pressed="false">⤢ Full screen</button>
           <svg id="stack-svg" viewBox="0 0 640 620" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
           <div class="slab-labels" id="slab-labels"></div>
           <div class="egress"><span class="tenant-chip" id="tenant-chip"></span><span><i></i>No customer data leaves your cloud</span><span>Only key attestation + job counts cross, over <b id="egress-net">Private Link</b></span></div>
@@ -43,16 +40,16 @@
     <div class="ask">
       <div class="ask-head">
         <span class="eyebrow"><span class="spark" aria-hidden="true"></span>Ask UtilityAI Pro</span>
-        <h2>What do you want to <span class="grad">know</span>?</h2>
+        <h2>Ask the <span class="grad">model outputs</span></h2>
       </div>
       <div class="ask-thread" id="ask-thread" aria-live="polite"></div>
       <form class="ask-box" id="ask-form">
         <label for="ask-input" class="sr">Ask a question about UtilityAI Pro</label>
-        <textarea id="ask-input" rows="1" placeholder="Ask about models, use cases, security or deployment…"></textarea>
+        <textarea id="ask-input" rows="1" placeholder="Ask a question the models can answer…"></textarea>
         <button type="submit" id="ask-send" aria-label="Send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </form>
       <div class="ask-sugg chips" id="ask-sugg"></div>
-      <p class="ask-note" id="ask-note">Answers come from this page's content.</p>
+      <p class="ask-note" id="ask-note">Demo on synthetic model outputs.</p>
     </div>
   </div>
 </section>
@@ -83,5 +80,12 @@
   </div>
   <div class="model-tabs" role="tablist" id="model-tabs" aria-label="Models"></div>
   <div id="model-panels"></div>
+</dialog>
+<dialog id="eng-dlg" aria-labelledby="eng-dlg-title">
+  <div class="dlg-head">
+    <div><span class="eyebrow"><span class="spark" aria-hidden="true"></span>Engines · APIs · MCPs</span><h3 id="eng-dlg-title">What each one does</h3></div>
+    <button type="button" class="btn sm" id="eng-close">Close</button>
+  </div>
+  <div class="eng-wrap"><div class="eng-list" id="eng-list"></div><div class="eng-detail" id="eng-detail"></div></div>
 </dialog>
 <div class="tip" id="tip" hidden></div>

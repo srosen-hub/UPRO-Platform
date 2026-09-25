@@ -65,13 +65,18 @@ section.block.first{padding-top:clamp(28px,4vw,48px)}
 .brand img{height:30px;width:auto;display:block}
 .brand-sep{width:1px;height:20px;background:var(--line-2)}
 .brand-prod{font-size:var(--fs-3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.top-search{flex:1;min-width:0;max-width:640px;margin-left:auto;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line-2);border-radius:999px;padding:4px 4px 4px 16px;box-shadow:0 6px 24px rgba(41,171,226,.14)}
+.top-search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(41,171,226,.18),0 6px 24px rgba(41,171,226,.2)}
+.top-search input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:var(--fs-3);padding:6px 0}
+.top-search button{width:34px;height:34px;border-radius:999px;border:0;background:var(--navy);color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
+.top-search button svg{width:16px;height:16px}
 .nav-links{display:flex;gap:4px;margin-left:auto;align-items:center}
 .nav-links a{color:var(--ink-2);text-decoration:none;font-size:var(--fs-3);font-weight:600;padding:6px 12px;border-radius:999px;white-space:nowrap}
 .nav-links a:hover{background:var(--surface-2);color:var(--ink)}
 .nav-links a.nav-ask{display:inline-flex;align-items:center;gap:6px;color:#fff;background:var(--navy);box-shadow:0 0 0 1px rgba(41,171,226,.4),0 6px 18px rgba(41,171,226,.25)}
 .nav-links a.nav-ask .spark{background:linear-gradient(90deg,#7dd3fc,#5eead4)}
 .nav-links a.nav-ask:hover{background:#0c2638;color:#fff}
-@media (max-width:760px){.brand-sep,.brand-prod{display:none}.nav-links a:not(.nav-ask){display:none}}
+@media (max-width:760px){.brand-sep,.brand-prod{display:none}.brand img{height:24px}.nav .wrap{gap:10px}}
 
 /* shared controls */
 .chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -97,9 +102,8 @@ section.block.first{padding-top:clamp(28px,4vw,48px)}
 /* platform */
 .plat-head{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
 .plat-head .sec-head{margin:0}
-.env-picker{display:grid;gap:10px;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--glass-line);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow)}
-.env-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.env-row .lbl{width:78px}
+.env-picker{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--glass-line);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow)}
+.env-sep{width:1px;height:24px;background:var(--line-2)}
 .plat-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:24px;align-items:start}
 @media (max-width:980px){.plat-grid{grid-template-columns:minmax(0,1fr)}}
 .stage-wrap{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px)}
@@ -367,20 +371,44 @@ svg .t-2{fill:var(--ink-2)}
 .seg button[aria-pressed="true"]{background:var(--navy);color:#fff}
 footer{padding-block:24px;font-size:var(--fs-3);color:var(--muted);border-top:1px solid var(--glass-line)}
 footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* full screen platform */
+.full-btn{position:absolute;top:12px;right:12px;z-index:3}
+body.plat-full{overflow:hidden}
+body.plat-full #platform{position:fixed;inset:0;z-index:90;overflow:auto;background:var(--bg);padding:16px}
+body.plat-full #platform .wrap{max-width:none}
+body.plat-full .plat-grid{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
+body.plat-full .stage-wrap{position:static}
+/* engines dialog */
+dialog#eng-dlg{width:min(1100px,calc(100% - 32px));max-height:calc(100vh - 48px);border:1px solid var(--glass-line);border-radius:24px;padding:clamp(16px,2.4vw,28px);background:rgba(255,255,255,.97);box-shadow:0 30px 80px rgba(4,18,31,.3);color:var(--ink)}
+dialog#eng-dlg::backdrop{background:rgba(4,18,31,.35);backdrop-filter:blur(6px)}
+dialog{z-index:100}
+.eng-wrap{display:grid;grid-template-columns:260px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:760px){.eng-wrap{grid-template-columns:1fr}}
+.eng-list{display:grid;gap:4px}
+.eng-list .lbl{margin-top:8px}
+.eng-btn{display:flex;align-items:center;gap:8px;text-align:left;border:1px solid transparent;background:transparent;border-radius:10px;padding:7px 10px;font-size:var(--fs-3);font-weight:600;color:var(--ink-2);cursor:pointer}
+.eng-btn .ic{color:var(--accent-text)}
+.eng-btn:hover{background:var(--surface-2)}
+.eng-btn[aria-pressed="true"]{background:var(--navy);color:#fff}
+.eng-btn[aria-pressed="true"] .ic{color:#7dd3fc}
+.eng-detail{display:grid;gap:14px}
+/* ask demo answers */
+.a .q-src{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:var(--fs-3);color:var(--muted)}
+.a .q-src .tag{display:inline-flex;align-items:center;gap:5px}
+.a .mini{display:grid;gap:6px;border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff;font-size:var(--fs-3)}
 </style>
-<nav class="nav" aria-label="Sections">
+<header class="nav" aria-label="Bidgely UtilityAI Pro">
   <div class="wrap">
-    <a class="brand" href="#platform" aria-label="Bidgely UtilityAI Pro">
-      <img id="brand-logo" alt="Bidgely" width="113" height="30">
-      <span class="brand-sep"></span><span class="brand-prod">UtilityAI Pro</span>
-    </a>
-    <div class="nav-links">
-      <a href="#platform">Platform</a>
-      <a href="#usecases">Use cases</a>
-      <a href="#ask" class="nav-ask"><span class="spark" aria-hidden="true"></span>Ask AI</a>
-    </div>
+    <a class="brand" href="#platform" aria-label="Bidgely UtilityAI Pro"><img id="brand-logo" alt="Bidgely" width="113" height="30"><span class="brand-sep"></span><span class="brand-prod">UtilityAI Pro</span></a>
+    <form class="top-search" id="top-search" role="search">
+      <span class="spark" aria-hidden="true"></span>
+      <label for="top-q" class="sr">Ask your data</label>
+      <input id="top-q" type="search" placeholder="Ask your data: which networks are adding EVs fastest?" autocomplete="off">
+      <button type="submit" aria-label="Ask"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </form>
   </div>
-</nav>
+</header>
 
 <section class="block first" id="platform">
   <div class="wrap">
@@ -388,16 +416,15 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
       <div class="sec-head">
         <span class="eyebrow"><span class="spark" aria-hidden="true"></span>The AI platform for utilities</span>
         <h2>UtilityAI Pro, <span class="grad">stacked on your data</span></h2>
-        <p class="lede">Runs in your cloud. Click any layer.</p>
       </div>
       <div class="env-picker" aria-label="Environment">
-        <div class="env-row"><span class="lbl">Cloud</span><div class="chips" id="cloud-chips" role="group" aria-label="Cloud"></div></div>
-        <div class="env-row"><span class="lbl">Data lake</span><div class="chips" id="lake-chips" role="group" aria-label="Data lake"></div></div>
+        <div class="chips" id="cloud-chips" role="group" aria-label="Cloud"></div><span class="env-sep" aria-hidden="true"></span><div class="chips" id="lake-chips" role="group" aria-label="Data lake"></div>
       </div>
     </div>
     <div class="plat-grid">
       <div class="stage-wrap">
         <div class="stage" id="stage">
+          <button type="button" class="btn sm full-btn" id="full-btn" aria-pressed="false">⤢ Full screen</button>
           <svg id="stack-svg" viewBox="0 0 640 620" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
           <div class="slab-labels" id="slab-labels"></div>
           <div class="egress"><span class="tenant-chip" id="tenant-chip"></span><span><i></i>No customer data leaves your cloud</span><span>Only key attestation + job counts cross, over <b id="egress-net">Private Link</b></span></div>
@@ -413,16 +440,16 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
     <div class="ask">
       <div class="ask-head">
         <span class="eyebrow"><span class="spark" aria-hidden="true"></span>Ask UtilityAI Pro</span>
-        <h2>What do you want to <span class="grad">know</span>?</h2>
+        <h2>Ask the <span class="grad">model outputs</span></h2>
       </div>
       <div class="ask-thread" id="ask-thread" aria-live="polite"></div>
       <form class="ask-box" id="ask-form">
         <label for="ask-input" class="sr">Ask a question about UtilityAI Pro</label>
-        <textarea id="ask-input" rows="1" placeholder="Ask about models, use cases, security or deployment…"></textarea>
+        <textarea id="ask-input" rows="1" placeholder="Ask a question the models can answer…"></textarea>
         <button type="submit" id="ask-send" aria-label="Send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </form>
       <div class="ask-sugg chips" id="ask-sugg"></div>
-      <p class="ask-note" id="ask-note">Answers come from this page's content.</p>
+      <p class="ask-note" id="ask-note">Demo on synthetic model outputs.</p>
     </div>
   </div>
 </section>
@@ -453,6 +480,13 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
   </div>
   <div class="model-tabs" role="tablist" id="model-tabs" aria-label="Models"></div>
   <div id="model-panels"></div>
+</dialog>
+<dialog id="eng-dlg" aria-labelledby="eng-dlg-title">
+  <div class="dlg-head">
+    <div><span class="eyebrow"><span class="spark" aria-hidden="true"></span>Engines · APIs · MCPs</span><h3 id="eng-dlg-title">What each one does</h3></div>
+    <button type="button" class="btn sm" id="eng-close">Close</button>
+  </div>
+  <div class="eng-wrap"><div class="eng-list" id="eng-list"></div><div class="eng-detail" id="eng-detail"></div></div>
 </dialog>
 <div class="tip" id="tip" hidden></div>
 <script>(() => {"use strict";
@@ -1250,7 +1284,6 @@ function renderStack() {
 
   const labels = $("#slab-labels"); labels.innerHTML = "";
   AI_TOOLS.forEach(([k, name], i) => labels.append(el("span", { class: "ai-row", style: `left:${AIX[i] / S.W * 100}%;top:${AIY[i] / S.H * 100}%` }, `<span class="ai-pill">${logoAI(k)}<span>${name}</span></span>`)));
-  labels.append(el("span", { class: "ai-row", style: `left:${(AIX[3] + 120) / S.W * 100}%;top:${(AIY[0] + 19) / S.H * 100}%` }, `<span class="lbl" style="white-space:nowrap">Your AI tools, via MCP</span>`));
 
   [...BANDS].reverse().forEach((B) => {
     const i = BANDS.indexOf(B), yc = S.top + i * S.gap, sel = B.id === selBand, st = bandStyle(B.id);
@@ -1264,7 +1297,7 @@ function renderStack() {
     const quad = (u0, v0, u1, v1) => [map(u0, v0), map(u1, v0), map(u1, v1), map(u0, v1)].map(p => P(...p)).join(" ");
     const ids = bandIds(B.id);
     const rows = B.id === "found" ? [ids.filter(k => NODES[k].row === "src"), ids.filter(k => NODES[k].row === "lake")] : ids.length > 12 ? [ids.slice(0, 5), ids.slice(5, 10), ids.slice(10)] : ids.length > 6 ? [ids.slice(0, Math.ceil(ids.length / 2)), ids.slice(Math.ceil(ids.length / 2))] : [ids];
-    const hook = (node, id) => { hoverable(node, () => `<b>${esc(NODES[id].name)}</b><div>${esc(sub(NODES[id].sub))}</div>`); node.addEventListener("click", (e) => { e.stopPropagation(); selBand = B.id; renderStack(); renderLayer(id); if (NODES[id].tab) openModel(NODES[id].tab); }); };
+    const hook = (node, id) => { hoverable(node, () => `<b>${esc(NODES[id].name)}</b><div>${esc(sub(NODES[id].sub))}</div>`); node.addEventListener("click", (e) => { e.stopPropagation(); selBand = B.id; renderStack(); renderLayer(id); if (NODES[id].tab) openModel(NODES[id].tab); else if (NODES[id].band === "engines") openEngine(id); }); };
     const centers = [];
     rows.forEach((row, ri) => {
       const nr = rows.length, v0 = nr === 1 ? 0.34 : nr === 2 ? 0.14 + ri * 0.44 : 0.08 + ri * 0.3, vh = nr === 1 ? 0.32 : nr === 2 ? 0.3 : 0.22;
@@ -1314,7 +1347,7 @@ function renderStack() {
 function renderLayer(focusId) {
   const B = BANDS.find(b => b.id === selBand), ids = bandIds(B.id), e = ENV();
   const card = (id) => {
-    const nd = NODES[id], click = !!nd.tab, tag = click ? "button" : "div";
+    const nd = NODES[id], click = !!nd.tab || nd.band === "engines", tag = click ? "button" : "div";
     return `<${tag}${click ? ' type="button"' : ""} class="comp${click ? " clickable" : ""}" data-id="${id}"${id === focusId ? ' style="border-color:var(--accent)"' : ""}>
       <span class="ci">${icon(pickIcon(nd.name + " " + nd.sub))}</span><b>${esc(nd.name)}</b><span class="sub">${esc(sub(nd.sub))}</span>${click ? '<span class="go">Explore →</span>' : ""}</${tag}>`;
   };
@@ -1325,17 +1358,80 @@ function renderLayer(focusId) {
   } else if (B.id === "engines") {
     grid = ["Grid & analytics", "Customer experience", "APIs, MCPs & apps"].map(gn => `<div class="lbl group-h">${gn}</div>` + ids.filter(k => NODES[k].group === gn).map(card).join("")).join("");
   } else grid = ids.map(card).join("");
-  $("#layer-panel").innerHTML = `<div class="layer-top"><span class="eyebrow">Layer ${BANDS.length - BANDS.indexOf(B)} of ${BANDS.length}</span><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div><div class="comp-grid">${grid}</div>`;
+  $("#layer-panel").innerHTML = `<div class="layer-top"><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div><div class="comp-grid">${grid}</div>`;
   $("#layer-panel").querySelectorAll(".comp[data-id]").forEach(c => {
     const nd = NODES[c.dataset.id];
     hoverable(c, () => `<b>${esc(nd.name)}</b><div>${esc(sub(nd.desc))}</div>`);
     if (nd.tab) c.addEventListener("click", () => openModel(nd.tab));
+    else if (nd.band === "engines") c.addEventListener("click", () => openEngine(c.dataset.id));
   });
 }
 function openModel(tab) {
   const d = $("#model-dlg");
   if (!d.open) { try { d.showModal(); } catch (e) { d.setAttribute("open", ""); } }
   setModelTab(tab);
+}
+
+/* ---------- Engines · APIs · MCPs explorer (dialog) ---------- */
+// Per-component detail: what goes in, what comes out, and a small example of the output.
+const bars = (rows, max, unit = "") => rows.map(([n, v, c]) => `<div class="drv"><span>${esc(n)}</span><span class="track"><i style="width:${Math.abs(v) / max * 100}%;background:var(${c || "--accent"})"></i></span><b style="text-align:right">${esc(String(v))}${unit}</b></div>`).join("");
+const kv = (rows) => rows.map(([k, v]) => `<div class="mock-row"><span class="muted">${esc(k)}</span><b>${esc(v)}</b></div>`).join("");
+const json = (o) => `<div class="cmd"><code style="white-space:pre-wrap">${esc(JSON.stringify(o, null, 1).replace(/\n\s*/g, " "))}</code></div>`;
+const ENGINE_DETAIL = {
+  "e-agg":  { in: ["Hourly end-use outputs per meter", "GIS meter-to-asset mapping"], out: ["8760 end-use load shapes per transformer, feeder, network"],
+    ex: () => `<div class="lbl">Feeder F-2231 · peak hour 18:00</div>${bars([["Cooling", 2.9, "--c-cool"], ["EV charging", 1.6, "--c-ev"], ["Base load", 3.8, "--c-other"], ["Heat pumps", 0.4, "--c-heat"]], 4, " MW")}${kv([["Meters rolled up", "1,842"], ["Transformers", "96"]])}` },
+  "e-flex": { in: ["EV, HVAC, pool, water heating, battery load", "Event window"], out: ["Shiftable kW per customer and hour"],
+    ex: () => `<div class="lbl">Customer 40021887 · 4 to 8pm</div>${bars([["EV charging", 6.1, "--c-ev"], ["HVAC", 2.2, "--c-cool"], ["Pool pump", 0.9, "--c-pool"]], 7, " kW")}${kv([["Available in window", "86% of events"]])}` },
+  "e-fc":   { in: ["Adoption detections over time", "DER propensity scores"], out: ["Adoption and growth inputs for your forecast models"],
+    ex: () => `<div class="lbl">Network N-18 · EV adoption inputs</div>${kv([["Current share", "14.2%"], ["12-month growth", "+4.1 pts"], ["High-propensity homes", "2,310"], ["2030 projected share", "27%"]])}` },
+  "e-kw":   { in: ["AMI kWh intervals"], out: ["kW demand values and peaks"],
+    ex: () => `<div class="lbl">15-minute interval to demand</div>${kv([["Interval energy", "1.8 kWh"], ["Demand", "7.2 kW"], ["Monthly peak", "9.4 kW at 18:15"]])}` },
+  "e-rate": { in: ["Interval usage", "Rate catalog"], out: ["Cost at any granularity, past or forward-looking"],
+    ex: () => `<div class="lbl">Yesterday, TOU plan</div>${bars([["Off-peak", 4.12, "--c-ev"], ["Mid-peak", 2.05, "--c-solar"], ["On-peak", 3.60, "--c-heat"]], 4.5, "")}${kv([["Total", "$9.77"]])}` },
+  "e-cost": { in: ["Usage", "Rate engine output"], out: ["Usage and cost by day, month and TOU band"],
+    ex: () => `<div class="lbl">August by TOU band</div>${bars([["Off-peak", 92, "--c-ev"], ["Mid-peak", 38, "--c-solar"], ["On-peak", 64, "--c-heat"]], 100, "")}${kv([["Bill", "$194"]])}` },
+  "e-bp":   { in: ["Month-to-date usage", "Seasonality", "Rate engine"], out: ["Projected cost for the open billing cycle"],
+    ex: () => `<div class="lbl">Cycle day 15 of 30</div>${kv([["Spent so far", "$84"], ["Projected bill", "$171"], ["Typical bill", "$120"], ["Status", "Alert threshold crossed"]])}` },
+  "e-rc":   { in: ["12 months of interval usage", "Eligible plans"], out: ["Annual cost on each plan and the best fit"],
+    ex: () => `<div class="lbl">Annual cost by plan</div>${bars([["Standard", 2280, "--c-other"], ["TOU", 1990, "--c-cool"], ["TOU-EV", 1860, "--c-ev"]], 2400, "")}` },
+  "e-rec":  { in: ["Disaggregation", "Similar-home gaps", "Tip catalog"], out: ["Ranked savings tips per customer and cycle"],
+    ex: () => `<ol class="tips-list"><li>Raise cooling setpoint 2°F, 2 to 7pm <b>$19/mo</b></li><li>AC tune-up <b>$14/mo</b></li><li>Charge EV after 11pm <b>$11/mo</b></li></ol>` },
+  "e-hi":   { in: ["All model outputs for a home"], out: ["Personalized insight cards"],
+    ex: () => `<div class="notif"><span class="app">${icon("flame")}Insight</span><b>Your AC used 24% more than similar homes in August.</b></div><div class="notif"><span class="app">${icon("ev")}Insight</span><b>70% of your EV charging is already off-peak.</b></div>` },
+  "i-api":  { in: ["Customer identity via your gateway"], out: ["Ratepayer-scoped JSON for web, app, CSR tools"],
+    ex: () => `<div class="lbl">GET /v1/bill-itemization?account=40021887&amp;cycle=2026-08</div>${json({ total: 194, cooling: 88, ev: 31, always_on: 24, pool_pump: 18 })}` },
+  "i-mcp":  { in: ["An agent's tool call"], out: ["Structured answers any AI tool can use"],
+    ex: () => `<div class="lbl">tools/call analyze_bill</div>${json({ bill: 194, prior: 142, drivers: { cooling_weather: 38, ev: 9, rate_change: 6 } })}<div class="pill-row">${AI_TOOLS.map(([k, n]) => `<span class="tag" style="display:inline-flex;align-items:center;gap:5px">${logoAI(k)}${n}</span>`).join("")}</div>` },
+  "i-awb":  { in: ["Complete Data Layer"], out: ["Segments, maps, program simulations, exports"],
+    ex: () => `<div class="lbl">Segment: heat pump candidates</div>${kv([["Homes", "18,240"], ["Expected enrollments", "1,460"], ["Export", "CSV · Marketing cloud"]])}` },
+  "i-ea":   { in: ["A plain-language question"], out: ["Governed query + explained answer"],
+    ex: () => `<div class="tip-row">${icon("search")}<span>How many homes added an EV this year?</span></div><div class="cmd"><code>SELECT network, COUNT(*) FROM upro.ev_detections WHERE first_seen &gt;= '2026-01-01' GROUP BY 1</code></div>` },
+  "i-cc":   { in: ["Operator settings"], out: ["Schedules, thresholds, content and rates for every component"],
+    ex: () => `${kv([["Model run", "Nightly 01:00"], ["High bill threshold", "+40%"], ["Checkpoints", "Days 10, 15, 20"], ["Rate catalog", "Updated Sep 1"]])}` },
+};
+let engSel = "e-agg";
+function openEngine(id) {
+  engSel = id || engSel;
+  const d = $("#eng-dlg");
+  if (!d.open) { try { d.showModal(); } catch (e) { d.setAttribute("open", ""); } }
+  renderEngine();
+}
+function renderEngine() {
+  const groups = ["Grid & analytics", "Customer experience", "APIs, MCPs & apps"];
+  const ids = Object.keys(NODES).filter(k => NODES[k].band === "engines");
+  $("#eng-list").innerHTML = groups.map(g => `<div class="lbl">${g}</div>` + ids.filter(k => NODES[k].group === g).map(k => `<button type="button" class="eng-btn" data-id="${k}" aria-pressed="${k === engSel}">${icon(pickIcon(NODES[k].name + " " + NODES[k].sub))}${esc(NODES[k].name)}</button>`).join("")).join("");
+  $("#eng-list").querySelectorAll(".eng-btn").forEach(b => b.addEventListener("click", () => { engSel = b.dataset.id; renderEngine(); }));
+  const n = NODES[engSel], D = ENGINE_DETAIL[engSel];
+  const ucs = USE_CASES.filter(u => u.trace.includes(engSel));
+  $("#eng-detail").innerHTML = `<div class="layer-top"><span class="eyebrow">${esc(n.group)}</span><h3>${esc(n.name)}</h3><p>${esc(sub(n.desc))}</p></div>
+    <div class="flow" style="grid-auto-columns:1fr">
+      <div class="node-s"><span class="top">${icon("export")}In</span>${D.in.map(x => `<span class="sys">${esc(x)}</span>`).join("")}</div>
+      <div class="node-s"><span class="top">${icon("gear")}${esc(n.name)}</span><span class="sys">${esc(sub(n.sub))}</span></div>
+      <div class="node-s"><span class="top">${icon("check")}Out</span>${D.out.map(x => `<span class="sys">${esc(x)}</span>`).join("")}</div>
+    </div>
+    <div class="mock"><div class="mock-bar"><i></i><i></i><i></i><span>Example output</span></div><div class="mock-body">${D.ex()}</div></div>
+    ${ucs.length ? `<div><div class="lbl" style="margin-bottom:6px">Powers</div><div class="chips">${ucs.map(u => `<button type="button" class="chip sm" data-uc="${u.id}">${esc(u.short)}</button>`).join("")}</div></div>` : ""}`;
+  $("#eng-detail").querySelectorAll("[data-uc]").forEach(b => b.addEventListener("click", () => { $("#eng-dlg").close(); if (document.body.classList.contains("plat-full")) $("#full-btn").click(); openUC(b.dataset.uc); }));
 }
 
 /* ---------- models ---------- */
@@ -1438,12 +1534,6 @@ function mDisagg() {
     ["--c-heat", "Heat pump", "Cycling signature · aux strip below 32°F"],
     ["--c-cool", "Central AC", "Saturates near 3.7 kWh/h on the hottest afternoons"],
   ].map(([c, h, t]) => `<div class="det"><div class="h"><span class="sw" style="background:var(${c})"></span>${h}</div><div class="v">${t}</div></div>`).join("")));
-  const acc = el("div", {});
-  acc.innerHTML = `<div class="viz-h" style="margin-bottom:8px"><h4>Published accuracy, 15-minute data</h4><span class="xs muted">validated against your ground truth before launch</span></div>
-  <div class="tbl-scroll"><table class="acc-table"><thead><tr><th>Appliance</th><th>Min history</th><th>Precision</th><th>Recall</th><th>Accuracy</th><th>False pos.</th><th>Est. accuracy (100-MAPE)</th></tr></thead><tbody>
-  ${ACCURACY.map(a => `<tr><td>${a.a}</td><td class="mono">${a.days} days</td><td>${a.p}%</td><td>${a.r}%</td><td>${a.acc}%</td><td>${a.fpr}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="bar" style="flex:1"><i style="width:${a.est}%"></i></div><span class="mono xs">${a.est} ±${a.pm}%</span></div></td></tr>`).join("")}
-  </tbody></table></div><p class="xs muted" style="margin-top:6px">Precision: when the model says yes, how often it is right. Recall: share of true owners found. 100-MAPE: share of actual appliance consumption captured.</p>`;
-  v.append(acc);
   drawDay();
 }
 function drawDay() {
@@ -2029,12 +2119,28 @@ const UCV = {
 };
 
 /* ---------- Ask UtilityAI Pro: a chat grounded in this page's content ---------- */
+// Demo questions answered from (synthetic) model outputs. Each has a short answer, the outputs it
+// queried, and a small result table.
 const ASK_SUGG = [
-  ["Does any customer data leave our cloud?", "No. Models run as encrypted containers on confidential compute inside your tenant. They read inputs from your data lake and write outputs back to it as governed tables. Only two things cross the boundary: the attestation handshake that releases model keys, and operational counts such as job and row counts. Neither contains PII or consumption data.\nLINKS: layer:found, layer:models"],
-  ["How accurate is EV detection?", "On 15-minute data, Level 2/3 EV charging is detected with 85% precision, 92% recall and 98% overall accuracy, capturing about 90% (±5%) of actual EV consumption. Level 1 charging is harder: 65% precision and 75% recall. EV detection needs about 180 days of history, and each model is validated against your own ground truth before launch.\nLINKS: model:disagg, uc:trend"],
-  ["What helps with non-wires alternatives?", "Three use cases work together:\n- End-use load forecasting shows which appliances drive each network's peak.\n- Flexibility targeting sizes shiftable kW by feeder and customer.\n- NWS evaluation compares a build against a flexibility portfolio and returns pre- and post-program 8760s.\nLINKS: uc:nws, uc:forecast, uc:flex"],
-  ["How do I connect it to Copilot or ChatGPT?", "Each use case is exposed through a UtilityAI Pro MCP server running in your tenant. In Copilot Studio, add it under Tools → Add a tool → MCP. In ChatGPT, turn on developer mode under Settings → Apps & Connectors and create a connector with the server URL. Sign-in goes through your SSO, so data access follows existing roles.\nLINKS: uc:highbill, uc:analyst"],
+  { q: "Which networks are adding EVs fastest?", src: [["ev", "EV detections"], ["pin", "GIS rollup"]],
+    rows: [["N-18", 1204], ["N-04", 988], ["N-12", 760], ["N-07", 512]], unit: " new EV homes",
+    text: "N-18 leads with 1,204 homes that started charging an EV this year, now 14.2% of homes. N-04 follows with 988. 212 of the new chargers have no interconnection record.\nLINKS: uc:trend, model:disagg" },
+  { q: "What's driving the summer peak on Network 12?", src: [["brain", "Disaggregation"], ["gear", "Meter-to-asset aggregation"]],
+    rows: [["Base load", 21.6], ["Cooling", 12.1], ["EV charging", 6.3], ["Heat pumps", 1.2]], unit: " MW",
+    text: "The 6pm design-day peak is 41.2 MW. Cooling is 12.1 MW of it and EV charging 6.3 MW, and EV charging is the fastest growing piece, forecast at +3.4 MW by 2030.\nLINKS: uc:forecast, uc:nws" },
+  { q: "How many homes are heat pump candidates?", src: [["brain", "Attributes"], ["user", "Customer income"], ["clipboard", "Program history"]],
+    rows: [["Electric resistance heat", 412000], ["No heat pump yet", 318000], ["Likely income-qualified", 61300], ["Not enrolled", 18240]], unit: " homes",
+    text: "318,000 homes heat with electric resistance and have no heat pump. 61,300 of them are likely income-qualified, and 18,240 aren't in any program yet, a ready-made outreach list.\nLINKS: uc:targeting, model:attr, model:inc" },
+  { q: "Who would save the most on TOU-EV?", src: [["tag", "Rate comparison"], ["ev", "EV detections"]],
+    rows: [["Save over $400/yr", 8120], ["$200 to $400", 21560], ["$100 to $200", 34900]], unit: " customers",
+    text: "8,120 EV owners would save more than $400 a year on TOU-EV, mostly because their charging already happens after 9pm. Another 21,560 would save $200 to $400.\nLINKS: uc:rates, model:life" },
+  { q: "Which homes may have a failing AC?", src: [["flame", "Appliance inefficiency"]],
+    rows: [["Degrading", 14800], ["Saturating on hot days", 9300], ["Short cycling", 4100]], unit: " homes",
+    text: "14,800 homes show AC degradation: energy per cooling degree up more than 15% over two summers. 9,300 hit a ceiling on the hottest days. These are good tune-up and replacement targets.\nLINKS: model:ineff, uc:targeting" },
+  { q: "Does any customer data leave our cloud?", src: [["shield", "Platform security"]], rows: [], unit: "",
+    text: "No. Models run as encrypted containers on confidential compute inside your tenant and read and write your data lake directly. Only the key attestation handshake and operational counts cross the boundary, with no PII or consumption data.\nLINKS: layer:found, layer:models" },
 ];
+const DEMO_DATA = ASK_SUGG.filter(d => d.rows.length).map(d => `Q: ${d.q}\nData: ${d.rows.map(r => `${r[0]} = ${r[1].toLocaleString()}${d.unit}`).join("; ")}\nContext: ${d.text.split("\nLINKS")[0]}`).join("\n\n");
 let askTurns = [], askCtl = null, askSample;
 
 function askKnowledge() {
@@ -2051,9 +2157,11 @@ COMPONENTS:\n${nodes}
 MODELS: ${models}
 ACCURACY (15-minute data):\n${acc}
 USE CASES:\n${ucs}
+DEMO MODEL OUTPUTS (synthetic sample utility, use these numbers when asked about data):
+${DEMO_DATA}
 MCP SERVERS (connect to Claude, ChatGPT, Microsoft Copilot Studio, Gemini Enterprise or any MCP client; URLs are https://upro.<utility>.com/mcp/<server>; tool names illustrative):\n${mcp}`;
 }
-const ASK_RULES = () => `You are the UtilityAI Pro guide on Bidgely's platform page. Answer the visitor using ONLY the page content below. If the answer isn't there, say you don't have that detail and suggest asking the Bidgely team. Be brief: 2 to 4 short sentences, or up to 4 bullets starting with "- ". Plain text, no headings, no bold. Do not invent numbers, customers or prices.
+const ASK_RULES = () => `You are the UtilityAI Pro demo assistant. You answer questions a utility could ask of its UtilityAI Pro model outputs, using the synthetic demo data and page content below. Answer using ONLY that content; when you quote demo numbers, say which model outputs they come from. If the answer isn't there, say you don't have that detail and suggest asking the Bidgely team. Be brief: 2 to 4 short sentences, or up to 4 bullets starting with "- ". Plain text, no headings, no bold. Do not invent numbers, customers or prices.
 After the answer, add one final line starting "LINKS:" listing up to 3 relevant ids from the content, like "LINKS: uc:highbill, model:disagg, layer:models". Omit the line if nothing fits.
 
 PAGE CONTENT:
@@ -2079,6 +2187,14 @@ function go(id) {
   else if (kind === "model") openModel(key);
   else if (kind === "layer") { selBand = key; renderStack(); renderLayer(); $("#platform").scrollIntoView({ behavior: "smooth" }); }
 }
+function fillDemo(a, d) {
+  fillBubble(a, d.text);
+  const max = Math.max(1, ...d.rows.map(r => r[1]));
+  const src = `<div class="q-src">Queried ${d.src.map(([ic, n]) => `<span class="tag">${icon(ic)}${esc(n)}</span>`).join("")}</div>`;
+  const mini = d.rows.length ? `<div class="mini">${d.rows.map(([n, v]) => `<div class="drv"><span>${esc(n)}</span><span class="track"><i style="width:${v / max * 100}%;background:var(--grad)"></i></span><b style="text-align:right">${v.toLocaleString()}</b></div>`).join("")}<span class="muted">${esc(d.unit.trim())} · synthetic demo data</span></div>` : "";
+  a.querySelector(".body").insertAdjacentHTML("beforebegin", src);
+  a.querySelector(".body").insertAdjacentHTML("afterend", mini);
+}
 function answerBubble() {
   const a = el("div", { class: "a" }, `<span class="who"><span class="spark" aria-hidden="true"></span>UtilityAI Pro</span><div class="body"><span class="thinking" aria-label="Thinking"><i></i><i></i><i></i></span></div><div class="links"></div>`);
   $("#ask-thread").append(a); return a;
@@ -2096,9 +2212,10 @@ async function ask(q) {
   input.value = ""; autoGrow();
   $("#ask-thread").append(el("div", { class: "q" }, esc(q)));
   const a = answerBubble();
-  const canned = ASK_SUGG.find(s => s[0] === q);
-  if (!askSample) { // no live model in this view: prewritten answers for the suggestions
-    setTimeout(() => fillBubble(a, canned ? canned[1] : "Live answers need this page open in Claude. Try one of the suggested questions below."), 450);
+  const canned = ASK_SUGG.find(s => s.q === q);
+  if (canned) { setTimeout(() => fillDemo(a, canned), 650); return; } // suggested questions use the fixed demo outputs
+  if (!askSample) { // no live model in this view
+    setTimeout(() => canned ? fillDemo(a, canned) : fillBubble(a, "Live answers need this page open in Claude. Try one of the suggested questions."), 650);
     return;
   }
   askTurns.push({ role: "user", content: q });
@@ -2110,20 +2227,21 @@ async function ask(q) {
   } catch (e) {
     askTurns.pop();
     if (e.code === "cancelled") return;
-    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e.code)) { askSample = null; $("#ask-note").textContent = "Live answers are off for this view. Suggested questions still work."; }
-    fillBubble(a, canned ? canned[1] : e.code === "rate_limited" ? "Too many questions at once. Try again in a moment." : "That didn't go through. Try asking again.");
+    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e.code)) { askSample = null; $("#ask-note").textContent = "Live answers are off for this view. The suggested questions still work."; }
+    if (canned) return fillDemo(a, canned);
+    fillBubble(a, e.code === "rate_limited" ? "Too many questions at once. Try again in a moment." : "That didn't go through. Try asking again.");
   } finally { send.disabled = false; }
 }
 function autoGrow() { const t = $("#ask-input"); t.style.height = "auto"; t.style.height = Math.min(160, t.scrollHeight) + "px"; }
 
 function initAsk() {
   const sg = $("#ask-sugg");
-  sg.innerHTML = ASK_SUGG.map(([q]) => `<button type="button" class="chip">${icon("search")}${esc(q)}</button>`).join("");
-  sg.querySelectorAll("button").forEach((b, i) => b.addEventListener("click", () => ask(ASK_SUGG[i][0])));
+  sg.innerHTML = ASK_SUGG.map(d => `<button type="button" class="chip">${icon(d.src[0][0])}${esc(d.q)}</button>`).join("");
+  sg.querySelectorAll("button").forEach((b, i) => b.addEventListener("click", () => ask(ASK_SUGG[i].q)));
   $("#ask-form").addEventListener("submit", (e) => { e.preventDefault(); ask($("#ask-input").value); });
   $("#ask-input").addEventListener("input", autoGrow);
   $("#ask-input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask($("#ask-input").value); } });
-  if (window.claude && window.claude.use) window.claude.use("sample").then(s => { askSample = s; if (s) $("#ask-note").textContent = "Answers come from this page, using Claude on your account."; }).catch(() => {});
+  if (window.claude && window.claude.use) window.claude.use("sample").then(s => { askSample = s; if (s) $("#ask-note").textContent = "Live answers from synthetic demo model outputs, using Claude on your account."; }).catch(() => {});
 }
 
 /* ---------- init ---------- */
@@ -2137,5 +2255,11 @@ $("#model-dlg").addEventListener("click", (e) => { if (e.target.id === "model-dl
 let rz, lastVW = VW();
 addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if ($("#model-dlg").open && Math.abs(VW() - lastVW) > 8) { lastVW = VW(); renderModel(); } drawUCViz(); }, 140); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawUCViz(); });
+$("#eng-close").addEventListener("click", () => $("#eng-dlg").close());
+$("#eng-dlg").addEventListener("click", (e) => { if (e.target.id === "eng-dlg") e.target.close(); });
+const setFull = (on) => { document.body.classList.toggle("plat-full", on); const b = $("#full-btn"); b.setAttribute("aria-pressed", on); b.textContent = on ? "✕ Exit full screen" : "⤢ Full screen"; };
+$("#full-btn").addEventListener("click", () => setFull(!document.body.classList.contains("plat-full")));
+addEventListener("keydown", (e) => { if (e.key === "Escape" && document.body.classList.contains("plat-full") && !document.querySelector("dialog[open]")) setFull(false); });
+$("#top-search").addEventListener("submit", (e) => { e.preventDefault(); const q = $("#top-q").value; $("#top-q").value = ""; $("#ask").scrollIntoView({ behavior: "smooth" }); ask(q); });
 
 })();</script>

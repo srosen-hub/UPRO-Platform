@@ -98,12 +98,6 @@ function mDisagg() {
     ["--c-heat", "Heat pump", "Cycling signature · aux strip below 32°F"],
     ["--c-cool", "Central AC", "Saturates near 3.7 kWh/h on the hottest afternoons"],
   ].map(([c, h, t]) => `<div class="det"><div class="h"><span class="sw" style="background:var(${c})"></span>${h}</div><div class="v">${t}</div></div>`).join("")));
-  const acc = el("div", {});
-  acc.innerHTML = `<div class="viz-h" style="margin-bottom:8px"><h4>Published accuracy, 15-minute data</h4><span class="xs muted">validated against your ground truth before launch</span></div>
-  <div class="tbl-scroll"><table class="acc-table"><thead><tr><th>Appliance</th><th>Min history</th><th>Precision</th><th>Recall</th><th>Accuracy</th><th>False pos.</th><th>Est. accuracy (100-MAPE)</th></tr></thead><tbody>
-  ${ACCURACY.map(a => `<tr><td>${a.a}</td><td class="mono">${a.days} days</td><td>${a.p}%</td><td>${a.r}%</td><td>${a.acc}%</td><td>${a.fpr}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="bar" style="flex:1"><i style="width:${a.est}%"></i></div><span class="mono xs">${a.est} ±${a.pm}%</span></div></td></tr>`).join("")}
-  </tbody></table></div><p class="xs muted" style="margin-top:6px">Precision: when the model says yes, how often it is right. Recall: share of true owners found. 100-MAPE: share of actual appliance consumption captured.</p>`;
-  v.append(acc);
   drawDay();
 }
 function drawDay() {

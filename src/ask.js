@@ -1,10 +1,26 @@
 /* ---------- Ask UtilityAI Pro: a chat grounded in this page's content ---------- */
+// Demo questions answered from (synthetic) model outputs. Each has a short answer, the outputs it
+// queried, and a small result table.
 const ASK_SUGG = [
-  ["Does any customer data leave our cloud?", "No. Models run as encrypted containers on confidential compute inside your tenant. They read inputs from your data lake and write outputs back to it as governed tables. Only two things cross the boundary: the attestation handshake that releases model keys, and operational counts such as job and row counts. Neither contains PII or consumption data.\nLINKS: layer:found, layer:models"],
-  ["How accurate is EV detection?", "On 15-minute data, Level 2/3 EV charging is detected with 85% precision, 92% recall and 98% overall accuracy, capturing about 90% (±5%) of actual EV consumption. Level 1 charging is harder: 65% precision and 75% recall. EV detection needs about 180 days of history, and each model is validated against your own ground truth before launch.\nLINKS: model:disagg, uc:trend"],
-  ["What helps with non-wires alternatives?", "Three use cases work together:\n- End-use load forecasting shows which appliances drive each network's peak.\n- Flexibility targeting sizes shiftable kW by feeder and customer.\n- NWS evaluation compares a build against a flexibility portfolio and returns pre- and post-program 8760s.\nLINKS: uc:nws, uc:forecast, uc:flex"],
-  ["How do I connect it to Copilot or ChatGPT?", "Each use case is exposed through a UtilityAI Pro MCP server running in your tenant. In Copilot Studio, add it under Tools → Add a tool → MCP. In ChatGPT, turn on developer mode under Settings → Apps & Connectors and create a connector with the server URL. Sign-in goes through your SSO, so data access follows existing roles.\nLINKS: uc:highbill, uc:analyst"],
+  { q: "Which networks are adding EVs fastest?", src: [["ev", "EV detections"], ["pin", "GIS rollup"]],
+    rows: [["N-18", 1204], ["N-04", 988], ["N-12", 760], ["N-07", 512]], unit: " new EV homes",
+    text: "N-18 leads with 1,204 homes that started charging an EV this year, now 14.2% of homes. N-04 follows with 988. 212 of the new chargers have no interconnection record.\nLINKS: uc:trend, model:disagg" },
+  { q: "What's driving the summer peak on Network 12?", src: [["brain", "Disaggregation"], ["gear", "Meter-to-asset aggregation"]],
+    rows: [["Base load", 21.6], ["Cooling", 12.1], ["EV charging", 6.3], ["Heat pumps", 1.2]], unit: " MW",
+    text: "The 6pm design-day peak is 41.2 MW. Cooling is 12.1 MW of it and EV charging 6.3 MW, and EV charging is the fastest growing piece, forecast at +3.4 MW by 2030.\nLINKS: uc:forecast, uc:nws" },
+  { q: "How many homes are heat pump candidates?", src: [["brain", "Attributes"], ["user", "Customer income"], ["clipboard", "Program history"]],
+    rows: [["Electric resistance heat", 412000], ["No heat pump yet", 318000], ["Likely income-qualified", 61300], ["Not enrolled", 18240]], unit: " homes",
+    text: "318,000 homes heat with electric resistance and have no heat pump. 61,300 of them are likely income-qualified, and 18,240 aren't in any program yet, a ready-made outreach list.\nLINKS: uc:targeting, model:attr, model:inc" },
+  { q: "Who would save the most on TOU-EV?", src: [["tag", "Rate comparison"], ["ev", "EV detections"]],
+    rows: [["Save over $400/yr", 8120], ["$200 to $400", 21560], ["$100 to $200", 34900]], unit: " customers",
+    text: "8,120 EV owners would save more than $400 a year on TOU-EV, mostly because their charging already happens after 9pm. Another 21,560 would save $200 to $400.\nLINKS: uc:rates, model:life" },
+  { q: "Which homes may have a failing AC?", src: [["flame", "Appliance inefficiency"]],
+    rows: [["Degrading", 14800], ["Saturating on hot days", 9300], ["Short cycling", 4100]], unit: " homes",
+    text: "14,800 homes show AC degradation: energy per cooling degree up more than 15% over two summers. 9,300 hit a ceiling on the hottest days. These are good tune-up and replacement targets.\nLINKS: model:ineff, uc:targeting" },
+  { q: "Does any customer data leave our cloud?", src: [["shield", "Platform security"]], rows: [], unit: "",
+    text: "No. Models run as encrypted containers on confidential compute inside your tenant and read and write your data lake directly. Only the key attestation handshake and operational counts cross the boundary, with no PII or consumption data.\nLINKS: layer:found, layer:models" },
 ];
+const DEMO_DATA = ASK_SUGG.filter(d => d.rows.length).map(d => `Q: ${d.q}\nData: ${d.rows.map(r => `${r[0]} = ${r[1].toLocaleString()}${d.unit}`).join("; ")}\nContext: ${d.text.split("\nLINKS")[0]}`).join("\n\n");
 let askTurns = [], askCtl = null, askSample;
 
 function askKnowledge() {
@@ -21,9 +37,11 @@ COMPONENTS:\n${nodes}
 MODELS: ${models}
 ACCURACY (15-minute data):\n${acc}
 USE CASES:\n${ucs}
+DEMO MODEL OUTPUTS (synthetic sample utility, use these numbers when asked about data):
+${DEMO_DATA}
 MCP SERVERS (connect to Claude, ChatGPT, Microsoft Copilot Studio, Gemini Enterprise or any MCP client; URLs are https://upro.<utility>.com/mcp/<server>; tool names illustrative):\n${mcp}`;
 }
-const ASK_RULES = () => `You are the UtilityAI Pro guide on Bidgely's platform page. Answer the visitor using ONLY the page content below. If the answer isn't there, say you don't have that detail and suggest asking the Bidgely team. Be brief: 2 to 4 short sentences, or up to 4 bullets starting with "- ". Plain text, no headings, no bold. Do not invent numbers, customers or prices.
+const ASK_RULES = () => `You are the UtilityAI Pro demo assistant. You answer questions a utility could ask of its UtilityAI Pro model outputs, using the synthetic demo data and page content below. Answer using ONLY that content; when you quote demo numbers, say which model outputs they come from. If the answer isn't there, say you don't have that detail and suggest asking the Bidgely team. Be brief: 2 to 4 short sentences, or up to 4 bullets starting with "- ". Plain text, no headings, no bold. Do not invent numbers, customers or prices.
 After the answer, add one final line starting "LINKS:" listing up to 3 relevant ids from the content, like "LINKS: uc:highbill, model:disagg, layer:models". Omit the line if nothing fits.
 
 PAGE CONTENT:
@@ -49,6 +67,14 @@ function go(id) {
   else if (kind === "model") openModel(key);
   else if (kind === "layer") { selBand = key; renderStack(); renderLayer(); $("#platform").scrollIntoView({ behavior: "smooth" }); }
 }
+function fillDemo(a, d) {
+  fillBubble(a, d.text);
+  const max = Math.max(1, ...d.rows.map(r => r[1]));
+  const src = `<div class="q-src">Queried ${d.src.map(([ic, n]) => `<span class="tag">${icon(ic)}${esc(n)}</span>`).join("")}</div>`;
+  const mini = d.rows.length ? `<div class="mini">${d.rows.map(([n, v]) => `<div class="drv"><span>${esc(n)}</span><span class="track"><i style="width:${v / max * 100}%;background:var(--grad)"></i></span><b style="text-align:right">${v.toLocaleString()}</b></div>`).join("")}<span class="muted">${esc(d.unit.trim())} · synthetic demo data</span></div>` : "";
+  a.querySelector(".body").insertAdjacentHTML("beforebegin", src);
+  a.querySelector(".body").insertAdjacentHTML("afterend", mini);
+}
 function answerBubble() {
   const a = el("div", { class: "a" }, `<span class="who"><span class="spark" aria-hidden="true"></span>UtilityAI Pro</span><div class="body"><span class="thinking" aria-label="Thinking"><i></i><i></i><i></i></span></div><div class="links"></div>`);
   $("#ask-thread").append(a); return a;
@@ -66,9 +92,10 @@ async function ask(q) {
   input.value = ""; autoGrow();
   $("#ask-thread").append(el("div", { class: "q" }, esc(q)));
   const a = answerBubble();
-  const canned = ASK_SUGG.find(s => s[0] === q);
-  if (!askSample) { // no live model in this view: prewritten answers for the suggestions
-    setTimeout(() => fillBubble(a, canned ? canned[1] : "Live answers need this page open in Claude. Try one of the suggested questions below."), 450);
+  const canned = ASK_SUGG.find(s => s.q === q);
+  if (canned) { setTimeout(() => fillDemo(a, canned), 650); return; } // suggested questions use the fixed demo outputs
+  if (!askSample) { // no live model in this view
+    setTimeout(() => canned ? fillDemo(a, canned) : fillBubble(a, "Live answers need this page open in Claude. Try one of the suggested questions."), 650);
     return;
   }
   askTurns.push({ role: "user", content: q });
@@ -80,18 +107,19 @@ async function ask(q) {
   } catch (e) {
     askTurns.pop();
     if (e.code === "cancelled") return;
-    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e.code)) { askSample = null; $("#ask-note").textContent = "Live answers are off for this view. Suggested questions still work."; }
-    fillBubble(a, canned ? canned[1] : e.code === "rate_limited" ? "Too many questions at once. Try again in a moment." : "That didn't go through. Try asking again.");
+    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e.code)) { askSample = null; $("#ask-note").textContent = "Live answers are off for this view. The suggested questions still work."; }
+    if (canned) return fillDemo(a, canned);
+    fillBubble(a, e.code === "rate_limited" ? "Too many questions at once. Try again in a moment." : "That didn't go through. Try asking again.");
   } finally { send.disabled = false; }
 }
 function autoGrow() { const t = $("#ask-input"); t.style.height = "auto"; t.style.height = Math.min(160, t.scrollHeight) + "px"; }
 
 function initAsk() {
   const sg = $("#ask-sugg");
-  sg.innerHTML = ASK_SUGG.map(([q]) => `<button type="button" class="chip">${icon("search")}${esc(q)}</button>`).join("");
-  sg.querySelectorAll("button").forEach((b, i) => b.addEventListener("click", () => ask(ASK_SUGG[i][0])));
+  sg.innerHTML = ASK_SUGG.map(d => `<button type="button" class="chip">${icon(d.src[0][0])}${esc(d.q)}</button>`).join("");
+  sg.querySelectorAll("button").forEach((b, i) => b.addEventListener("click", () => ask(ASK_SUGG[i].q)));
   $("#ask-form").addEventListener("submit", (e) => { e.preventDefault(); ask($("#ask-input").value); });
   $("#ask-input").addEventListener("input", autoGrow);
   $("#ask-input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask($("#ask-input").value); } });
-  if (window.claude && window.claude.use) window.claude.use("sample").then(s => { askSample = s; if (s) $("#ask-note").textContent = "Answers come from this page, using Claude on your account."; }).catch(() => {});
+  if (window.claude && window.claude.use) window.claude.use("sample").then(s => { askSample = s; if (s) $("#ask-note").textContent = "Live answers from synthetic demo model outputs, using Claude on your account."; }).catch(() => {});
 }
