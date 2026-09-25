@@ -47,35 +47,42 @@ function mDisagg() {
     <h3>Appliance &amp; DER disaggregation</h3>
     <p>One meter, one row per day. Raw reads on the left, what the model separates out on the right. Click a row.</p>`,
     [["Input", "AMI interval data (15-min or hourly), weather, bill cycles"], ["Output", "Hourly kWh per appliance per meter; monthly for cooking, laundry, entertainment"], ["Categories", "Always on, heating, cooling, water heating, refrigeration, lighting, pool pump, EV, solar, plus 3 monthly"], ["Written to", "Governed output tables in your data platform, every run"]]);
-  v.append(el("div", { class: "viz-h" }, `<h4>8,760 hours, separated</h4><span class="xs muted mono">sample premise · Oct 2025 to Sep 2026</span>`));
-  const wrap = el("div", { class: "hm-wrap" });
+  v.append(el("div", { class: "viz-h" }, `<h4>8,760 hours, separated</h4><span class="mono">sample premise · Oct 2025 to Sep 2026</span>`));
+  // Instrument panel: raw AMI in, six end-use channels out. Rows are days, columns are hours.
+  const panelEl = el("div", { class: "hm-panel" });
+  panelEl.innerHTML = `<div class="hm-head"><span><i class="hm-dot"></i>Input · raw AMI</span><span class="hm-arrow" aria-hidden="true">→</span><span><i class="hm-dot on"></i>Model output · 6 end uses</span></div>`;
+  const wrap = el("div", { class: "hm-body" });
   const months = el("div", { class: "hm-y", "aria-hidden": "true" });
   ["Oct","Dec","Feb","Apr","Jun","Aug","Sep"].forEach(m => months.append(el("span", {}, m)));
-  const multi = el("div", { class: "hm-multi" });
-  const cursor = el("div", { class: "hm-cursor", hidden: "" });
-  wrap.append(months, multi, cursor);
-  v.append(wrap);
-  const zero = cssv("--hm-zero");
+  const rawCol = el("div", { class: "hm-raw" }), comps = el("div", { class: "hm-comps" });
+  const cursor = el("div", { class: "hm-cursor", hidden: "" }), selLine = el("div", { class: "hm-sel" });
+  wrap.append(months, rawCol, el("div", { class: "hm-gap", "aria-hidden": "true" }), comps, cursor, selLine);
+  panelEl.append(wrap);
+  v.append(panelEl);
+  const MAGMA = ["#000004", "#1c1044", "#4f127b", "#812581", "#b5367a", "#e55064", "#fb8761", "#fec287", "#fcfdbf"];
+  const ramp = (stops, t) => { const x = clamp(t, 0, 1) * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(x)); return mix(stops[i], stops[i + 1], x - i); };
+  const BASE = "#0d141d";
   HM_SERIES.forEach(s => {
-    const cell = el("div", { class: "hm-cell", role: "button", tabindex: "0", "aria-pressed": hmFocus === s.id, "aria-label": `${s.name} heatmap` });
-    const cv = el("canvas", { width: 48, height: 365 });
-    const arr = s.id === "net" ? HH.net : HH.c[s.id];
+    const isRaw = s.id === "net";
+    const cell = el("div", { class: "hm-cell" + (isRaw ? " raw" : ""), role: "button", tabindex: "0", "aria-label": `${s.name} heatmap` });
+    const W = isRaw ? 96 : 48, px = W / 24;
+    const cv = el("canvas", { width: W, height: 365 });
+    const arr = isRaw ? HH.net : HH.c[s.id];
     let mx = 0; for (let i = 0; i < N; i++) mx = Math.max(mx, Math.abs(arr[i]));
-    const ctx = cv.getContext("2d"); const img = ctx.createImageData(48, 365);
-    const hue = s.id === "net" ? cssv("--c-cool") : cssv(s.v);
-    const deep = s.id === "net" ? mix(hue, "#0b2d52", 0.35) : null;
-    const deepHex = deep ? "#" + deep.map(x => x.toString(16).padStart(2, "0")).join("") : hue;
-    const sol = cssv("--c-solar");
+    const ctx = cv.getContext("2d"); const img = ctx.createImageData(W, 365);
+    const hue = cssv(s.v), hot = "#" + mix(hue, "#ffffff", 0.45).map(x => x.toString(16).padStart(2, "0")).join("");
     for (let d = 0; d < DAYS; d++) for (let h = 0; h < H; h++) {
       const val = arr[d * H + h];
-      const rgb = val < 0 ? mix(zero, sol, Math.pow(clamp(-val / 4.5, 0, 1), 0.7)) : mix(zero, deepHex, Math.pow(clamp(val / (s.id === "net" ? 9 : mx), 0, 1), 0.65));
-      for (let x = h * 2; x < h * 2 + 2; x++) { const o = (d * 48 + x) * 4; img.data[o] = rgb[0]; img.data[o + 1] = rgb[1]; img.data[o + 2] = rgb[2]; img.data[o + 3] = 255; }
+      let rgb;
+      if (isRaw) rgb = val < 0 ? ramp([BASE, "#0e4a5c", "#1fb5c9", "#b8f3ff"], Math.pow(-val / 4.5, 0.7)) : ramp(MAGMA, 0.08 + 0.92 * Math.pow(clamp(val / 9, 0, 1), 0.6));
+      else { const t = Math.pow(clamp(Math.abs(val) / mx, 0, 1), 0.6); rgb = t < 0.02 ? mix(BASE, BASE, 0) : ramp([BASE, hue, hot], t); }
+      for (let x = h * px; x < (h + 1) * px; x++) { const o = (d * W + x) * 4; img.data[o] = rgb[0]; img.data[o + 1] = rgb[1]; img.data[o + 2] = rgb[2]; img.data[o + 3] = 255; }
     }
     ctx.putImageData(img, 0, 0);
-    const kwh = s.id === "net" ? `${Math.round(annual.ao + annual.pool + annual.wh + annual.ev + annual.heat + annual.cool + annual.other - annual.solar).toLocaleString()} kWh net` : `${Math.round(annual[s.id]).toLocaleString()} kWh/yr`;
-    cell.innerHTML = `<div class="nm"><span class="sw" style="background:var(${s.v})"></span>${s.name}</div>`;
+    const kwh = isRaw ? `${Math.round(annual.ao + annual.pool + annual.wh + annual.ev + annual.heat + annual.cool + annual.other - annual.solar).toLocaleString()} kWh net` : `${Math.round(annual[s.id]).toLocaleString()} kWh`;
+    cell.innerHTML = `<div class="nm">${isRaw ? "" : `<span class="sw" style="background:var(${s.v})"></span>`}${s.name}</div><div class="kwh">${kwh}</div>`;
     cell.append(cv);
-    cell.append(el("div", { class: "kwh" }, kwh));
+    if (isRaw) cell.append(el("div", { class: "hm-x" }, "<span>00</span><span>06</span><span>12</span><span>18</span><span>24</span>"));
     const pick = (e) => { const rc = cv.getBoundingClientRect(); return [clamp(Math.floor((e.clientY - rc.top) / rc.height * DAYS), 0, DAYS - 1), clamp(Math.floor((e.clientX - rc.left) / rc.width * H), 0, H - 1), rc]; };
     cv.addEventListener("mousemove", (e) => {
       const [d, h, rc] = pick(e); const val = arr[d * H + h];
@@ -86,8 +93,9 @@ function mDisagg() {
     cv.addEventListener("mouseleave", () => { hideTip(); cursor.hidden = true; });
     cv.addEventListener("click", (e) => { selDay = pick(e)[0]; drawDay(); });
     cell.addEventListener("keydown", (e) => { if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); selDay = clamp(selDay + (e.key === "ArrowDown" ? 1 : -1), 0, DAYS - 1); drawDay(); } });
-    multi.append(cell);
+    (isRaw ? rawCol : comps).append(cell);
   });
+  panelEl.append(el("div", { class: "hm-foot" }, `<span>Rows = 365 days · columns = 24 hours</span><span class="hm-scale"><i style="background:linear-gradient(90deg,${MAGMA.join(",")})"></i>0 → 9 kWh/h</span>`));
   const dayBox = el("div", { id: "day-box" });
   v.append(dayBox);
   v.append(el("div", { class: "detect-list" }, [
@@ -100,8 +108,15 @@ function mDisagg() {
   ].map(([c, h, t]) => `<div class="det"><div class="h"><span class="sw" style="background:var(${c})"></span>${h}</div><div class="v">${t}</div></div>`).join("")));
   drawDay();
 }
+function placeSel() {
+  const line = document.querySelector(".hm-sel"), cv = document.querySelector(".hm-cell.raw canvas"), wr = document.querySelector(".hm-body");
+  if (!line || !cv || !wr) return;
+  const rc = cv.getBoundingClientRect(), wb = wr.getBoundingClientRect();
+  line.style.top = (rc.top - wb.top + (selDay + 0.5) / DAYS * rc.height) + "px";
+}
 function drawDay() {
   const box = $("#day-box"); if (!box) return;
+  requestAnimationFrame(placeSel);
   const d = selDay;
   const w = VW(), h = 250, ml = 38, mr = 8, mt = 14, mb = 26;
   let mxS = 0, mnS = 0;

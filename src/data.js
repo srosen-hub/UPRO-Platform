@@ -130,7 +130,7 @@ const BANDS = [ // top to bottom
   { id: "out", name: "Apps & agents", tag: "you build and own" },
   { id: "engines", name: "Engines · APIs · MCPs", tag: "answers, delivered anywhere" },
   { id: "models", name: "Core ML models", tag: "26 patents · 38M+ meters" },
-  { id: "found", name: "Data foundation", tag: "in your {lakeLabel}" },
+  { id: "found", name: "Your data foundation", tag: "your {lakeLabel} + systems of record" },
 ];
 
 const MODEL_TABS = [
