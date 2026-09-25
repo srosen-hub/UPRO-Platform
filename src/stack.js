@@ -152,12 +152,6 @@ function renderStack() {
   tc.innerHTML = `${logo(cloud)}${logo(lake === "native" ? "" : lake)}<span>${esc(e.tenant)}</span>`;
 }
 
-const APP_TARGETS = [
-  ["Customer & billing", [["Oracle CC&B", "oracle"], ["SAP", "sap"], ["Salesforce", "salesforce"]]],
-  ["Contact center", [["Genesys"], ["NICE"]]],
-  ["Grid operations", [["ADMS"], ["DERMS"]]],
-  ["Assets & work", [["IBM Maximo", "ibm"]]],
-];
 const vendorRows = (rows) => `<div class="vendors">${rows.map(([g, vs]) => `<div class="vendor-row"><span class="lbl">${g}</span>${vs.map(([n, k]) => `<span class="vendor">${k ? logo(k) : ""}${esc(n)}</span>`).join("")}</div>`).join("")}</div>`;
 const SRC_VENDORS = [
   ["AMI & MDM", [["Itron"], ["Landis+Gyr"], ["Sensus"]]],
@@ -178,8 +172,6 @@ function renderLayer(focusId) {
       ${vendorRows(SRC_VENDORS)}`;
   } else if (B.id === "engines") {
     grid = ["Grid & analytics engines", "Customer experience engines", "APIs, MCPs & apps"].map(gn => `<div class="lbl group-h">${gn}</div>` + ids.filter(k => NODES[k].group === gn).map(card).join("")).join("");
-  } else if (B.id === "out") {
-    grid = ids.map(card).join("") + `<div class="lbl group-h">Feeds the applications you already run</div>${vendorRows(APP_TARGETS)}`;
   } else grid = ids.map(card).join("");
   const stats = B.id === "models" ? `<div class="layer-stats">${[["38 Million", "meters"], ["45+", "utilities"], ["15 years", "of labeled ground truth"]].map(([v, l]) => `<span><strong>${v}</strong><em>${l}</em></span>`).join("")}</div>` : "";
   $("#layer-panel").innerHTML = `<div class="layer-top"><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div>${stats}<div class="comp-grid">${grid}</div>`;
