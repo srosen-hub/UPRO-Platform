@@ -49,13 +49,12 @@ let selBand = "models";
 const bandIds = (id) => Object.keys(NODES).filter(k => NODES[k].band === id);
 const MODEL_COLORS = ["--c-cool", "--c-heat", "--c-ev", "--c-solar", "--c-pool", "--c-wh", "--c-ao", "--c-cool"];
 const LAKE_TINT = { databricks: ["#fff4f1", "#ffd9cf", "#ffc2b3"], snowflake: ["#eefaff", "#c9eefa", "#a7e1f4"], native: ["#f4f7fa", "#dbe4ec", "#c7d3de"] };
-function bandStyle(id, sel) {
-  const lt = LAKE_TINT[lake] || LAKE_TINT.native;
+function bandStyle(id) {
   return ({
-    out:     { top: ["#ffffff", "#eef5fb"], L: "#dde8f1", R: "#c7d8e6", stroke: "#b6cadb" },
-    engines: { top: ["#123d5c", "#04121f"], L: "#082033", R: "#051624", stroke: "#1f6c96" },
-    models:  { top: ["#f5fcff", "#d8f0fb"], L: "#b7e1f4", R: "#8fcfec", stroke: "#86c7e6" },
-    found:   { top: ["#ffffff", lt[0]], L: lt[1], R: lt[2], stroke: lt[2] },
+    out:     { top: ["#ffffff", "#f6f7f9"], L: "#eceff2", R: "#dfe3e8", stroke: "#b7bec7" },
+    engines: { top: ["#141c26", "#0a0f16"], L: "#080c11", R: "#05080c", stroke: "#33404f" },
+    models:  { top: ["#ffffff", "#f3f5f7"], L: "#eceff2", R: "#dfe3e8", stroke: "#b7bec7" },
+    found:   { top: ["#ffffff", "#f6f7f9"], L: "#eceff2", R: "#dfe3e8", stroke: "#b7bec7" },
   })[id];
 }
 
@@ -63,15 +62,15 @@ function renderStack() {
   const S = STACK, svg = $("#stack-svg"); svg.innerHTML = "";
   svg.setAttribute("viewBox", `0 0 ${S.W} ${S.H}`);
   const defs = svgEl("defs", {}, svg);
-  defs.innerHTML = `<linearGradient id="gFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#29abe2" stop-opacity=".14"/><stop offset="1" stop-color="#14b8a6" stop-opacity=".04"/></linearGradient>
-    <linearGradient id="gFlow" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#14b8a6"/><stop offset="1" stop-color="#29abe2"/></linearGradient>
+  defs.innerHTML = `<linearGradient id="gFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#29abe2" stop-opacity=".05"/><stop offset="1" stop-color="#29abe2" stop-opacity="0"/></linearGradient>
+    <linearGradient id="gFlow" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#29abe2"/><stop offset="1" stop-color="#29abe2"/></linearGradient>
     <filter id="glow" x="-20%" y="-40%" width="140%" height="180%"><feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#29abe2" flood-opacity=".45"/></filter>`;
   BANDS.forEach(B => { const st = bandStyle(B.id); defs.insertAdjacentHTML("beforeend", `<linearGradient id="gT-${B.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${st.top[0]}"/><stop offset="1" stop-color="${st.top[1]}"/></linearGradient>`); });
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const P = (x, y) => `${x.toFixed(1)},${y.toFixed(1)}`;
   const n = BANDS.length;
   const fy = S.top + (n - 1) * S.gap + 34, fa = S.a + 26, fb = S.b + 16;
-  svgEl("polygon", { points: [P(S.cx, fy - fb), P(S.cx + fa, fy), P(S.cx, fy + fb), P(S.cx - fa, fy)].join(" "), fill: "url(#gFloor)", stroke: cssv("--accent"), "stroke-width": 1.5, "stroke-dasharray": "6 5" }, svg);
+  svgEl("polygon", { points: [P(S.cx, fy - fb), P(S.cx + fa, fy), P(S.cx, fy + fb), P(S.cx - fa, fy)].join(" "), fill: "url(#gFloor)", stroke: "#9aa4af", "stroke-width": 1, "stroke-dasharray": "4 4" }, svg);
   // data rising from the lake through every layer, and on up to the AI tools
   const flowG = svgEl("g", { "aria-hidden": "true" }, svg);
   const yTop = 70, yBot = S.top + (n - 1) * S.gap;
@@ -92,7 +91,7 @@ function renderStack() {
 
   [...BANDS].reverse().forEach((B) => {
     const i = BANDS.indexOf(B), yc = S.top + i * S.gap, sel = B.id === selBand, st = bandStyle(B.id);
-    const g = svgEl("g", { class: "slab" + (sel ? " sel" : ""), "data-band": B.id, filter: sel ? "url(#glow)" : "" }, svg);
+    const g = svgEl("g", { class: "slab" + (sel ? " sel" : ""), "data-band": B.id, filter: "" }, svg);
     const T = [S.cx, yc - S.b], R = [S.cx + S.a, yc], Bt = [S.cx, yc + S.b], L = [S.cx - S.a, yc];
     const stroke = sel ? cssv("--accent") : st.stroke;
     svgEl("polygon", { points: [P(...L), P(...Bt), P(Bt[0], Bt[1] + S.t), P(L[0], L[1] + S.t)].join(" "), fill: st.L, stroke, "stroke-width": 1 }, g);
@@ -109,32 +108,32 @@ function renderStack() {
       row.forEach((id, ci) => {
         const cw = 0.86 / row.length, u0 = 0.07 + ci * cw, u1 = u0 + cw * 0.8, cu = (u0 + u1) / 2, cv = v0 + vh / 2;
         if (B.id === "out") { // app windows
-          hook(svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh), fill: "#ffffff", stroke: sel ? cssv("--accent") : "#b9cfe0", "stroke-width": 1 }, g), id);
-          svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh * 0.22), fill: sel ? cssv("--accent") : "#cfe3f1", "pointer-events": "none" }, g);
-          svgEl("polygon", { points: quad(u0 + (u1 - u0) * 0.15, v0 + vh * 0.45, u1 - (u1 - u0) * 0.3, v0 + vh * 0.58), fill: "#e3edf5", "pointer-events": "none" }, g);
+          hook(svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh), fill: "#ffffff", stroke: sel ? cssv("--accent") : "#c3cad2", "stroke-width": 1 }, g), id);
+          svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh * 0.22), fill: sel ? cssv("--accent") : "#dde2e7", "pointer-events": "none" }, g);
+          svgEl("polygon", { points: quad(u0 + (u1 - u0) * 0.15, v0 + vh * 0.45, u1 - (u1 - u0) * 0.3, v0 + vh * 0.58), fill: "#eceff2", "pointer-events": "none" }, g);
         } else if (B.id === "engines") { // chips on a circuit board
-          if (ci < row.length - 1) svgEl("polygon", { points: quad(u1, cv - 0.012, u0 + cw, cv + 0.012), fill: "#29abe2", opacity: 0.55, "pointer-events": "none" }, g);
-          hook(svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh), fill: "#0b2c44", stroke: "#29abe2", "stroke-width": 1 }, g), id);
-          svgEl("polygon", { points: quad(u0 + (u1 - u0) * 0.25, v0 + vh * 0.25, u1 - (u1 - u0) * 0.25, v0 + vh * 0.75), fill: NODES[id].group === "APIs, MCPs & apps" ? "#5eead4" : "#29abe2", opacity: 0.8, "pointer-events": "none" }, g);
+          if (ci < row.length - 1) svgEl("polygon", { points: quad(u1, cv - 0.012, u0 + cw, cv + 0.012), fill: "#3b4a5a", opacity: 0.9, "pointer-events": "none" }, g);
+          hook(svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh), fill: "#0f1720", stroke: sel ? "#29abe2" : "#4a5a6b", "stroke-width": 1 }, g), id);
+          svgEl("polygon", { points: quad(u0 + (u1 - u0) * 0.25, v0 + vh * 0.25, u1 - (u1 - u0) * 0.25, v0 + vh * 0.75), fill: NODES[id].group === "APIs, MCPs & apps" ? "#e6ebf0" : "#29abe2", opacity: sel ? 0.95 : 0.6, "pointer-events": "none" }, g);
         } else if (B.id === "models") { // neural network nodes
           centers.push([map(cu, cv), id, ci + ri * 4]);
         } else { // foundation: source pads and lake cylinders
           const [x, y] = map(cu, cv);
           if (ri === 0) {
-            hook(svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh), fill: "#ffffff", stroke: "#c7d3de", "stroke-width": 1 }, g), id);
-            svgEl("circle", { cx: x, cy: y, r: 2.4, fill: "#8aa0b3", "pointer-events": "none" }, g);
+            hook(svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh), fill: "#ffffff", stroke: sel ? cssv("--accent") : "#c3cad2", "stroke-width": 1 }, g), id);
+            svgEl("circle", { cx: x, cy: y, r: 2.4, fill: "#6b7480", "pointer-events": "none" }, g);
           } else {
             const w = 15, h = 13, cyl = svgEl("g", {}, g);
-            svgEl("path", { d: `M${x - w},${y - h / 2} v${h} a${w},${w * 0.35} 0 0 0 ${w * 2},0 v${-h}`, fill: lake === "databricks" ? "#ff8a6f" : lake === "snowflake" ? "#49c2ea" : "#8fa7bb", stroke: "#fff", "stroke-width": 1 }, cyl);
-            svgEl("ellipse", { cx: x, cy: y - h / 2, rx: w, ry: w * 0.35, fill: lake === "databricks" ? "#ffc0b0" : lake === "snowflake" ? "#b5e8f8" : "#d4dee8", stroke: "#fff", "stroke-width": 1 }, cyl);
+            svgEl("path", { d: `M${x - w},${y - h / 2} v${h} a${w},${w * 0.35} 0 0 0 ${w * 2},0 v${-h}`, fill: "#ffffff", stroke: sel ? cssv("--accent") : "#6b7480", "stroke-width": 1 }, cyl);
+            svgEl("ellipse", { cx: x, cy: y - h / 2, rx: w, ry: w * 0.35, fill: "#f2f4f6", stroke: sel ? cssv("--accent") : "#6b7480", "stroke-width": 1 }, cyl);
             hook(cyl, id);
           }
         }
       });
     });
     if (B.id === "models") {
-      centers.forEach(([p1], a1) => centers.forEach(([p2], a2) => { if (a2 > a1 && Math.hypot(p1[0] - p2[0], p1[1] - p2[1]) < 120) svgEl("line", { x1: p1[0], y1: p1[1], x2: p2[0], y2: p2[1], stroke: "#7cc4e6", "stroke-width": 1, opacity: 0.7, "pointer-events": "none" }, g); }));
-      centers.forEach(([p, id, k]) => { const c = svgEl("circle", { cx: p[0], cy: p[1], r: 9, fill: cssv(MODEL_COLORS[k] || "--c-cool"), stroke: "#fff", "stroke-width": 2.5 }, g); hook(c, id); });
+      centers.forEach(([p1], a1) => centers.forEach(([p2], a2) => { if (a2 > a1 && Math.hypot(p1[0] - p2[0], p1[1] - p2[1]) < 120) svgEl("line", { x1: p1[0], y1: p1[1], x2: p2[0], y2: p2[1], stroke: sel ? "#9fd3ec" : "#c3cad2", "stroke-width": 1, opacity: 1, "pointer-events": "none" }, g); }));
+      centers.forEach(([p, id, k]) => { const c = svgEl("circle", { cx: p[0], cy: p[1], r: 6, fill: sel ? cssv("--accent") : "#0a0f16", stroke: "#fff", "stroke-width": 2 }, g); hook(c, id); });
     }
     g.addEventListener("click", () => { selBand = B.id; renderStack(); renderLayer(); });
     const lx = (S.cx + S.a + 16) / S.W * 100, ly = (yc + S.t / 2) / S.H * 100;
@@ -146,7 +145,6 @@ function renderStack() {
   });
   const e = ENV(), tc = $("#tenant-chip");
   tc.innerHTML = `${logo(cloud)}${logo(lake === "native" ? "" : lake)}<span>${esc(e.tenant)}</span>`;
-  $("#egress-net").textContent = e.network;
 }
 
 function renderLayer(focusId) {

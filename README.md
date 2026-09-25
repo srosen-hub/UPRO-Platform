@@ -20,9 +20,9 @@ so it can be shown to any utility.
    ChatGPT, Copilot Studio, Gemini and developers, a replayable conversation showing the MCP tool
    call, and the recipe with icons.
 
-AI-forward light theme: aurora gradients, glass surfaces, Bidgely navy #04121f and Bidgely blue
-#29abe2, the official Bidgely logo, Sora + Manrope, and three text sizes (`--fs-1`, `--fs-2`,
-`--fs-3` in `src/styles.css`).
+Precise platform theme: flat surfaces, hairline rules, a monochrome wireframe stack, one accent
+(Bidgely blue #29abe2), the official Bidgely logo, Geist + Geist Mono, and three text sizes
+(`--fs-1`, `--fs-2`, `--fs-3` in `src/styles.css`).
 
 ## Structure
 
