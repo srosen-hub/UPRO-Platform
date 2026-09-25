@@ -49,7 +49,7 @@ function renderEngine() {
   $("#eng-list").querySelectorAll(".eng-btn").forEach(b => b.addEventListener("click", () => { engSel = b.dataset.id; renderEngine(); }));
   const n = NODES[engSel], D = ENGINE_DETAIL[engSel];
   const ucs = USE_CASES.filter(u => u.trace.includes(engSel));
-  $("#eng-detail").innerHTML = `<div class="layer-top"><span class="eyebrow">${esc(n.group)}</span><h3>${esc(n.name)}</h3><p>${esc(sub(n.desc))}</p></div>
+  $("#eng-detail").innerHTML = `<div class="layer-top"><h3>${esc(n.name)}</h3><p>${esc(sub(n.desc))}</p></div>
     <div class="flow" style="grid-auto-columns:1fr">
       <div class="node-s"><span class="top">${icon("export")}In</span>${D.in.map(x => `<span class="sys">${esc(x)}</span>`).join("")}</div>
       <div class="node-s"><span class="top">${icon("gear")}${esc(n.name)}</span><span class="sys">${esc(sub(n.sub))}</span></div>

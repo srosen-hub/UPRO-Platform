@@ -415,7 +415,6 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
   <div class="wrap">
     <div class="plat-head">
       <div class="sec-head">
-        <span class="eyebrow"><span class="spark" aria-hidden="true"></span>The AI platform for utilities</span>
         <h2>UtilityAI Pro, <span class="grad">stacked on your data</span></h2>
       </div>
       <div class="env-picker" aria-label="Environment">
@@ -440,7 +439,6 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
   <div class="wrap">
     <div class="ask">
       <div class="ask-head">
-        <span class="eyebrow"><span class="spark" aria-hidden="true"></span>Ask UtilityAI Pro</span>
         <h2>Ask the <span class="grad">model outputs</span></h2>
       </div>
       <div class="ask-thread" id="ask-thread" aria-live="polite"></div>
@@ -457,7 +455,6 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
 <section class="block" id="usecases">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow"><span class="spark" aria-hidden="true"></span>Use cases</span>
       <h2>Built on the platform, <span class="grad">ready for any AI agent</span></h2>
       <p class="lede">Pick a use case to see it run.</p>
     </div>
@@ -1420,7 +1417,7 @@ function renderEngine() {
   $("#eng-list").querySelectorAll(".eng-btn").forEach(b => b.addEventListener("click", () => { engSel = b.dataset.id; renderEngine(); }));
   const n = NODES[engSel], D = ENGINE_DETAIL[engSel];
   const ucs = USE_CASES.filter(u => u.trace.includes(engSel));
-  $("#eng-detail").innerHTML = `<div class="layer-top"><span class="eyebrow">${esc(n.group)}</span><h3>${esc(n.name)}</h3><p>${esc(sub(n.desc))}</p></div>
+  $("#eng-detail").innerHTML = `<div class="layer-top"><h3>${esc(n.name)}</h3><p>${esc(sub(n.desc))}</p></div>
     <div class="flow" style="grid-auto-columns:1fr">
       <div class="node-s"><span class="top">${icon("export")}In</span>${D.in.map(x => `<span class="sys">${esc(x)}</span>`).join("")}</div>
       <div class="node-s"><span class="top">${icon("gear")}${esc(n.name)}</span><span class="sys">${esc(sub(n.sub))}</span></div>
@@ -1852,7 +1849,7 @@ function renderUC() {
   host.innerHTML = `
     <div class="uc-hero">
       <div class="panel">
-        <div class="panel-top"><span class="eyebrow"><span class="spark" aria-hidden="true"></span>${esc(u.group)}</span><button type="button" class="btn sm" id="uc-close">Close</button></div>
+        <div class="panel-top"><span></span><button type="button" class="btn sm" id="uc-close">Close</button></div>
         <h3>${esc(u.title)}</h3>
         <p>${esc(firstSentence(u.need))}</p>
         <ul class="value-list">${u.value.map(x => `<li>${CHECK}<span>${esc(x)}</span></li>`).join("")}</ul>
@@ -1863,7 +1860,6 @@ function renderUC() {
 
     <div class="mcp">
       <div class="mcp-setup">
-        <span class="eyebrow"><span class="spark" aria-hidden="true"></span>Connect to your AI tools</span>
         <div class="ai-tabs" role="group" aria-label="AI tool">${Object.keys(ASSISTANTS).map(k => `<button type="button" class="ai-tab" data-t="${k}" aria-pressed="${mcpTab === k}">${k === "dev" ? icon("code") : logoAI(k)}${k === "dev" ? "Developers" : k === "copilot" ? "Copilot" : ASSISTANTS[k].name}</button>`).join("")}</div>
         <div class="howto" id="howto"></div>
         <div class="tool-chips">${S.tools.map(t => `<code class="${used.has(t) ? "used" : ""}">${t}</code>`).join("")}</div>

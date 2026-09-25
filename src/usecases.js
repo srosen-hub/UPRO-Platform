@@ -44,7 +44,7 @@ function renderUC() {
   host.innerHTML = `
     <div class="uc-hero">
       <div class="panel">
-        <div class="panel-top"><span class="eyebrow"><span class="spark" aria-hidden="true"></span>${esc(u.group)}</span><button type="button" class="btn sm" id="uc-close">Close</button></div>
+        <div class="panel-top"><span></span><button type="button" class="btn sm" id="uc-close">Close</button></div>
         <h3>${esc(u.title)}</h3>
         <p>${esc(firstSentence(u.need))}</p>
         <ul class="value-list">${u.value.map(x => `<li>${CHECK}<span>${esc(x)}</span></li>`).join("")}</ul>
@@ -55,7 +55,6 @@ function renderUC() {
 
     <div class="mcp">
       <div class="mcp-setup">
-        <span class="eyebrow"><span class="spark" aria-hidden="true"></span>Connect to your AI tools</span>
         <div class="ai-tabs" role="group" aria-label="AI tool">${Object.keys(ASSISTANTS).map(k => `<button type="button" class="ai-tab" data-t="${k}" aria-pressed="${mcpTab === k}">${k === "dev" ? icon("code") : logoAI(k)}${k === "dev" ? "Developers" : k === "copilot" ? "Copilot" : ASSISTANTS[k].name}</button>`).join("")}</div>
         <div class="howto" id="howto"></div>
         <div class="tool-chips">${S.tools.map(t => `<code class="${used.has(t) ? "used" : ""}">${t}</code>`).join("")}</div>
