@@ -108,7 +108,8 @@ section.block.first{border-top:0;padding-top:clamp(24px,4vw,40px)}
 .tenant-chip{display:inline-flex;align-items:center;gap:6px;margin-right:auto;font-family:var(--f-mono);font-size:var(--fs-3);color:var(--ink-2);background:#fff;border:1px dashed var(--line-3);border-radius:3px;padding:3px 8px}
 .egress{position:relative;padding:6px 4px 2px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;justify-content:flex-end;font-family:var(--f-mono);font-size:var(--fs-3);color:var(--muted)}
 .egress span{display:inline-flex;align-items:center;gap:6px}
-.egress i{width:6px;height:6px;border-radius:50%;background:var(--good);display:inline-block}
+.egress-lock{display:inline-flex;align-items:center;gap:6px}
+.egress-lock svg{color:var(--good);flex:none}
 @media (max-width:620px){.slab-label span{display:none}.slab-label{max-width:40%}.egress{justify-content:flex-start}.ai-pill span{display:none}}
 
 .layer-panel{display:grid;gap:14px;align-content:start;padding:clamp(16px,2.4vw,24px)}
@@ -414,3 +415,9 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
 .dest-logos{display:flex;gap:7px;align-items:center}
 .dest-logos svg,.dest-logos img{width:14px;height:14px}
 @media (max-width:620px){.dest-box{padding:4px 3px}.dest-box span:not(.dest-logos){display:none}.dest-box b{font-size:10px}}
+
+/* egress bar: make the deployment boundary obvious */
+.egress{font-family:inherit;margin-top:8px;padding:10px 12px;background:#fff;border:1px solid var(--line-2);border-left:3px solid var(--good);border-radius:3px;font-size:13.5px;justify-content:space-between}
+.egress .tenant-chip{font-family:inherit;font-size:13.5px;margin-right:0;font-weight:600;color:var(--ink);border:0;background:none;padding:0}
+.egress-lock{font-weight:600;color:var(--good)}
+.egress-lock svg{width:15px;height:15px}
