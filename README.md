@@ -27,6 +27,7 @@ Manrope, and three text sizes (`--fs-1`, `--fs-2`, `--fs-3` in `src/styles.css`)
 ```
 src/styles.css   design tokens (light + dark) and layout
 src/body.html    static page structure
+src/logos.js     cloud and data platform marks (Simple Icons)
 src/data.js      all content: nodes, clouds, use cases, accuracy table, plan
 src/app.js       synthetic meter data, interactions and charts (no libraries)
 scripts/build.sh assembles src/ into index.html and dist/upro-platform.html

@@ -96,6 +96,11 @@ section.block{padding-block:clamp(56px,8vw,104px);border-top:1px solid var(--lin
 .chip:hover{border-color:var(--accent);color:var(--ink)}
 .chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .chip.sm{padding:4px 10px}
+.chip.env{display:inline-flex;align-items:center;gap:7px}
+.chip.env[aria-pressed="true"]{background:var(--accent-soft);color:var(--ink);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.logo{width:15px;height:15px;flex:none;display:block}
+#tenant-label{display:inline-flex;align-items:center;gap:6px}
+.tenant-tag svg.logo{width:14px;height:14px}
 .uc-strip{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .uc-strip .lbl{font-size:var(--fs-3);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .trace-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:var(--fs-3);color:var(--ink-2);min-height:30px}

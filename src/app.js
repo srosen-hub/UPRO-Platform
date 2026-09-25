@@ -238,7 +238,7 @@ function refreshNodeText() {
   document.querySelectorAll(".node").forEach(b => { b.querySelector("[data-sub]").textContent = sub(NODES[b.dataset.id].sub); });
   document.querySelectorAll(".band").forEach(b => { const B = BANDS.find(x => x.id === b.dataset.band); b.querySelector("[data-tag]").textContent = sub(B.tag); });
   const ll = $("[data-lake-label]"); if (ll) ll.textContent = `UtilityAI Pro data layer, inside your ${e.lakeLabel}`;
-  $("#tenant-label").textContent = e.tenant;
+  $("#tenant-label").innerHTML = `${logo(cloud)}${logo(lake === "native" ? "" : lake)}<span>${esc(e.tenant)}</span>`;
   document.querySelectorAll('[data-env="network"]').forEach(x => x.textContent = e.network);
 }
 function selectNode(id) {
@@ -298,12 +298,14 @@ function drawLinks() {
     });
   }
 }
+const DB_ICON = `<svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
+const logo = (k) => LOGOS[k] ? `<svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="${LOGOS[k].c}" d="${LOGOS[k].d}"/></svg>` : DB_ICON;
 function buildEnvChips() {
   [["#cloud-chips", CLOUDS, "cloud"], ["#dep-chips", CLOUDS, "cloud"], ["#lake-chips", LAKES, "lake"], ["#dep-lake-chips", LAKES, "lake"]].forEach(([sel, src, kind]) => {
     const c = $(sel); if (!c) return; c.innerHTML = "";
     for (const k in src) {
       const lbl = kind === "lake" && k === "native" ? "Cloud-native" : src[k].label;
-      const b = el("button", { type: "button", class: "chip", "data-kind": kind, "data-k": k, "aria-pressed": k === (kind === "cloud" ? cloud : lake) }, esc(lbl));
+      const b = el("button", { type: "button", class: "chip env", "data-kind": kind, "data-k": k, "aria-pressed": k === (kind === "cloud" ? cloud : lake) }, logo(k) + esc(lbl));
       b.addEventListener("click", () => setEnv(kind, k));
       c.append(b);
     }
