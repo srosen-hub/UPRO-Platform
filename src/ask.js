@@ -107,7 +107,7 @@ async function ask(q) {
   } catch (e) {
     askTurns.pop();
     if (e.code === "cancelled") return;
-    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e.code)) { askSample = null; $("#ask-note").textContent = "Live answers are off for this view. The suggested questions still work."; }
+    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e.code)) { askSample = null; }
     if (canned) return fillDemo(a, canned);
     fillBubble(a, e.code === "rate_limited" ? "Too many questions at once. Try again in a moment." : "That didn't go through. Try asking again.");
   } finally { send.disabled = false; }
@@ -121,5 +121,5 @@ function initAsk() {
   $("#ask-form").addEventListener("submit", (e) => { e.preventDefault(); ask($("#ask-input").value); });
   $("#ask-input").addEventListener("input", autoGrow);
   $("#ask-input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask($("#ask-input").value); } });
-  if (window.claude && window.claude.use) window.claude.use("sample").then(s => { askSample = s; if (s) $("#ask-note").textContent = "Live answers from synthetic demo model outputs, using Claude on your account."; }).catch(() => {});
+  if (window.claude && window.claude.use) window.claude.use("sample").then(s => { askSample = s; }).catch(() => {});
 }

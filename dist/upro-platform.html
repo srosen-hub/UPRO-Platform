@@ -449,7 +449,6 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
         <button type="submit" id="ask-send" aria-label="Send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </form>
       <div class="ask-sugg chips" id="ask-sugg"></div>
-      <p class="ask-note" id="ask-note">Demo on synthetic model outputs.</p>
     </div>
   </div>
 </section>
@@ -560,7 +559,7 @@ const pickIcon = (t) => { for (const [re, k] of ICON_RULES) if (re.test(t)) retu
 const CLOUDS = {
   azure: { label: "Azure", compute: "Azure confidential containers / confidential VMs", identity: "Entra ID + your customer SSO",
     network: "Azure Private Link", agentsExt: "Azure AI Foundry", bi: "Looker app (native) or Power BI",
-    native: { label: "Azure-native", data: "Microsoft Fabric / ADLS Gen2, governed with Purview", dataShort: "Fabric · Purview", jobs: "Fabric Spark jobs", agentsInt: "Microsoft Copilot" } },
+    native: { label: "Microsoft Fabric", data: "Microsoft Fabric / ADLS Gen2, governed with Purview", dataShort: "Fabric · Purview", jobs: "Fabric Spark jobs", agentsInt: "Microsoft Copilot" } },
   gcp: { label: "Google Cloud", compute: "Confidential GKE nodes / Confidential VMs", identity: "Cloud Identity + your customer SSO",
     network: "Private Service Connect", agentsExt: "Vertex AI Agent Builder", bi: "Looker",
     native: { label: "BigQuery", data: "BigQuery datasets, governed with Dataplex", dataShort: "BigQuery · Dataplex", jobs: "Dataproc / BigQuery jobs", agentsInt: "Gemini Enterprise" } },
@@ -1351,8 +1350,7 @@ function renderLayer(focusId) {
   };
   let grid;
   if (B.id === "found") {
-    grid = `<div class="lbl group-h">Your systems of record</div>${ids.filter(k => NODES[k].row === "src").map(card).join("")}
-      <div class="lbl group-h" style="display:flex;align-items:center;gap:6px">${logo(lake === "native" ? "" : lake)}In your ${esc(e.lakeLabel)}</div>${ids.filter(k => NODES[k].row === "lake").map(card).join("")}`;
+    grid = `<div class="lbl group-h">Your systems of record</div>${ids.filter(k => NODES[k].row === "src").map(card).join("")}`;
   } else if (B.id === "engines") {
     grid = ["Grid & analytics", "Customer experience", "APIs, MCPs & apps"].map(gn => `<div class="lbl group-h">${gn}</div>` + ids.filter(k => NODES[k].group === gn).map(card).join("")).join("");
   } else grid = ids.map(card).join("");
@@ -2240,7 +2238,7 @@ async function ask(q) {
   } catch (e) {
     askTurns.pop();
     if (e.code === "cancelled") return;
-    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e.code)) { askSample = null; $("#ask-note").textContent = "Live answers are off for this view. The suggested questions still work."; }
+    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e.code)) { askSample = null; }
     if (canned) return fillDemo(a, canned);
     fillBubble(a, e.code === "rate_limited" ? "Too many questions at once. Try again in a moment." : "That didn't go through. Try asking again.");
   } finally { send.disabled = false; }
@@ -2254,7 +2252,7 @@ function initAsk() {
   $("#ask-form").addEventListener("submit", (e) => { e.preventDefault(); ask($("#ask-input").value); });
   $("#ask-input").addEventListener("input", autoGrow);
   $("#ask-input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask($("#ask-input").value); } });
-  if (window.claude && window.claude.use) window.claude.use("sample").then(s => { askSample = s; if (s) $("#ask-note").textContent = "Live answers from synthetic demo model outputs, using Claude on your account."; }).catch(() => {});
+  if (window.claude && window.claude.use) window.claude.use("sample").then(s => { askSample = s; }).catch(() => {});
 }
 
 /* ---------- init ---------- */

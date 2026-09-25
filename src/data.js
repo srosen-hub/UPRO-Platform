@@ -5,7 +5,7 @@
 const CLOUDS = {
   azure: { label: "Azure", compute: "Azure confidential containers / confidential VMs", identity: "Entra ID + your customer SSO",
     network: "Azure Private Link", agentsExt: "Azure AI Foundry", bi: "Looker app (native) or Power BI",
-    native: { label: "Azure-native", data: "Microsoft Fabric / ADLS Gen2, governed with Purview", dataShort: "Fabric · Purview", jobs: "Fabric Spark jobs", agentsInt: "Microsoft Copilot" } },
+    native: { label: "Microsoft Fabric", data: "Microsoft Fabric / ADLS Gen2, governed with Purview", dataShort: "Fabric · Purview", jobs: "Fabric Spark jobs", agentsInt: "Microsoft Copilot" } },
   gcp: { label: "Google Cloud", compute: "Confidential GKE nodes / Confidential VMs", identity: "Cloud Identity + your customer SSO",
     network: "Private Service Connect", agentsExt: "Vertex AI Agent Builder", bi: "Looker",
     native: { label: "BigQuery", data: "BigQuery datasets, governed with Dataplex", dataShort: "BigQuery · Dataplex", jobs: "Dataproc / BigQuery jobs", agentsInt: "Gemini Enterprise" } },
