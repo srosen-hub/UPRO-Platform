@@ -127,10 +127,10 @@ const NODES = {
 };
 
 const BANDS = [ // top to bottom
-  { id: "out", name: "Applications, agents & automations", tag: "you build and own" },
-  { id: "engines", name: "Engines · APIs · MCPs", tag: "answers, and how every channel and agent reaches them" },
-  { id: "models", name: "Core ML models", tag: "26 patents · 10+ years of labeled data · 38M+ meters" },
-  { id: "found", name: "Utility data foundation", tag: "your systems of record and your {lakeLabel}" },
+  { id: "out", name: "Apps & agents", tag: "you build and own" },
+  { id: "engines", name: "Engines · APIs · MCPs", tag: "answers, delivered anywhere" },
+  { id: "models", name: "Core ML models", tag: "26 patents · 38M+ meters" },
+  { id: "found", name: "Data foundation", tag: "in your {lakeLabel}" },
 ];
 
 const MODEL_TABS = [

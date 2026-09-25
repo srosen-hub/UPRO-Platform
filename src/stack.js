@@ -34,102 +34,145 @@ function setEnv(kind, k) {
 }
 
 /* ---------- isometric platform stack ---------- */
-const STACK = { W: 640, H: 580, cx: 196, a: 168, b: 44, t: 14, top: 104, gap: 124 };
+const STACK = { W: 640, H: 620, cx: 196, a: 168, b: 44, t: 16, top: 160, gap: 116 };
 const LAYER_COPY = {
-  out: "Your apps, agents and automations. Built by your team or SI from Bidgely reference implementations and run on your own platforms.",
-  engines: "Engines turn raw model outputs into use-case-ready answers for grid planning and customer experience. APIs, MCP servers and apps carry those answers to every channel, dashboard and AI agent.",
-  models: "Bidgely's patented models, delivered as encrypted containers on confidential compute. Select a model to see what it detects.",
-  found: "What you already run. UtilityAI Pro reads your systems of record and keeps all of its data in your {lakeLabel}.",
+  out: "Apps, agents and automations you build and own.",
+  engines: "Engines turn outputs into answers. APIs and MCPs deliver them to every channel and agent.",
+  models: "Patented models, encrypted, running in your cloud. Click one.",
+  found: "Your systems of record, with all UtilityAI Pro data kept in your {lakeLabel}.",
 };
+const AI_TOOLS = [["claude", "Claude"], ["chatgpt", "ChatGPT"], ["copilot", "Copilot"], ["gemini", "Gemini"]];
+const logoAI = (k) => k === "copilot"
+  ? `<svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="10.5" height="10.5" fill="#F25022"/><rect x="12.5" y="1" width="10.5" height="10.5" fill="#7FBA00"/><rect x="1" y="12.5" width="10.5" height="10.5" fill="#00A4EF"/><rect x="12.5" y="12.5" width="10.5" height="10.5" fill="#FFB900"/></svg>`
+  : `<svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="${AI_LOGOS[k].c}" d="${AI_LOGOS[k].d}"/></svg>`;
 let selBand = "models";
 const bandIds = (id) => Object.keys(NODES).filter(k => NODES[k].band === id);
-const TILE_COLORS = { models: ["--c-cool", "--c-heat", "--c-ev", "--c-solar", "--c-pool", "--c-wh", "--c-ao", "--c-cool"] };
+const MODEL_COLORS = ["--c-cool", "--c-heat", "--c-ev", "--c-solar", "--c-pool", "--c-wh", "--c-ao", "--c-cool"];
+const LAKE_TINT = { databricks: ["#fff4f1", "#ffd9cf", "#ffc2b3"], snowflake: ["#eefaff", "#c9eefa", "#a7e1f4"], native: ["#f4f7fa", "#dbe4ec", "#c7d3de"] };
+function bandStyle(id, sel) {
+  const lt = LAKE_TINT[lake] || LAKE_TINT.native;
+  return ({
+    out:     { top: ["#ffffff", "#eef5fb"], L: "#dde8f1", R: "#c7d8e6", stroke: "#b6cadb" },
+    engines: { top: ["#123d5c", "#04121f"], L: "#082033", R: "#051624", stroke: "#1f6c96" },
+    models:  { top: ["#f5fcff", "#d8f0fb"], L: "#b7e1f4", R: "#8fcfec", stroke: "#86c7e6" },
+    found:   { top: ["#ffffff", lt[0]], L: lt[1], R: lt[2], stroke: lt[2] },
+  })[id];
+}
 
 function renderStack() {
   const S = STACK, svg = $("#stack-svg"); svg.innerHTML = "";
   svg.setAttribute("viewBox", `0 0 ${S.W} ${S.H}`);
   const defs = svgEl("defs", {}, svg);
-  defs.innerHTML = `
-    <linearGradient id="gTop" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9f6fd"/></linearGradient>
-    <linearGradient id="gTopSel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2fbff"/><stop offset="1" stop-color="#c9ebfa"/></linearGradient>
-    <linearGradient id="gFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#29abe2" stop-opacity=".10"/><stop offset="1" stop-color="#29abe2" stop-opacity=".02"/></linearGradient>`;
+  defs.innerHTML = `<linearGradient id="gFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#29abe2" stop-opacity=".14"/><stop offset="1" stop-color="#14b8a6" stop-opacity=".04"/></linearGradient>
+    <linearGradient id="gFlow" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#14b8a6"/><stop offset="1" stop-color="#29abe2"/></linearGradient>
+    <filter id="glow" x="-20%" y="-40%" width="140%" height="180%"><feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#29abe2" flood-opacity=".45"/></filter>`;
+  BANDS.forEach(B => { const st = bandStyle(B.id); defs.insertAdjacentHTML("beforeend", `<linearGradient id="gT-${B.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${st.top[0]}"/><stop offset="1" stop-color="${st.top[1]}"/></linearGradient>`); });
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const P = (x, y) => `${x.toFixed(1)},${y.toFixed(1)}`;
   const n = BANDS.length;
-  // cloud floor: the tenant boundary everything stands on
-  const fy = S.top + (n - 1) * S.gap + 30, fa = S.a + 26, fb = S.b + 16;
+  const fy = S.top + (n - 1) * S.gap + 34, fa = S.a + 26, fb = S.b + 16;
   svgEl("polygon", { points: [P(S.cx, fy - fb), P(S.cx + fa, fy), P(S.cx, fy + fb), P(S.cx - fa, fy)].join(" "), fill: "url(#gFloor)", stroke: cssv("--accent"), "stroke-width": 1.5, "stroke-dasharray": "6 5" }, svg);
-  // pillars and data rising from the lake to the top layer
+  // data rising from the lake through every layer, and on up to the AI tools
   const flowG = svgEl("g", { "aria-hidden": "true" }, svg);
-  const yTop = S.top + S.b, yBot = S.top + (n - 1) * S.gap;
+  const yTop = 70, yBot = S.top + (n - 1) * S.gap;
+  const AIX = [70, 154, 238, 322], AIY = [40, 78, 40, 78];
+  AIX.forEach((x, i) => svgEl("path", { d: `M${x},${AIY[i] + 12} L${x},${S.top - S.b + 20}`, stroke: cssv("--accent-line"), "stroke-width": 1.2, "stroke-dasharray": "3 4", fill: "none" }, flowG));
   [-96, 0, 96].forEach((dx, i) => {
-    svgEl("line", { x1: S.cx + dx, x2: S.cx + dx, y1: yTop, y2: yBot, stroke: cssv("--accent-line"), "stroke-width": 1.2, "stroke-dasharray": "3 5" }, flowG);
+    svgEl("line", { x1: S.cx + dx, x2: S.cx + dx, y1: S.top, y2: yBot, stroke: cssv("--accent-line"), "stroke-width": 1.2, "stroke-dasharray": "3 5" }, flowG);
     if (!reduce) for (let k = 0; k < 3; k++) {
-      const c = svgEl("circle", { cx: S.cx + dx, cy: yBot, r: 3.2, fill: cssv("--accent") }, flowG);
-      c.innerHTML = `<animate attributeName="cy" from="${yBot}" to="${yTop}" dur="3.2s" begin="${-(k * 1.07 + i * 0.4).toFixed(2)}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;1;0" dur="3.2s" begin="${-(k * 1.07 + i * 0.4).toFixed(2)}s" repeatCount="indefinite"/>`;
+      const c = svgEl("circle", { cx: S.cx + dx, cy: yBot, r: 3.4, fill: "url(#gFlow)" }, flowG);
+      const beg = -(k * 1.1 + i * 0.4).toFixed(2);
+      c.innerHTML = `<animate attributeName="cy" from="${yBot}" to="${S.top - S.b}" dur="3.4s" begin="${beg}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;1;0" dur="3.4s" begin="${beg}s" repeatCount="indefinite"/>`;
     }
   });
-  // slabs, bottom first so upper slabs paint over the pillars
+  if (!reduce) AIX.forEach((x, i) => { const c = svgEl("circle", { cx: x, cy: S.top - S.b + 20, r: 2.6, fill: cssv("--accent") }, flowG); c.innerHTML = `<animate attributeName="cy" from="${S.top - S.b + 20}" to="${AIY[i] + 12}" dur="1.8s" begin="${-i * 0.45}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="1.8s" begin="${-i * 0.45}s" repeatCount="indefinite"/>`; });
+
   const labels = $("#slab-labels"); labels.innerHTML = "";
+  AI_TOOLS.forEach(([k, name], i) => labels.append(el("span", { class: "ai-row", style: `left:${AIX[i] / S.W * 100}%;top:${AIY[i] / S.H * 100}%` }, `<span class="ai-pill">${logoAI(k)}<span>${name}</span></span>`)));
+  labels.append(el("span", { class: "ai-row", style: `left:${(AIX[3] + 120) / S.W * 100}%;top:${(AIY[0] + 19) / S.H * 100}%` }, `<span class="lbl" style="white-space:nowrap">Your AI tools, via MCP</span>`));
+
   [...BANDS].reverse().forEach((B) => {
-    const i = BANDS.indexOf(B), yc = S.top + i * S.gap, sel = B.id === selBand;
-    const g = svgEl("g", { class: "slab" + (sel ? " sel" : ""), "data-band": B.id, tabindex: "-1" }, svg);
+    const i = BANDS.indexOf(B), yc = S.top + i * S.gap, sel = B.id === selBand, st = bandStyle(B.id);
+    const g = svgEl("g", { class: "slab" + (sel ? " sel" : ""), "data-band": B.id, filter: sel ? "url(#glow)" : "" }, svg);
     const T = [S.cx, yc - S.b], R = [S.cx + S.a, yc], Bt = [S.cx, yc + S.b], L = [S.cx - S.a, yc];
-    const stroke = sel ? cssv("--accent") : "#a9d4ea";
-    svgEl("polygon", { points: [P(...L), P(...Bt), P(Bt[0], Bt[1] + S.t), P(L[0], L[1] + S.t)].join(" "), fill: sel ? "#7fcbee" : "#d3e9f5", stroke, "stroke-width": 1 }, g);
-    svgEl("polygon", { points: [P(...Bt), P(...R), P(R[0], R[1] + S.t), P(Bt[0], Bt[1] + S.t)].join(" "), fill: sel ? "#4fb6e5" : "#b9dbee", stroke, "stroke-width": 1 }, g);
-    svgEl("polygon", { points: [P(...T), P(...R), P(...Bt), P(...L)].join(" "), fill: sel ? "url(#gTopSel)" : "url(#gTop)", stroke, "stroke-width": sel ? 1.6 : 1 }, g);
-    // component tiles laid out on the top face: map (u,v) in the unit square onto the diamond
+    const stroke = sel ? cssv("--accent") : st.stroke;
+    svgEl("polygon", { points: [P(...L), P(...Bt), P(Bt[0], Bt[1] + S.t), P(L[0], L[1] + S.t)].join(" "), fill: st.L, stroke, "stroke-width": 1 }, g);
+    svgEl("polygon", { points: [P(...Bt), P(...R), P(R[0], R[1] + S.t), P(Bt[0], Bt[1] + S.t)].join(" "), fill: st.R, stroke, "stroke-width": 1 }, g);
+    svgEl("polygon", { points: [P(...T), P(...R), P(...Bt), P(...L)].join(" "), fill: `url(#gT-${B.id})`, stroke, "stroke-width": sel ? 1.8 : 1 }, g);
+    const map = (u, v) => [T[0] + u * (R[0] - T[0]) + v * (L[0] - T[0]), T[1] + u * (R[1] - T[1]) + v * (L[1] - T[1])];
+    const quad = (u0, v0, u1, v1) => [map(u0, v0), map(u1, v0), map(u1, v1), map(u0, v1)].map(p => P(...p)).join(" ");
     const ids = bandIds(B.id);
     const rows = B.id === "found" ? [ids.filter(k => NODES[k].row === "src"), ids.filter(k => NODES[k].row === "lake")] : ids.length > 12 ? [ids.slice(0, 5), ids.slice(5, 10), ids.slice(10)] : ids.length > 6 ? [ids.slice(0, Math.ceil(ids.length / 2)), ids.slice(Math.ceil(ids.length / 2))] : [ids];
-    const map = (u, v) => [T[0] + u * (R[0] - T[0]) + v * (L[0] - T[0]), T[1] + u * (R[1] - T[1]) + v * (L[1] - T[1])];
+    const hook = (node, id) => { hoverable(node, () => `<b>${esc(NODES[id].name)}</b><div>${esc(sub(NODES[id].sub))}</div>`); node.addEventListener("click", (e) => { e.stopPropagation(); selBand = B.id; renderStack(); renderLayer(id); if (NODES[id].tab) openModel(NODES[id].tab); }); };
+    const centers = [];
     rows.forEach((row, ri) => {
-      const nr = rows.length, v0 = nr === 1 ? 0.36 : nr === 2 ? 0.16 + ri * 0.42 : 0.1 + ri * 0.29, vh = nr === 1 ? 0.3 : nr === 2 ? 0.28 : 0.21;
+      const nr = rows.length, v0 = nr === 1 ? 0.34 : nr === 2 ? 0.14 + ri * 0.44 : 0.08 + ri * 0.3, vh = nr === 1 ? 0.32 : nr === 2 ? 0.3 : 0.22;
       row.forEach((id, ci) => {
-        const cw = 0.84 / row.length, u0 = 0.08 + ci * cw, u1 = u0 + cw * 0.78;
-        const pts = [map(u0, v0), map(u1, v0), map(u1, v0 + vh), map(u0, v0 + vh)].map(p => P(...p)).join(" ");
-        let fill = sel ? "#ffffff" : "#f4fbfe", st = sel ? cssv("--accent") : "#b7dcee";
-        if (B.id === "models") { fill = cssv(TILE_COLORS.models[ci + ri * 4] || "--c-cool"); st = "#ffffff"; }
-        if (B.id === "found" && ri === 1) { fill = sel ? "#dff3fc" : "#eaf7fd"; st = cssv("--accent"); }
-        const tile = svgEl("polygon", { points: pts, fill, stroke: st, "stroke-width": 1, opacity: B.id === "models" && !sel ? 0.75 : 1 }, g);
-        hoverable(tile, () => `<b>${esc(NODES[id].name)}</b><div>${esc(sub(NODES[id].sub))}</div>`);
-        tile.addEventListener("click", (e) => { e.stopPropagation(); selBand = B.id; renderStack(); renderLayer(id); if (NODES[id].tab) openModel(NODES[id].tab); });
+        const cw = 0.86 / row.length, u0 = 0.07 + ci * cw, u1 = u0 + cw * 0.8, cu = (u0 + u1) / 2, cv = v0 + vh / 2;
+        if (B.id === "out") { // app windows
+          hook(svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh), fill: "#ffffff", stroke: sel ? cssv("--accent") : "#b9cfe0", "stroke-width": 1 }, g), id);
+          svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh * 0.22), fill: sel ? cssv("--accent") : "#cfe3f1", "pointer-events": "none" }, g);
+          svgEl("polygon", { points: quad(u0 + (u1 - u0) * 0.15, v0 + vh * 0.45, u1 - (u1 - u0) * 0.3, v0 + vh * 0.58), fill: "#e3edf5", "pointer-events": "none" }, g);
+        } else if (B.id === "engines") { // chips on a circuit board
+          if (ci < row.length - 1) svgEl("polygon", { points: quad(u1, cv - 0.012, u0 + cw, cv + 0.012), fill: "#29abe2", opacity: 0.55, "pointer-events": "none" }, g);
+          hook(svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh), fill: "#0b2c44", stroke: "#29abe2", "stroke-width": 1 }, g), id);
+          svgEl("polygon", { points: quad(u0 + (u1 - u0) * 0.25, v0 + vh * 0.25, u1 - (u1 - u0) * 0.25, v0 + vh * 0.75), fill: NODES[id].group === "APIs, MCPs & apps" ? "#5eead4" : "#29abe2", opacity: 0.8, "pointer-events": "none" }, g);
+        } else if (B.id === "models") { // neural network nodes
+          centers.push([map(cu, cv), id, ci + ri * 4]);
+        } else { // foundation: source pads and lake cylinders
+          const [x, y] = map(cu, cv);
+          if (ri === 0) {
+            hook(svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh), fill: "#ffffff", stroke: "#c7d3de", "stroke-width": 1 }, g), id);
+            svgEl("circle", { cx: x, cy: y, r: 2.4, fill: "#8aa0b3", "pointer-events": "none" }, g);
+          } else {
+            const w = 15, h = 13, cyl = svgEl("g", {}, g);
+            svgEl("path", { d: `M${x - w},${y - h / 2} v${h} a${w},${w * 0.35} 0 0 0 ${w * 2},0 v${-h}`, fill: lake === "databricks" ? "#ff8a6f" : lake === "snowflake" ? "#49c2ea" : "#8fa7bb", stroke: "#fff", "stroke-width": 1 }, cyl);
+            svgEl("ellipse", { cx: x, cy: y - h / 2, rx: w, ry: w * 0.35, fill: lake === "databricks" ? "#ffc0b0" : lake === "snowflake" ? "#b5e8f8" : "#d4dee8", stroke: "#fff", "stroke-width": 1 }, cyl);
+            hook(cyl, id);
+          }
+        }
       });
     });
+    if (B.id === "models") {
+      centers.forEach(([p1], a1) => centers.forEach(([p2], a2) => { if (a2 > a1 && Math.hypot(p1[0] - p2[0], p1[1] - p2[1]) < 120) svgEl("line", { x1: p1[0], y1: p1[1], x2: p2[0], y2: p2[1], stroke: "#7cc4e6", "stroke-width": 1, opacity: 0.7, "pointer-events": "none" }, g); }));
+      centers.forEach(([p, id, k]) => { const c = svgEl("circle", { cx: p[0], cy: p[1], r: 9, fill: cssv(MODEL_COLORS[k] || "--c-cool"), stroke: "#fff", "stroke-width": 2.5 }, g); hook(c, id); });
+    }
     g.addEventListener("click", () => { selBand = B.id; renderStack(); renderLayer(); });
-    // HTML label at the slab's right corner so text stays at the page's text sizes
     const lx = (S.cx + S.a + 16) / S.W * 100, ly = (yc + S.t / 2) / S.H * 100;
     const extra = B.id === "found" ? `${logo(lake === "native" ? "" : lake)}` : "";
-    const lab = el("button", { type: "button", class: "slab-label", style: `left:${lx}%;top:${ly}%`, "aria-pressed": sel },
-      `<b>${esc(B.name)}</b><span style="display:flex;align-items:center;gap:5px">${extra}${esc(sub(B.tag))}</span>`);
+    const lab = el("button", { type: "button", class: "slab-label", style: `left:${lx}%;top:${ly}%`, "aria-pressed": sel }, `<b>${esc(B.name)}</b><span>${extra}${esc(sub(B.tag))}</span>`);
     lab.addEventListener("click", () => { selBand = B.id; renderStack(); renderLayer(); });
     labels.append(lab);
     svgEl("line", { x1: R[0] + 2, y1: R[1] + S.t / 2, x2: R[0] + 14, y2: R[1] + S.t / 2, stroke: cssv("--line-2"), "stroke-width": 1 }, svg);
   });
-  const e = ENV();
-  $("#tenant-chip").innerHTML = `${logo(cloud)}${logo(lake === "native" ? "" : lake)}<span>${esc(e.tenant)}</span>`;
+  const e = ENV(), tc = $("#tenant-chip");
+  tc.innerHTML = `${logo(cloud)}${logo(lake === "native" ? "" : lake)}<span>${esc(e.tenant)}</span>`;
   $("#egress-net").textContent = e.network;
 }
 
 function renderLayer(focusId) {
   const B = BANDS.find(b => b.id === selBand), ids = bandIds(B.id), e = ENV();
   const card = (id) => {
-    const nd = NODES[id], click = !!nd.tab;
-    return `<${click ? "button type=\"button\"" : "div"} class="comp${click ? " clickable" : ""}${id === focusId ? " clickable" : ""}" data-id="${id}"${id === focusId ? ' style="border-color:var(--accent)"' : ""}>
-      <b>${esc(nd.name)}</b><span class="sub">${esc(sub(nd.sub))}</span><span>${esc(sub(nd.desc))}</span>${click ? '<span class="go">See what it detects →</span>' : ""}</${click ? "button" : "div"}>`;
+    const nd = NODES[id], click = !!nd.tab, tag = click ? "button" : "div";
+    return `<${tag}${click ? ' type="button"' : ""} class="comp${click ? " clickable" : ""}" data-id="${id}"${id === focusId ? ' style="border-color:var(--accent)"' : ""}>
+      <span class="ci">${icon(pickIcon(nd.name + " " + nd.sub))}</span><b>${esc(nd.name)}</b><span class="sub">${esc(sub(nd.sub))}</span>${click ? '<span class="go">Explore →</span>' : ""}</${tag}>`;
   };
   let grid;
   if (B.id === "found") {
     grid = `<div class="lbl group-h">Your systems of record</div>${ids.filter(k => NODES[k].row === "src").map(card).join("")}
-      <div class="lbl group-h" style="display:flex;align-items:center;gap:6px">${logo(lake === "native" ? "" : lake)}UtilityAI Pro data layer, inside your ${esc(e.lakeLabel)}</div>${ids.filter(k => NODES[k].row === "lake").map(card).join("")}`;
+      <div class="lbl group-h" style="display:flex;align-items:center;gap:6px">${logo(lake === "native" ? "" : lake)}In your ${esc(e.lakeLabel)}</div>${ids.filter(k => NODES[k].row === "lake").map(card).join("")}`;
   } else if (B.id === "engines") {
     grid = ["Grid & analytics", "Customer experience", "APIs, MCPs & apps"].map(gn => `<div class="lbl group-h">${gn}</div>` + ids.filter(k => NODES[k].group === gn).map(card).join("")).join("");
   } else grid = ids.map(card).join("");
-  const idx = BANDS.length - BANDS.indexOf(B);
-  $("#layer-panel").innerHTML = `<div class="layer-top"><span class="eyebrow">Layer ${idx} of ${BANDS.length}</span><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div><div class="comp-grid">${grid}</div>`;
-  $("#layer-panel").querySelectorAll(".comp[data-id]").forEach(c => { const nd = NODES[c.dataset.id]; if (nd.tab) c.addEventListener("click", () => openModel(nd.tab)); });
+  $("#layer-panel").innerHTML = `<div class="layer-top"><span class="eyebrow">Layer ${BANDS.length - BANDS.indexOf(B)} of ${BANDS.length}</span><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div><div class="comp-grid">${grid}</div>`;
+  $("#layer-panel").querySelectorAll(".comp[data-id]").forEach(c => {
+    const nd = NODES[c.dataset.id];
+    hoverable(c, () => `<b>${esc(nd.name)}</b><div>${esc(sub(nd.desc))}</div>`);
+    if (nd.tab) c.addEventListener("click", () => openModel(nd.tab));
+  });
 }
 function openModel(tab) {
+  const d = $("#model-dlg");
+  if (!d.open) { try { d.showModal(); } catch (e) { d.setAttribute("open", ""); } }
   setModelTab(tab);
-  $("#models").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }

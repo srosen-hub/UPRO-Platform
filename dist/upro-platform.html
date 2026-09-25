@@ -3,73 +3,87 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@600;700&display=swap">
 <style>
-/* Light Bidgely theme: white surfaces, navy ink (#04121f), Bidgely blue (#29abe2) fills with a darker
-   blue for text. Two fonts only (Sora display, Manrope text) and three text sizes: --fs-1, --fs-2, --fs-3. */
+/* AI-forward light Bidgely theme: aurora gradients, glass surfaces, navy ink (#04121f), Bidgely blue (#29abe2).
+   Two fonts (Sora display, Manrope text) and three text sizes: --fs-1, --fs-2, --fs-3. */
 :root{
   color-scheme: light;
-  --bg:#f5f7fa; --surface:#ffffff; --surface-2:#f1f5f9; --surface-3:#e5ecf3;
+  --bg:#f6f8fc; --surface:#ffffff; --surface-2:#f1f5f9; --surface-3:#e5ecf3;
+  --glass:rgba(255,255,255,.72); --glass-line:rgba(4,18,31,.07);
   --ink:#04121f; --ink-2:#3a4a5b; --muted:#667788; --line:#e2e8ef; --line-2:#cbd5e0;
   --accent:#29abe2; --accent-text:#0a74a8; --accent-ink:#04121f; --accent-soft:#e7f6fd; --accent-line:#9ed7f1;
+  --teal:#14b8a6; --indigo:#6366f1;
+  --grad:linear-gradient(90deg,#0a74a8 0%,#29abe2 45%,#14b8a6 100%);
+  --grad-soft:linear-gradient(135deg,rgba(41,171,226,.14),rgba(20,184,166,.10) 60%,rgba(99,102,241,.08));
   --navy:#04121f; --navy-2:#0c344a;
   --c-cool:#2a78d6; --c-heat:#eb6834; --c-ev:#1baf7a; --c-wh:#4a3aa7; --c-pool:#e87ba4; --c-ao:#008300; --c-solar:#eda100; --c-other:#9aa7b4;
   --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
   --hm-zero:#eef3f8;
-  --shadow:0 1px 2px rgba(4,18,31,.05),0 10px 30px rgba(4,18,31,.06);
+  --shadow:0 1px 2px rgba(4,18,31,.04),0 12px 40px rgba(4,18,31,.07);
   --f-display:"Sora",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --fs-1:clamp(1.75rem,3.2vw,2.5rem); /* display: section titles */
+  --fs-1:clamp(1.9rem,3.6vw,2.9rem); /* display: section titles */
   --fs-2:1rem;                         /* body and card titles */
   --fs-3:.8125rem;                     /* labels, captions, chart text, commands */
-  --r:12px;
+  --r:14px;
 }
 
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto} *{animation:none!important;transition:none!important}}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:var(--fs-2);line-height:1.6;margin:0;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:var(--fs-2);line-height:1.6;margin:0;-webkit-font-smoothing:antialiased;position:relative;overflow-x:hidden}
+/* ambient background: aurora glow + dot grid */
+body::before{content:"";position:fixed;inset:-20vh -10vw auto;height:110vh;z-index:-2;pointer-events:none;
+  background:radial-gradient(40% 45% at 18% 20%,rgba(41,171,226,.22),transparent 70%),radial-gradient(35% 40% at 82% 12%,rgba(20,184,166,.18),transparent 70%),radial-gradient(30% 35% at 60% 55%,rgba(99,102,241,.10),transparent 70%);
+  filter:blur(10px);animation:aurora 18s ease-in-out infinite alternate}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(rgba(4,18,31,.07) 1px,transparent 1px);background-size:22px 22px;-webkit-mask-image:linear-gradient(180deg,#000 0,rgba(0,0,0,.35) 60%,transparent);mask-image:linear-gradient(180deg,#000 0,rgba(0,0,0,.35) 60%,transparent)}
+@keyframes aurora{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(3vw,2vh,0) scale(1.08)}}
 a{color:var(--accent-text)}
-button,input{font:inherit;color:inherit}
+button,input,textarea{font:inherit;color:inherit}
 code,pre{font-family:var(--f-body);font-variant-numeric:tabular-nums}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
 h1,h2,h3,h4,h5,h6{font-family:var(--f-display);text-wrap:balance;margin:0;font-weight:600}
-h1,h2{font-size:var(--fs-1);line-height:1.15;font-weight:700;letter-spacing:-.02em}
+h1,h2{font-size:var(--fs-1);line-height:1.1;font-weight:700;letter-spacing:-.03em}
 h3,h4,h5,h6{font-size:var(--fs-2);line-height:1.35}
 p{margin:0}
 small,.small,.xs{font-size:var(--fs-3)}
-.eyebrow{font-size:var(--fs-3);letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text);font-weight:700}
-.lede{color:var(--ink-2);max-width:66ch}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:var(--fs-3);letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text);font-weight:700}
+.spark{width:14px;height:14px;display:inline-block;flex:none;background:var(--grad);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1l2.6 7.4L22 11l-7.4 2.6L12 21l-2.6-7.4L2 11l7.4-2.6z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1l2.6 7.4L22 11l-7.4 2.6L12 21l-2.6-7.4L2 11l7.4-2.6z'/%3E%3C/svg%3E") center/contain no-repeat}
+.lede{color:var(--ink-2);max-width:60ch}
 .muted{color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
 .wrap{max-width:1280px;margin:0 auto;padding-inline:clamp(16px,4vw,40px)}
-section.block{padding-block:clamp(40px,6vw,72px);border-top:1px solid var(--line)}
-section.block.first{border-top:0;padding-top:clamp(24px,4vw,40px)}
+section.block{padding-block:clamp(40px,6vw,76px)}
+section.block.first{padding-top:clamp(28px,4vw,48px)}
 .sec-head{display:grid;gap:10px;margin-bottom:26px;max-width:820px}
 
 /* nav */
-.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-.nav .wrap{display:flex;align-items:center;gap:20px;height:58px}
-.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);white-space:nowrap}
-.brand-mark{width:24px;height:24px;color:var(--accent)}
-.brand-word{font-family:var(--f-display);font-weight:700;letter-spacing:-.01em}
-.brand-sep{width:1px;height:18px;background:var(--line-2)}
-.brand-prod{font-size:var(--fs-3);font-weight:700;color:var(--accent-text);letter-spacing:.06em;text-transform:uppercase}
-.nav-links{display:flex;gap:2px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
-.nav-links a{color:var(--ink-2);text-decoration:none;font-size:var(--fs-3);font-weight:600;padding:6px 10px;border-radius:6px;white-space:nowrap}
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:rgba(255,255,255,.7);backdrop-filter:blur(16px) saturate(1.4);-webkit-backdrop-filter:blur(16px) saturate(1.4);border-bottom:1px solid var(--glass-line)}
+.nav .wrap{display:flex;align-items:center;gap:20px;height:60px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink);white-space:nowrap}
+.brand img{height:30px;width:auto;display:block}
+.brand-sep{width:1px;height:20px;background:var(--line-2)}
+.brand-prod{font-size:var(--fs-3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.nav-links{display:flex;gap:4px;margin-left:auto;align-items:center}
+.nav-links a{color:var(--ink-2);text-decoration:none;font-size:var(--fs-3);font-weight:600;padding:6px 12px;border-radius:999px;white-space:nowrap}
 .nav-links a:hover{background:var(--surface-2);color:var(--ink)}
-@media (max-width:760px){.brand-sep,.brand-prod{display:none}.nav-links{margin-left:0}}
+.nav-links a.nav-ask{display:inline-flex;align-items:center;gap:6px;color:#fff;background:var(--navy);box-shadow:0 0 0 1px rgba(41,171,226,.4),0 6px 18px rgba(41,171,226,.25)}
+.nav-links a.nav-ask .spark{background:linear-gradient(90deg,#7dd3fc,#5eead4)}
+.nav-links a.nav-ask:hover{background:#0c2638;color:#fff}
+@media (max-width:760px){.brand-sep,.brand-prod{display:none}.nav-links a:not(.nav-ask){display:none}}
 
 /* shared controls */
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:var(--fs-3);font-weight:600;cursor:pointer;color:var(--ink-2);line-height:1.3}
+.chip{border:1px solid var(--line-2);background:var(--glass);border-radius:999px;padding:6px 14px;font-size:var(--fs-3);font-weight:600;cursor:pointer;color:var(--ink-2);line-height:1.3}
 .chip:hover{border-color:var(--accent);color:var(--ink)}
 .chip[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
 .chip.sm{padding:4px 10px}
-.chip.env{display:inline-flex;align-items:center;gap:7px}
-.chip.env[aria-pressed="true"]{background:var(--accent-soft);color:var(--ink);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.chip.env{display:inline-flex;align-items:center;gap:7px;background:var(--surface)}
+.chip.env[aria-pressed="true"]{background:var(--accent-soft);color:var(--ink);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,0 4px 14px rgba(41,171,226,.2)}
 .logo{width:15px;height:15px;flex:none;display:block}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);text-decoration:none;font-weight:600;cursor:pointer;font-size:var(--fs-3)}
 .btn:hover{border-color:var(--accent)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.dark{background:var(--navy);border-color:var(--navy);color:#fff}
 .btn.sm{padding:4px 12px}
 .lbl{font-size:var(--fs-3);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
@@ -77,62 +91,236 @@ section.block.first{border-top:0;padding-top:clamp(24px,4vw,40px)}
 .sw{width:10px;height:10px;border-radius:3px;flex:none;display:inline-block}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:var(--fs-3);color:var(--ink-2)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
+.ic{width:16px;height:16px;flex:none}
+.glass{background:var(--glass);backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);border:1px solid var(--glass-line);box-shadow:var(--shadow)}
 
 /* platform */
 .plat-head{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
 .plat-head .sec-head{margin:0}
-.env-picker{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow)}
+.env-picker{display:grid;gap:10px;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--glass-line);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow)}
 .env-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .env-row .lbl{width:78px}
-.plat-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:28px;align-items:start}
+.plat-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:24px;align-items:start}
 @media (max-width:980px){.plat-grid{grid-template-columns:minmax(0,1fr)}}
-.stage{position:relative;background:radial-gradient(90% 70% at 50% 45%,#e6f5fc,transparent 70%),var(--surface);border:1px solid var(--line);border-radius:20px;padding:10px;box-shadow:var(--shadow);overflow:hidden}
-.stage > svg{display:block;width:100%;height:auto}
+.stage-wrap{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px)}
+@media (max-width:980px){.stage-wrap{position:static}}
+.stage{position:relative;border-radius:24px;padding:10px;overflow:hidden;background:radial-gradient(70% 60% at 40% 45%,rgba(41,171,226,.16),transparent 70%),radial-gradient(50% 40% at 80% 90%,rgba(20,184,166,.12),transparent 70%),rgba(255,255,255,.75);border:1px solid var(--glass-line);box-shadow:var(--shadow)}
+.stage::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(41,171,226,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(41,171,226,.07) 1px,transparent 1px);background-size:28px 28px;-webkit-mask-image:radial-gradient(70% 70% at 45% 50%,#000,transparent);mask-image:radial-gradient(70% 70% at 45% 50%,#000,transparent);pointer-events:none}
+.stage > svg{display:block;width:100%;height:auto;position:relative}
 .stage .slab{cursor:pointer;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
 .stage .slab:hover{transform:translateY(-5px)}
 .stage .slab.sel{transform:translateY(-9px)}
-.slab-labels{position:absolute;left:10px;right:10px;top:10px;pointer-events:none;aspect-ratio:640/580}
-.slab-label{position:absolute;pointer-events:auto;transform:translateY(-50%);display:grid;gap:1px;text-align:left;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:10px;padding:5px 10px;cursor:pointer;box-shadow:0 1px 2px rgba(4,18,31,.05);max-width:41%}
+.slab-labels{position:absolute;left:10px;right:10px;top:10px;pointer-events:none;aspect-ratio:640/620}
+.slab-label{position:absolute;pointer-events:auto;transform:translateY(-50%);display:grid;gap:1px;text-align:left;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);border:1px solid var(--glass-line);border-radius:12px;padding:6px 12px;cursor:pointer;box-shadow:0 4px 16px rgba(4,18,31,.06);max-width:41%}
 .slab-label b{font-family:var(--f-display);font-weight:600;font-size:var(--fs-3);white-space:nowrap}
-.slab-label span{font-size:var(--fs-3);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.slab-label:hover,.slab-label[aria-pressed="true"]{border-color:var(--accent)}
-.slab-label[aria-pressed="true"]{box-shadow:0 0 0 1px var(--accent) inset}
-.tenant-chip{position:absolute;left:18px;top:16px;display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-3);font-weight:700;color:var(--accent-text);background:var(--surface);border:1.5px dashed var(--accent);border-radius:999px;padding:4px 12px}
-.egress{position:static;padding:4px 8px 6px;display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:flex-end;font-size:var(--fs-3);color:var(--muted)}
+.slab-label span{font-size:var(--fs-3);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.slab-label:hover{border-color:var(--accent)}
+.slab-label[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,0 6px 20px rgba(41,171,226,.25)}
+.ai-row{position:absolute;display:flex;gap:6px;align-items:center;transform:translate(-50%,-50%);pointer-events:auto}
+.ai-pill{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--glass-line);border-radius:999px;padding:4px 10px 4px 6px;font-size:var(--fs-3);font-weight:700;box-shadow:0 6px 18px rgba(4,18,31,.08);white-space:nowrap}
+.ai-pill .logo{width:16px;height:16px}
+.tenant-chip{display:inline-flex;margin-right:auto;align-items:center;gap:6px;font-size:var(--fs-3);font-weight:700;color:var(--accent-text);background:rgba(255,255,255,.9);border:1.5px dashed var(--accent);border-radius:999px;padding:4px 12px}
+.egress{position:relative;padding:4px 8px 6px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;justify-content:flex-end;font-size:var(--fs-3);color:var(--muted)}
 .egress span{display:inline-flex;align-items:center;gap:6px}
-.egress i{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block}
-@media (max-width:620px){.slab-label span{display:none}.slab-label{max-width:40%}.egress{justify-content:flex-start}}
+.egress i{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block;box-shadow:0 0 0 3px rgba(12,163,12,.18)}
+@media (max-width:620px){.slab-label span{display:none}.slab-label{max-width:40%}.egress{justify-content:flex-start}.ai-pill span{display:none}.ai-row .lbl{display:none}}
 
 .layer-panel{display:grid;gap:14px;align-content:start}
-.layer-top{display:grid;gap:6px}
+.layer-top{display:grid;gap:4px}
 .layer-top p{color:var(--ink-2)}
-.comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
-.comp{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;display:grid;gap:4px;align-content:start;font-size:var(--fs-3);color:var(--ink-2);box-shadow:0 1px 2px rgba(4,18,31,.04)}
-.comp b{font-family:var(--f-display);font-weight:600;color:var(--ink);font-size:var(--fs-2)}
-.comp .sub{color:var(--accent-text);font-weight:700}
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:8px}
+.comp{position:relative;text-align:left;border:1px solid var(--glass-line);background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:14px;padding:11px 12px;display:grid;gap:2px;align-content:start;font-size:var(--fs-3);color:var(--ink-2);box-shadow:0 2px 10px rgba(4,18,31,.04);cursor:default}
+.comp .ci{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:var(--grad-soft);color:var(--accent-text);margin-bottom:6px}
+.comp .ci .ic{width:16px;height:16px}
+.comp b{font-family:var(--f-display);font-weight:600;color:var(--ink);font-size:var(--fs-3);line-height:1.35}
+.comp .sub{color:var(--muted)}
 .comp.clickable{cursor:pointer}
-.comp.clickable:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.comp.clickable:hover,.comp:hover{border-color:var(--accent-line)}
+.comp.clickable:hover{box-shadow:0 0 0 1px var(--accent) inset,0 8px 24px rgba(41,171,226,.18)}
 .comp .go{color:var(--accent-text);font-weight:700;margin-top:4px}
-.group-h{grid-column:1/-1;margin-top:4px}
+.group-h{grid-column:1/-1;margin-top:6px}
 
-/* models */
-.model-tabs{display:flex;gap:4px;overflow-x:auto;padding:4px;margin-bottom:18px;background:var(--surface);border:1px solid var(--line);border-radius:999px;width:max-content;max-width:100%}
+/* ask */
+.ask{max-width:860px;margin:0 auto;display:grid;gap:16px;justify-items:center;text-align:center}
+.ask-head{display:grid;gap:8px;justify-items:center}
+.ask-box{position:relative;width:100%;display:flex;align-items:flex-end;gap:8px;background:#fff;border-radius:22px;padding:10px 10px 10px 18px;box-shadow:0 18px 50px rgba(41,171,226,.18),0 2px 6px rgba(4,18,31,.05);isolation:isolate}
+.ask-box::before{content:"";position:absolute;inset:-2px;border-radius:24px;padding:2px;background:conic-gradient(from var(--ang,0deg),#29abe2,#14b8a6,#6366f1,#29abe2);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;z-index:-1;animation:spin 6s linear infinite}
+@property --ang{syntax:"<angle>";inherits:false;initial-value:0deg}
+@keyframes spin{to{--ang:360deg}}
+.ask-box textarea{flex:1;border:0;outline:0;resize:none;background:transparent;font-size:var(--fs-2);line-height:1.5;padding:8px 0;max-height:160px;text-align:left}
+.ask-box button{width:40px;height:40px;border-radius:14px;border:0;background:var(--navy);color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
+.ask-box button svg{width:18px;height:18px}
+.ask-box button:disabled{opacity:.5;cursor:default}
+.ask-sugg{justify-content:center}
+.ask-sugg .chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.8)}
+.ask-note{font-size:var(--fs-3);color:var(--muted)}
+.ask-thread{width:100%;display:grid;gap:12px;text-align:left}
+.ask-thread:empty{display:none}
+.q{justify-self:end;background:var(--navy);color:#fff;border-radius:18px 18px 4px 18px;padding:9px 14px;max-width:80%}
+.a{justify-self:start;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border:1px solid var(--glass-line);border-radius:18px 18px 18px 4px;padding:12px 16px;max-width:92%;box-shadow:var(--shadow);display:grid;gap:8px}
+.a .who{display:flex;align-items:center;gap:6px;font-size:var(--fs-3);font-weight:700;color:var(--accent-text)}
+.a .body{color:var(--ink-2)}
+.a .body ul{margin:4px 0 0;padding-left:18px}
+.a .links{display:flex;flex-wrap:wrap;gap:6px}
+.thinking{display:inline-flex;gap:4px;padding:4px 0}
+.thinking i{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 1s infinite}
+.thinking i:nth-child(2){animation-delay:.15s}.thinking i:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+
+/* use case cards */
+.uc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.uc-c{position:relative;text-align:left;display:grid;gap:10px;align-content:start;padding:16px;border-radius:20px;border:1px solid var(--glass-line);background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:var(--shadow);cursor:pointer;overflow:hidden;transition:transform .25s,box-shadow .25s,border-color .25s;min-height:150px}
+.uc-c::after{content:"";position:absolute;right:-40px;top:-40px;width:140px;height:140px;border-radius:50%;background:var(--grad-soft);filter:blur(4px);pointer-events:none}
+.uc-c:hover{transform:translateY(-3px);border-color:var(--accent-line);box-shadow:0 16px 40px rgba(41,171,226,.18)}
+.uc-c[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1.5px var(--accent) inset,0 16px 40px rgba(41,171,226,.22)}
+.uc-c .ico{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--navy);color:#7dd3fc}
+.uc-c .ico .ic{width:20px;height:20px}
+.uc-c b{font-family:var(--f-display);font-weight:600}
+.uc-c .meta{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:var(--fs-3);color:var(--muted)}
+.uc-c .kind{font-weight:700;color:var(--accent-text)}
+.uc-card{display:grid;gap:16px;margin-top:20px;scroll-margin-top:80px}
+.uc-card:empty{display:none}
+.uc-hero{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr);gap:16px;align-items:stretch}
+@media (max-width:980px){.uc-hero{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--glass-line);border-radius:20px;padding:clamp(16px,2.4vw,24px);box-shadow:var(--shadow);display:grid;gap:14px;align-content:start;min-width:0}
+.panel p{color:var(--ink-2)}
+.panel-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.ucv{display:grid;gap:10px}
+.ucv-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.value-list{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.value-list li{display:grid;grid-template-columns:18px 1fr;gap:8px;font-size:var(--fs-3);color:var(--ink-2)}
+.value-list li svg{width:16px;height:16px;margin-top:1px;color:var(--good)}
+.proof{border-left:3px solid var(--accent);padding:2px 0 2px 12px;color:var(--ink-2);font-size:var(--fs-3)}
+.recipe{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:1000px){.recipe{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.recipe{grid-template-columns:1fr}}
+.ing{border:1px solid var(--glass-line);border-radius:var(--r);padding:12px;display:grid;gap:8px;align-content:start;background:rgba(255,255,255,.6)}
+.ing h6{font-family:var(--f-body);font-size:var(--fs-3);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:6px}
+.ing h6 i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.ing ul{margin:0;padding:0;list-style:none;display:grid;gap:5px}
+.ing li{display:flex;align-items:center;gap:8px;font-size:var(--fs-3);line-height:1.35;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 8px}
+.ing li .ic{color:var(--accent-text)}
+.ing.utility{border-style:dashed;border-color:var(--accent-line);background:var(--accent-soft)}
+details.more{border-top:1px solid var(--line);padding-top:10px}
+details.more summary{cursor:pointer;font-size:var(--fs-3);font-weight:700;color:var(--accent-text);list-style:none}
+details.more summary::-webkit-details-marker{display:none}
+.steps{margin:10px 0 0;padding:0;list-style:none;display:grid;counter-reset:s}
+.steps li{display:grid;grid-template-columns:30px 1fr;gap:10px;padding:0 0 12px;position:relative;font-size:var(--fs-3);color:var(--ink-2)}
+.steps li::before{counter-increment:s;content:counter(s);width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent-text);font-weight:700;display:grid;place-items:center;position:relative;z-index:1}
+.steps li::after{content:"";position:absolute;left:11.5px;top:26px;bottom:2px;width:1px;background:var(--line-2)}
+.steps li:last-child::after{display:none}
+.steps .who{display:inline-block;font-weight:700;padding:0 8px;border-radius:999px;margin-left:6px;border:1px solid var(--line-2);color:var(--muted)}
+
+/* mockups: window, phone, email */
+.mock{border-radius:16px;border:1px solid var(--line);background:#fff;overflow:hidden;box-shadow:0 12px 40px rgba(4,18,31,.08)}
+.mock-bar{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--surface-2);font-size:var(--fs-3);color:var(--muted)}
+.mock-bar i{width:9px;height:9px;border-radius:50%;background:var(--line-2);display:inline-block}
+.mock-bar i:nth-child(1){background:#ff6b5f}.mock-bar i:nth-child(2){background:#ffbd2e}.mock-bar i:nth-child(3){background:#28c940}
+.mock-bar span{margin-left:8px}
+.mock-body{padding:14px;display:grid;gap:10px;font-size:var(--fs-3)}
+.mock-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.big{font-family:var(--f-display);font-weight:700;font-size:var(--fs-2)}
+.up{color:var(--crit);font-weight:700}.down{color:var(--good);font-weight:700}
+.drv{display:grid;grid-template-columns:110px 1fr 56px;gap:8px;align-items:center}
+.drv .track{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.drv .track i{display:block;height:100%;border-radius:4px}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 10px;font-weight:700;background:var(--accent-soft);color:var(--accent-text)}
+.phones{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.phone{width:250px;max-width:100%;border-radius:34px;border:8px solid var(--navy);background:#fff;overflow:hidden;box-shadow:0 20px 50px rgba(4,18,31,.18);position:relative}
+.phone::before{content:"";display:block;width:70px;height:6px;border-radius:6px;background:var(--navy);margin:8px auto 4px}
+.phone-body{padding:10px 14px 16px;display:grid;gap:10px;font-size:var(--fs-3)}
+.notif{border-radius:14px;background:var(--surface-2);padding:10px;display:grid;gap:3px}
+.notif .app{display:flex;align-items:center;gap:6px;color:var(--muted);font-weight:700}
+.donut{width:120px;height:120px;border-radius:50%;margin:4px auto;position:relative}
+.donut::after{content:"";position:absolute;inset:22px;border-radius:50%;background:#fff}
+.donut b{position:absolute;inset:0;display:grid;place-items:center;z-index:1;font-family:var(--f-display)}
+.email .mock-body{gap:12px}
+.email .hdr{display:grid;gap:2px;color:var(--muted)}
+.email .banner{border-radius:12px;padding:12px;background:var(--grad-soft);display:grid;gap:4px}
+.tip-row{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:8px}
+.tip-row .ic{color:var(--accent-text);margin-top:1px}
+.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-3)}
+.tbl th,.tbl td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.tbl th{color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+
+/* agent automation */
+.auto{display:grid;gap:12px}
+.auto-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.auto-name{display:flex;align-items:center;gap:8px;font-weight:700}
+.auto-name .bot{width:30px;height:30px;border-radius:10px;background:var(--navy);color:#7dd3fc;display:grid;place-items:center}
+.auto-name small{display:block;color:var(--muted);font-weight:500}
+.flow{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px;position:relative}
+@media (max-width:700px){.flow{grid-auto-flow:row}}
+.node-s{position:relative;border:1px solid var(--line);border-radius:14px;padding:10px;background:#fff;display:grid;gap:4px;font-size:var(--fs-3);transition:border-color .3s,box-shadow .3s,transform .3s}
+.node-s .top{display:flex;align-items:center;gap:6px;font-weight:700;color:var(--ink)}
+.node-s .top .ic{color:var(--accent-text)}
+.node-s .sys{color:var(--muted)}
+.node-s.run{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,0 8px 24px rgba(41,171,226,.25);transform:translateY(-2px)}
+.node-s.done .top::after{content:"✓";margin-left:auto;color:var(--good);font-weight:800}
+.node-s:not(:last-child)::after{content:"";position:absolute;right:-10px;top:50%;width:10px;height:2px;background:var(--grad)}
+@media (max-width:700px){.node-s:not(:last-child)::after{right:auto;left:50%;top:auto;bottom:-10px;width:2px;height:10px}}
+.runlog{border-radius:12px;background:var(--navy);color:#cfe8f5;padding:10px 12px;font-size:var(--fs-3);display:grid;gap:3px;min-height:92px}
+.runlog .t{color:#6fb6d8;margin-right:8px}
+.runlog .ok{color:#5eead4}
+.out-card{border-radius:14px;border:1px solid var(--line);background:#fff;padding:12px;display:grid;gap:6px;font-size:var(--fs-3);box-shadow:0 8px 24px rgba(4,18,31,.06)}
+.out-card .oh{display:flex;align-items:center;gap:8px;font-weight:700}
+
+/* MCP connect + chat */
+.mcp{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);border:1px solid var(--glass-line);border-radius:20px;overflow:hidden;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:var(--shadow)}
+@media (max-width:900px){.mcp{grid-template-columns:minmax(0,1fr)}}
+.mcp-setup{padding:clamp(16px,2.4vw,22px);display:grid;gap:12px;align-content:start;border-right:1px solid var(--line)}
+@media (max-width:900px){.mcp-setup{border-right:0;border-bottom:1px solid var(--line)}}
+.mcp-setup p{font-size:var(--fs-3);color:var(--ink-2)}
+.ai-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.ai-tab{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-2);background:#fff;border-radius:999px;padding:5px 12px 5px 8px;font-size:var(--fs-3);font-weight:700;cursor:pointer;color:var(--ink-2)}
+.ai-tab[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;color:var(--ink)}
+.tool-chips{display:flex;flex-wrap:wrap;gap:5px}
+.tool-chips code{font-size:var(--fs-3);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--ink-2)}
+.tool-chips code.used{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-text);font-weight:700}
+.howto{display:grid;gap:8px}
+.howto ol{margin:0;padding-left:18px;display:grid;gap:4px;font-size:var(--fs-3);color:var(--ink-2)}
+.cmd{display:flex;align-items:stretch;border:1px solid var(--navy);border-radius:12px;overflow:hidden;background:var(--navy)}
+.cmd code{flex:1;min-width:0;font-size:var(--fs-3);color:#d7ecf7;padding:9px 12px;overflow-x:auto;white-space:nowrap}
+.cmd button{border:0;border-left:1px solid #1d3b52;background:#0c2638;color:#fff;font-size:var(--fs-3);font-weight:700;padding:0 12px;cursor:pointer}
+.chat{display:grid;grid-template-rows:auto 1fr;background:rgba(255,255,255,.55);min-height:360px}
+.chat-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.chat-top .who{display:flex;align-items:center;gap:8px;font-size:var(--fs-3);font-weight:700}
+.chat-body{padding:14px;display:grid;gap:10px;align-content:start}
+.msg{font-size:var(--fs-3);line-height:1.55;max-width:92%;animation:pop .35s ease both}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg.user{justify-self:end;background:var(--navy);color:#fff;border-radius:14px 14px 4px 14px;padding:9px 12px}
+.msg.assistant{color:var(--ink);padding:2px}
+.msg.tool{justify-self:stretch;max-width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+.msg.tool summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:7px 10px;font-weight:600}
+.msg.tool summary::-webkit-details-marker{display:none}
+.msg.tool summary .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.msg.tool summary .srvname{margin-left:auto;color:var(--muted);font-weight:500}
+.msg.tool pre{margin:0;padding:8px 10px;border-top:1px solid var(--line);background:var(--surface-2);font-size:var(--fs-3);white-space:pre-wrap;word-break:break-word;color:var(--ink-2)}
+.typing{display:inline-flex;gap:4px;padding:6px 2px}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+
+/* model dialog */
+dialog#model-dlg{width:min(1200px,calc(100% - 32px));max-height:calc(100vh - 48px);border:1px solid var(--glass-line);border-radius:24px;padding:clamp(16px,2.4vw,28px);background:rgba(255,255,255,.96);box-shadow:0 30px 80px rgba(4,18,31,.3);color:var(--ink)}
+dialog#model-dlg::backdrop{background:rgba(4,18,31,.35);backdrop-filter:blur(6px)}
+.dlg-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.model-tabs{display:flex;gap:4px;overflow-x:auto;padding:4px;margin-bottom:18px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;width:max-content;max-width:100%}
 .tab{border:0;background:transparent;padding:7px 14px;font-size:var(--fs-3);font-weight:600;cursor:pointer;color:var(--ink-2);white-space:nowrap;border-radius:999px}
-.tab:hover{color:var(--ink);background:var(--surface-2)}
+.tab:hover{color:var(--ink);background:#fff}
 .tab[aria-selected="true"]{background:var(--navy);color:#fff}
-.model-panel{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr);gap:28px;align-items:start}
+.model-panel{display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1.7fr);gap:24px;align-items:start}
 @media (max-width:980px){.model-panel{grid-template-columns:minmax(0,1fr)}}
-.m-copy{display:grid;gap:14px}
+.m-copy{display:grid;gap:12px}
 .m-copy p{color:var(--ink-2)}
-.m-copy p.small{color:var(--muted)}
-.spec{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--surface)}
-.spec div{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:10px 12px;border-top:1px solid var(--line);font-size:var(--fs-3)}
+.spec{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:#fff}
+.spec div{display:grid;grid-template-columns:86px 1fr;gap:10px;padding:9px 12px;border-top:1px solid var(--line);font-size:var(--fs-3)}
 .spec div:first-child{border-top:0}
 .spec span{font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-.viz{grid-template-columns:minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:grid;gap:14px;min-width:0;box-shadow:var(--shadow)}
+.viz{grid-template-columns:minmax(0,1fr);background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px;min-width:0}
 .viz-h{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
 .viz-h > span{font-size:var(--fs-3);color:var(--muted)}
-.viz svg,.ucv svg{display:block;width:100%;height:auto;overflow:visible}
+.viz svg:not(.ic):not(.logo),.ucv > svg{display:block;width:100%;height:auto;overflow:visible}
 svg text{fill:var(--muted);font-family:var(--f-body);font-size:var(--fs-3);font-weight:500}
 svg .t-ink{fill:var(--ink);font-weight:600}
 svg .t-2{fill:var(--ink-2)}
@@ -154,20 +342,20 @@ svg .t-2{fill:var(--ink-2)}
 .det.hl{border-color:var(--accent);background:var(--accent-soft)}
 .det .h{display:flex;align-items:center;gap:6px;font-weight:700}
 .det .v{color:var(--muted)}
-.tip{position:fixed;z-index:60;pointer-events:none;background:var(--navy);color:#fff;font-size:var(--fs-3);padding:8px 10px;border-radius:10px;max-width:260px;box-shadow:var(--shadow);font-family:var(--f-body);line-height:1.4}
+.tip{position:fixed;z-index:1000;pointer-events:none;background:var(--navy);color:#fff;font-size:var(--fs-3);padding:8px 10px;border-radius:10px;max-width:260px;box-shadow:var(--shadow);font-family:var(--f-body);line-height:1.4}
 .tip .r{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
 .tip .r i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
 .acc-table{width:100%;border-collapse:collapse;font-size:var(--fs-3);min-width:560px}
 .acc-table th{letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;font-weight:700;padding:6px 8px;border-bottom:1px solid var(--line-2)}
 .acc-table td{padding:6px 8px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
 .bar{height:6px;border-radius:3px;background:var(--surface-3);position:relative;min-width:60px}
-.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--accent)}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--grad)}
 .tbl-scroll{overflow-x:auto}
 .range{display:flex;align-items:center;gap:10px;font-size:var(--fs-3)}
 .range input{flex:1;accent-color:var(--accent)}
 .kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 @media (max-width:520px){.kpis{grid-template-columns:1fr}}
-.kpi{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface-2);font-size:var(--fs-3)}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface-2);font-size:var(--fs-3)}
 .kpi b{font-family:var(--f-display);font-size:var(--fs-2);display:block;font-variant-numeric:tabular-nums;color:var(--ink)}
 .kpi span{color:var(--muted)}
 .tips-list{display:grid;gap:6px;counter-reset:t;margin:0;padding:0;list-style:none}
@@ -177,115 +365,19 @@ svg .t-2{fill:var(--ink-2)}
 .seg{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;overflow:hidden;background:var(--surface-2);padding:2px}
 .seg button{border:0;background:transparent;padding:4px 12px;font-size:var(--fs-3);font-weight:600;cursor:pointer;color:var(--ink-2);border-radius:999px}
 .seg button[aria-pressed="true"]{background:var(--navy);color:#fff}
-
-/* use cases */
-.uc-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:18px}
-.uc-tab{flex:none;display:grid;gap:2px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 14px;cursor:pointer;min-width:150px;font-size:var(--fs-3)}
-.uc-tab b{font-weight:700;color:var(--ink);white-space:nowrap}
-.uc-tab span{color:var(--muted);white-space:nowrap}
-.uc-tab:hover{border-color:var(--accent)}
-.uc-tab[aria-pressed="true"]{background:var(--navy);border-color:var(--navy)}
-.uc-tab[aria-pressed="true"] b{color:#fff}
-.uc-tab[aria-pressed="true"] span{color:#9fc3d8}
-.uc-card{display:grid;gap:18px}
-.uc-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:18px;align-items:stretch}
-@media (max-width:980px){.uc-hero{grid-template-columns:minmax(0,1fr)}}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:clamp(16px,2.4vw,24px);box-shadow:var(--shadow);display:grid;gap:14px;align-content:start;min-width:0}
-.panel p{color:var(--ink-2)}
-.ucv{display:grid;gap:10px}
-.ucv-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.value-list{margin:0;padding:0;list-style:none;display:grid;gap:6px}
-.value-list li{display:grid;grid-template-columns:18px 1fr;gap:8px;font-size:var(--fs-3);color:var(--ink-2)}
-.value-list li svg{width:16px;height:16px;margin-top:1px;color:var(--good)}
-.proof{border-left:3px solid var(--accent);padding:2px 0 2px 12px;color:var(--ink-2);font-size:var(--fs-3)}
-.recipe{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-@media (max-width:1000px){.recipe{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:520px){.recipe{grid-template-columns:1fr}}
-.ing{border:1px solid var(--line);border-radius:var(--r);padding:12px;display:grid;gap:8px;align-content:start;background:var(--surface-2)}
-.ing h6{font-family:var(--f-body);font-size:var(--fs-3);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:6px}
-.ing h6 i{width:8px;height:8px;border-radius:50%;display:inline-block}
-.ing ul{margin:0;padding:0;list-style:none;display:grid;gap:5px}
-.ing li{font-size:var(--fs-3);line-height:1.35;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:5px 8px}
-.ing.utility{border-style:dashed;border-color:var(--accent-line);background:var(--accent-soft)}
-.steps{margin:0;padding:0;list-style:none;display:grid;counter-reset:s}
-.steps li{display:grid;grid-template-columns:30px 1fr;gap:10px;padding:0 0 12px;position:relative;font-size:var(--fs-3);color:var(--ink-2)}
-.steps li::before{counter-increment:s;content:counter(s);width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent-text);font-weight:700;display:grid;place-items:center;position:relative;z-index:1}
-.steps li::after{content:"";position:absolute;left:11.5px;top:26px;bottom:2px;width:1px;background:var(--line-2)}
-.steps li:last-child::after{display:none}
-.steps .who{display:inline-block;font-weight:700;padding:0 8px;border-radius:999px;margin-left:6px;border:1px solid var(--line-2);color:var(--muted)}
-.two{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px}
-@media (max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
-.split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.split div{font-size:var(--fs-3);display:grid;gap:4px;align-content:start;color:var(--ink-2)}
-.split ul{margin:0;padding-left:16px;display:grid;gap:3px}
-
-/* MCP connect + Claude chat */
-.mcp{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
-@media (max-width:900px){.mcp{grid-template-columns:minmax(0,1fr)}}
-.mcp-setup{padding:clamp(16px,2.4vw,22px);display:grid;gap:12px;align-content:start;border-right:1px solid var(--line)}
-@media (max-width:900px){.mcp-setup{border-right:0;border-bottom:1px solid var(--line)}}
-.mcp-setup p{font-size:var(--fs-3);color:var(--ink-2)}
-.srv{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface-2)}
-.srv-ic{width:34px;height:34px;border-radius:10px;background:var(--navy);display:grid;place-items:center;flex:none}
-.srv-ic svg{width:18px;height:18px;color:var(--accent)}
-.srv div{display:grid;font-size:var(--fs-3)}
-.srv b{font-weight:700;color:var(--ink)}
-.srv span{color:var(--muted)}
-.tool-chips{display:flex;flex-wrap:wrap;gap:5px}
-.tool-chips code{font-size:var(--fs-3);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--ink-2)}
-.tool-chips code.used{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-text);font-weight:700}
-.howto{display:grid;gap:8px}
-.howto ol{margin:0;padding-left:18px;display:grid;gap:6px;font-size:var(--fs-3);color:var(--ink-2)}
-.cmd{display:flex;align-items:stretch;border:1px solid var(--navy);border-radius:10px;overflow:hidden;background:var(--navy)}
-.cmd code{flex:1;min-width:0;font-size:var(--fs-3);color:#d7ecf7;padding:9px 12px;overflow-x:auto;white-space:nowrap}
-.cmd button{border:0;border-left:1px solid #1d3b52;background:#0c2638;color:#fff;font-size:var(--fs-3);font-weight:700;padding:0 12px;cursor:pointer}
-.cmd button:hover{background:#12344c}
-.chat{display:grid;grid-template-rows:auto 1fr;background:#faf9f6;min-height:420px}
-.chat-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-bottom:1px solid #ebe8e1;background:#fffefb}
-.chat-top .who{display:flex;align-items:center;gap:8px;font-size:var(--fs-3);font-weight:700;color:#3d3929}
-.chat-top .who i{width:18px;height:18px;border-radius:5px;background:#d97757;display:inline-block}
-.chat-body{padding:14px;display:grid;gap:10px;align-content:start}
-.msg{font-size:var(--fs-3);line-height:1.55;max-width:92%;animation:pop .35s ease both}
-@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.msg.user{justify-self:end;background:#efece4;color:#29261b;border-radius:14px 14px 4px 14px;padding:9px 12px}
-.msg.assistant{color:#29261b;padding:2px}
-.msg.tool{justify-self:stretch;max-width:100%;border:1px solid #e4e0d6;border-radius:10px;background:#fff;overflow:hidden}
-.msg.tool summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:7px 10px;font-weight:600;color:#3d3929}
-.msg.tool summary::-webkit-details-marker{display:none}
-.msg.tool summary .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
-.msg.tool summary .srvname{margin-left:auto;color:#8a8474;font-weight:500}
-.msg.tool pre{margin:0;padding:8px 10px;border-top:1px solid #efece4;background:#fbfaf7;font-size:var(--fs-3);white-space:pre-wrap;word-break:break-word;color:#4a4536}
-.typing{display:inline-flex;gap:4px;padding:6px 2px}
-.typing i{width:6px;height:6px;border-radius:50%;background:#b8b2a2;animation:blink 1s infinite}
-.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
-@keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
-
-/* deployment */
-.dep-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:start}
-@media (max-width:960px){.dep-grid{grid-template-columns:minmax(0,1fr)}}
-.map-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
-.map-table th,.map-table td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
-.map-table th{font-size:var(--fs-3);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;width:34%}
-.map-table td .xs{color:var(--muted)}
-.map-table tr:last-child td,.map-table tr:last-child th{border-bottom:0}
-.sec-list{display:grid;gap:10px}
-.sec-item{display:grid;grid-template-columns:34px 1fr;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
-.sec-item .ic{width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent-text);display:grid;place-items:center}
-.sec-item .ic svg{width:18px;height:18px}
-.sec-item p{font-size:var(--fs-3);color:var(--ink-2)}
-footer{border-top:1px solid var(--line);padding-block:24px;font-size:var(--fs-3);color:var(--muted)}
+footer{padding-block:24px;font-size:var(--fs-3);color:var(--muted);border-top:1px solid var(--glass-line)}
 footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 </style>
 <nav class="nav" aria-label="Sections">
   <div class="wrap">
     <a class="brand" href="#platform" aria-label="Bidgely UtilityAI Pro">
-      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="3" height="8" rx="1.5" fill="currentColor"/><rect x="8" y="7" width="3" height="13" rx="1.5" fill="currentColor"/><rect x="13" y="4" width="3" height="16" rx="1.5" fill="currentColor"/><rect x="18" y="9" width="3" height="11" rx="1.5" fill="currentColor"/></svg>
-      <span class="brand-word">bidgely</span><span class="brand-sep"></span><span class="brand-prod">UtilityAI Pro</span>
+      <img id="brand-logo" alt="Bidgely" width="113" height="30">
+      <span class="brand-sep"></span><span class="brand-prod">UtilityAI Pro</span>
     </a>
     <div class="nav-links">
       <a href="#platform">Platform</a>
-      <a href="#models">Models</a>
-      <a href="#usecases">Use cases &amp; MCP</a>
+      <a href="#usecases">Use cases</a>
+      <a href="#ask" class="nav-ask"><span class="spark" aria-hidden="true"></span>Ask AI</a>
     </div>
   </div>
 </nav>
@@ -294,9 +386,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
   <div class="wrap">
     <div class="plat-head">
       <div class="sec-head">
-        <span class="eyebrow">The platform</span>
-        <h2>UtilityAI Pro, stacked on your data</h2>
-        <p class="lede">Every layer runs inside your cloud and reads from and writes to your data lake. Pick your environment, then select a layer to see what's in it.</p>
+        <span class="eyebrow"><span class="spark" aria-hidden="true"></span>The AI platform for utilities</span>
+        <h2>UtilityAI Pro, <span class="grad">stacked on your data</span></h2>
+        <p class="lede">Runs in your cloud. Click any layer.</p>
       </div>
       <div class="env-picker" aria-label="Environment">
         <div class="env-row"><span class="lbl">Cloud</span><div class="chips" id="cloud-chips" role="group" aria-label="Cloud"></div></div>
@@ -304,52 +396,128 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
       </div>
     </div>
     <div class="plat-grid">
-      <div class="stage" id="stage">
-        <svg id="stack-svg" viewBox="0 0 640 580" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
-        <div class="slab-labels" id="slab-labels"></div>
-        <span class="tenant-chip" id="tenant-chip"></span>
-        <div class="egress"><span><i></i>No customer data leaves the boundary</span><span>Only key attestation + operational counts cross, over <b id="egress-net">Private Link</b></span></div>
+      <div class="stage-wrap">
+        <div class="stage" id="stage">
+          <svg id="stack-svg" viewBox="0 0 640 620" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
+          <div class="slab-labels" id="slab-labels"></div>
+          <div class="egress"><span class="tenant-chip" id="tenant-chip"></span><span><i></i>No customer data leaves your cloud</span><span>Only key attestation + job counts cross, over <b id="egress-net">Private Link</b></span></div>
+        </div>
       </div>
       <div class="layer-panel" id="layer-panel" aria-live="polite"></div>
     </div>
   </div>
 </section>
 
-<section class="block" id="models">
+<section class="block ask-block" id="ask">
   <div class="wrap">
-    <div class="sec-head">
-      <span class="eyebrow">Core ML models</span>
-      <h2>What each model does</h2>
-      <p class="lede">Eight containerized models run in your environment and write per-meter outputs to your data lake on every run. The examples use a synthetic home with the signatures the models detect in production data.</p>
+    <div class="ask">
+      <div class="ask-head">
+        <span class="eyebrow"><span class="spark" aria-hidden="true"></span>Ask UtilityAI Pro</span>
+        <h2>What do you want to <span class="grad">know</span>?</h2>
+      </div>
+      <div class="ask-thread" id="ask-thread" aria-live="polite"></div>
+      <form class="ask-box" id="ask-form">
+        <label for="ask-input" class="sr">Ask a question about UtilityAI Pro</label>
+        <textarea id="ask-input" rows="1" placeholder="Ask about models, use cases, security or deployment…"></textarea>
+        <button type="submit" id="ask-send" aria-label="Send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </form>
+      <div class="ask-sugg chips" id="ask-sugg"></div>
+      <p class="ask-note" id="ask-note">Answers come from this page's content.</p>
     </div>
-    <div class="model-tabs" role="tablist" id="model-tabs" aria-label="Models"></div>
-    <div id="model-panels"></div>
   </div>
 </section>
 
 <section class="block" id="usecases">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Use cases &amp; MCP</span>
-      <h2>Put it to work in any AI assistant in minutes</h2>
-      <p class="lede">Each use case combines model outputs, engines and your own data. Every one is also reachable through a UtilityAI Pro MCP server in your tenant, so your teams can connect it to Claude, ChatGPT, Microsoft Copilot, Gemini or any MCP-compatible agent and start asking questions right away.</p>
+      <span class="eyebrow"><span class="spark" aria-hidden="true"></span>Use cases</span>
+      <h2>Built on the platform, <span class="grad">ready for any AI agent</span></h2>
+      <p class="lede">Pick a use case to see it run.</p>
     </div>
-    <div class="uc-tabs" id="uc-tabs" role="group" aria-label="Use cases"></div>
+    <div class="uc-grid" id="uc-grid"></div>
     <div id="uc-card"></div>
   </div>
 </section>
 
-
 <footer>
   <div class="wrap">
     <span>Bidgely UtilityAI Pro · Proprietary and confidential</span>
-    <span>Household, network and customer examples are synthetic. MCP tool names are illustrative.</span>
+    <span>Examples are synthetic. MCP tool names are illustrative.</span>
   </div>
 </footer>
+
+<dialog id="model-dlg" aria-labelledby="model-dlg-title">
+  <div class="dlg-head">
+    <div><span class="eyebrow"><span class="spark" aria-hidden="true"></span>Core ML models</span><h3 id="model-dlg-title">What each model does</h3></div>
+    <button type="button" class="btn sm" id="model-close">Close</button>
+  </div>
+  <div class="model-tabs" role="tablist" id="model-tabs" aria-label="Models"></div>
+  <div id="model-panels"></div>
+</dialog>
 <div class="tip" id="tip" hidden></div>
 <script>(() => {"use strict";
+// Bidgely logo (from the official Bidgely Logo.png in Drive), laid out horizontally for the nav.
+const BIDGELY_LOGO = "data:image/png;base64,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";
+
 // Brand marks (Simple Icons, CC0) used to label supported clouds and data platforms.
 const LOGOS = {"azure": {"d": "M22.379 23.343a1.62 1.62 0 0 0 1.536-2.14v.002L17.35 1.76A1.62 1.62 0 0 0 15.816.657H8.184A1.62 1.62 0 0 0 6.65 1.76L.086 21.204a1.62 1.62 0 0 0 1.536 2.139h4.741a1.62 1.62 0 0 0 1.535-1.103l.977-2.892 4.947 3.675c.28.208.618.32.966.32m-3.084-12.531 3.624 10.739a.54.54 0 0 1-.51.713v-.001h-.03a.54.54 0 0 1-.322-.106l-9.287-6.9h4.853m6.313 7.006c.116-.326.13-.694.007-1.058L9.79 1.76a1.722 1.722 0 0 0-.007-.02h6.034a.54.54 0 0 1 .512.366l6.562 19.445a.54.54 0 0 1-.338.684", "c": "#0078D4"}, "gcp": {"d": "M12.19 2.38a9.344 9.344 0 0 0-9.234 6.893c.053-.02-.055.013 0 0-3.875 2.551-3.922 8.11-.247 10.941l.006-.007-.007.03a6.717 6.717 0 0 0 4.077 1.356h5.173l.03.03h5.192c6.687.053 9.376-8.605 3.835-12.35a9.365 9.365 0 0 0-2.821-4.552l-.043.043.006-.05A9.344 9.344 0 0 0 12.19 2.38zm-.358 4.146c1.244-.04 2.518.368 3.486 1.15a5.186 5.186 0 0 1 1.862 4.078v.518c3.53-.07 3.53 5.262 0 5.193h-5.193l-.008.009v-.04H6.785a2.59 2.59 0 0 1-1.067-.23h.001a2.597 2.597 0 1 1 3.437-3.437l3.013-3.012A6.747 6.747 0 0 0 8.11 8.24c.018-.01.04-.026.054-.023a5.186 5.186 0 0 1 3.67-1.69z", "c": "#4285F4"}, "aws": {"d": "M6.763 10.036c0 .296.032.535.088.71.064.176.144.368.256.576.04.063.056.127.056.183 0 .08-.048.16-.152.24l-.503.335a.383.383 0 0 1-.208.072c-.08 0-.16-.04-.239-.112a2.47 2.47 0 0 1-.287-.375 6.18 6.18 0 0 1-.248-.471c-.622.734-1.405 1.101-2.347 1.101-.67 0-1.205-.191-1.596-.574-.391-.384-.59-.894-.59-1.533 0-.678.239-1.23.726-1.644.487-.415 1.133-.623 1.955-.623.272 0 .551.024.846.064.296.04.6.104.918.176v-.583c0-.607-.127-1.03-.375-1.277-.255-.248-.686-.367-1.3-.367-.28 0-.568.031-.863.103-.295.072-.583.16-.862.272a2.287 2.287 0 0 1-.28.104.488.488 0 0 1-.127.023c-.112 0-.168-.08-.168-.247v-.391c0-.128.016-.224.056-.28a.597.597 0 0 1 .224-.167c.279-.144.614-.264 1.005-.36a4.84 4.84 0 0 1 1.246-.151c.95 0 1.644.216 2.091.647.439.43.662 1.085.662 1.963v2.586zm-3.24 1.214c.263 0 .534-.048.822-.144.287-.096.543-.271.758-.51.128-.152.224-.32.272-.512.047-.191.08-.423.08-.694v-.335a6.66 6.66 0 0 0-.735-.136 6.02 6.02 0 0 0-.75-.048c-.535 0-.926.104-1.19.32-.263.215-.39.518-.39.917 0 .375.095.655.295.846.191.2.47.296.838.296zm6.41.862c-.144 0-.24-.024-.304-.08-.064-.048-.12-.16-.168-.311L7.586 5.55a1.398 1.398 0 0 1-.072-.32c0-.128.064-.2.191-.2h.783c.151 0 .255.025.31.08.065.048.113.16.16.312l1.342 5.284 1.245-5.284c.04-.16.088-.264.151-.312a.549.549 0 0 1 .32-.08h.638c.152 0 .256.025.32.08.063.048.12.16.151.312l1.261 5.348 1.381-5.348c.048-.16.104-.264.16-.312a.52.52 0 0 1 .311-.08h.743c.127 0 .2.065.2.2 0 .04-.009.08-.017.128a1.137 1.137 0 0 1-.056.2l-1.923 6.17c-.048.16-.104.263-.168.311a.51.51 0 0 1-.303.08h-.687c-.151 0-.255-.024-.32-.08-.063-.056-.119-.16-.15-.32l-1.238-5.148-1.23 5.14c-.04.16-.087.264-.15.32-.065.056-.177.08-.32.08zm10.256.215c-.415 0-.83-.048-1.229-.143-.399-.096-.71-.2-.918-.32-.128-.071-.215-.151-.247-.223a.563.563 0 0 1-.048-.224v-.407c0-.167.064-.247.183-.247.048 0 .096.008.144.024.048.016.12.048.2.08.271.12.566.215.878.279.319.064.63.096.95.096.502 0 .894-.088 1.165-.264a.86.86 0 0 0 .415-.758.777.777 0 0 0-.215-.559c-.144-.151-.416-.287-.807-.415l-1.157-.36c-.583-.183-1.014-.454-1.277-.813a1.902 1.902 0 0 1-.4-1.158c0-.335.073-.63.216-.886.144-.255.335-.479.575-.654.24-.184.51-.32.83-.415.32-.096.655-.136 1.006-.136.175 0 .359.008.535.032.183.024.35.056.518.088.16.04.312.08.455.127.144.048.256.096.336.144a.69.69 0 0 1 .24.2.43.43 0 0 1 .071.263v.375c0 .168-.064.256-.184.256a.83.83 0 0 1-.303-.096 3.652 3.652 0 0 0-1.532-.311c-.455 0-.815.071-1.062.223-.248.152-.375.383-.375.71 0 .224.08.416.24.567.159.152.454.304.877.44l1.134.358c.574.184.99.44 1.237.767.247.327.367.702.367 1.117 0 .343-.072.655-.207.926-.144.272-.336.511-.583.703-.248.2-.543.343-.886.447-.36.111-.734.167-1.142.167zM21.698 16.207c-2.626 1.94-6.442 2.969-9.722 2.969-4.598 0-8.74-1.7-11.87-4.526-.247-.223-.024-.527.272-.351 3.384 1.963 7.559 3.153 11.877 3.153 2.914 0 6.114-.607 9.06-1.852.439-.2.814.287.383.607zM22.792 14.961c-.336-.43-2.22-.207-3.074-.103-.255.032-.295-.192-.063-.36 1.5-1.053 3.967-.75 4.254-.399.287.36-.08 2.826-1.485 4.007-.215.184-.423.088-.327-.151.32-.79 1.03-2.57.695-2.994z", "c": "#FFFFFF"}, "oci": {"d": "M16.412 4.412h-8.82a7.588 7.588 0 0 0-.008 15.176h8.828a7.588 7.588 0 0 0 0-15.176zm-.193 12.502H7.786a4.915 4.915 0 0 1 0-9.828h8.433a4.914 4.914 0 1 1 0 9.828z", "c": "#F80000"}, "databricks": {"d": "M.95 14.184L12 20.403l9.919-5.55v2.21L12 22.662l-10.484-5.96-.565.308v.77L12 24l11.05-6.218v-4.317l-.515-.309L12 19.118l-9.867-5.653v-2.21L12 16.805l11.05-6.218V6.32l-.515-.308L12 11.974 2.647 6.681 12 1.388l7.76 4.368.668-.411v-.566L12 0 .95 6.27v.72L12 13.207l9.919-5.55v2.26L12 15.52 1.516 9.56l-.565.308Z", "c": "#FF3621"}, "snowflake": {"d": "M24 3.459c0 .646-.418 1.18-1.141 1.18-.723 0-1.142-.534-1.142-1.18 0-.647.419-1.18 1.142-1.18.723 0 1.141.533 1.141 1.18zm-.228 0c0-.533-.38-.951-.913-.951s-.913.38-.913.95c0 .533.38.952.913.952.57 0 .913-.419.913-.951zm-1.37-.533h.495c.266 0 .456.152.456.38 0 .153-.076.229-.19.305l.19.266v.038h-.266l-.19-.266h-.229v.266h-.266zm.495.228h-.229v.267h.229c.114 0 .152-.038.152-.114.038-.077-.038-.153-.152-.153zM7.602 12.4c.038-.151.076-.304.076-.456 0-.114-.038-.228-.038-.342-.114-.343-.304-.647-.646-.838l-4.87-2.777c-.685-.38-1.56-.152-1.94.533-.381.685-.153 1.56.532 1.94l2.701 1.56-2.701 1.56c-.685.38-.913 1.256-.533 1.94.38.685 1.256.914 1.94.533l4.832-2.777c.343-.267.571-.533.647-.876zm1.332 2.626c-.266-.038-.57.038-.837.19l-4.832 2.777c-.685.38-.913 1.256-.532 1.94.38.686 1.255.914 1.94.533l2.701-1.56v3.12c0 .8.647 1.408 1.446 1.408.799 0 1.407-.647 1.407-1.408v-5.592c0-.761-.57-1.37-1.293-1.408zm4.946-6.088c.266.038.57-.038.837-.19l4.832-2.777c.685-.38.913-1.256.532-1.94-.38-.686-1.255-.914-1.94-.533l-2.701 1.56V1.975c0-.799-.647-1.408-1.446-1.408-.799 0-1.446.609-1.446 1.408V7.53c0 .76.609 1.37 1.332 1.407zM3.265 5.97l4.832 2.777c.266.152.533.19.837.19.723-.038 1.331-.684 1.331-1.407V1.975c0-.799-.646-1.408-1.407-1.408-.799 0-1.446.647-1.446 1.408v3.12l-2.701-1.56c-.685-.38-1.56-.152-1.94.533-.419.646-.19 1.521.494 1.902zm9.093 6.011a.412.412 0 00-.114-.266l-.57-.571a.346.346 0 00-.267-.114.412.412 0 00-.266.114l-.571.57a.411.411 0 00-.114.267c0 .076.038.19.114.267l.57.57a.345.345 0 00.267.114c.076 0 .19-.038.266-.114l.571-.57a.412.412 0 00.114-.267zm1.598.533L11.94 14.53c-.039.038-.153.114-.229.114h-.608a.411.411 0 01-.267-.114L8.82 12.514a.408.408 0 01-.076-.229v-.608c0-.076.038-.19.114-.267l2.016-2.016a.41.41 0 01.267-.114h.608a.41.41 0 01.267.114l2.016 2.016a.347.347 0 01.114.267v.608c-.076.077-.114.19-.19.229zm5.593 5.44l-4.832-2.777c-.266-.152-.57-.19-.837-.152-.723.038-1.332.684-1.332 1.408v5.554c0 .8.647 1.408 1.408 1.408.799 0 1.446-.647 1.446-1.408v-3.12l2.7 1.56c.686.38 1.561.152 1.941-.533.419-.646.19-1.521-.494-1.94zm2.549-7.533l-2.701 1.56 2.7 1.56c.686.38.914 1.256.533 1.94-.38.685-1.255.913-1.94.533l-4.832-2.778a1.644 1.644 0 01-.647-.798c-.037-.153-.076-.305-.076-.457 0-.114.039-.228.039-.342.114-.343.342-.647.646-.837l4.832-2.778c.685-.38 1.56-.152 1.94.533.457.609.19 1.484-.494 1.864", "c": "#29B5E8"}};
+
+// AI assistant marks (Simple Icons, CC0). Copilot uses the Microsoft four-square mark, drawn in logoAI().
+const AI_LOGOS = {"claude": {"d": "m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z", "c": "#D97757"}, "chatgpt": {"d": "M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z", "c": "#0F0F0F"}, "gemini": {"d": "M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81", "c": "#8E75B2"}};
+
+/* Line icons (24px grid, stroke = currentColor) and a keyword picker for recipe items. */
+const ICONS = {
+  meter: '<rect x="4" y="3" width="16" height="18" rx="3"/><circle cx="12" cy="10" r="4"/><path d="M12 10l2-2M8 17h8"/>',
+  bill: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+  tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/>',
+  weather: '<circle cx="8" cy="9" r="3"/><path d="M8 3v1M3 9h1M4.5 5.5l.7.7M11.5 5.5l-.7.7"/><path d="M9 20h8a4 4 0 0 0 0-8 5 5 0 0 0-9 2 3 3 0 0 0 1 6z"/>',
+  pin: '<path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/>',
+  clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/>',
+  home: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  building: '<rect x="4" y="3" width="10" height="18"/><path d="M14 9h6v12h-6M7 7h4M7 11h4M7 15h4"/>',
+  chart: '<path d="M4 20V4M4 20h16"/><path d="M7 15l4-4 3 3 5-6"/>',
+  brain: '<circle cx="6" cy="7" r="2"/><circle cx="18" cy="7" r="2"/><circle cx="6" cy="17" r="2"/><circle cx="18" cy="17" r="2"/><circle cx="12" cy="12" r="2.5"/><path d="M8 8l2.2 2.4M16 8l-2.2 2.4M8 16l2.2-2.4M16 16l-2.2-2.4"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+  plug: '<path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0z"/><path d="M12 17v4"/>',
+  code: '<path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/>',
+  dash: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 20V9M11 13h6M11 16h4"/>',
+  bot: '<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6"/><circle cx="12" cy="3.5" r="1"/>',
+  bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  battery: '<rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 10v4M7 10v4M11 10v4"/>',
+  shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  phone: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14h18M9 4v16"/>',
+  ev: '<path d="M5 16l1.5-5A2 2 0 0 1 8.4 9.5h7.2a2 2 0 0 1 1.9 1.5L19 16"/><rect x="3" y="14" width="18" height="4" rx="1.5"/><circle cx="7" cy="18.5" r="1.5"/><circle cx="17" cy="18.5" r="1.5"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6L19 19M5 19l1.4-1.4M17.6 6.4L19 5"/>',
+  flame: '<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-7 2 1 3 3 3 5"/>',
+  snow: '<path d="M12 2v20M3.5 7l17 10M3.5 17l17-10"/>',
+  search: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
+  send: '<path d="M3 11l18-8-8 18-2-8z"/>',
+  wrench: '<path d="M14 6a4 4 0 0 0 5 5l-9 9a2 2 0 0 1-3-3l9-9a4 4 0 0 0-2-2z"/>',
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  check: '<path d="M5 12l5 5 9-10"/>',
+  file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+  export: '<path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 14v6h14v-6"/>',
+  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>',
+};
+const icon = (k, cls = "ic") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[k] || ICONS.table}</svg>`;
+const ICON_RULES = [
+  [/\bmcp\b|agentic tools|assistant mcp|optimizer mcp/i, "plug"], [/\bapi\b/i, "code"], [/agent|genie|copilot|gemini|chat/i, "bot"],
+  [/workbench|dashboard|maps?\b|segment|simulation/i, "dash"], [/export|csv|pdf/i, "export"], [/control center|threshold/i, "gear"],
+  [/ami|interval|meter event|month-to-date|usage/i, "meter"], [/bill|billing|cis/i, "bill"], [/rate|tariff|tou/i, "tag"], [/weather/i, "weather"],
+  [/gis|network|topology|feeder|mapping/i, "pin"], [/program|enrollment|participation|campaign|marketing|implementer/i, "clipboard"],
+  [/survey|home|housing|premise/i, "home"], [/permit|external|census|catalog|enterprise data/i, "building"], [/forecast|trend|growth/i, "chart"],
+  [/ev\b|charger|charging/i, "ev"], [/solar|pv/i, "sun"], [/heat|hvac|thermostat|inefficiency/i, "flame"], [/flexib|battery|dispatch|derms|shift/i, "battery"],
+  [/demand kw|peak|kw\b|rating|design criteria/i, "bolt"], [/revenue|theft|tamper|investigation/i, "shield"], [/email|send/i, "mail"],
+  [/identity|sso|access/i, "user"], [/disaggregation|model|propensity|lifestyle|income|insights|attributes/i, "brain"],
+  [/engine|aggregation|projection|comparison|recommendation|heuristic|processing/i, "gear"], [/table|query|data layer|outputs|sql/i, "table"],
+  [/cost|project/i, "bill"],
+];
+const pickIcon = (t) => { for (const [re, k] of ICON_RULES) if (re.test(t)) return k; return "table"; };
 
 /* Content for the UtilityAI Pro overview. Sourced from the Southern Company SOW (Sep 2026)
    and the Con Edison enterprise proposal (Sep 2026), generalized for any utility. */
@@ -480,10 +648,10 @@ const NODES = {
 };
 
 const BANDS = [ // top to bottom
-  { id: "out", name: "Applications, agents & automations", tag: "you build and own" },
-  { id: "engines", name: "Engines · APIs · MCPs", tag: "answers, and how every channel and agent reaches them" },
-  { id: "models", name: "Core ML models", tag: "26 patents · 10+ years of labeled data · 38M+ meters" },
-  { id: "found", name: "Utility data foundation", tag: "your systems of record and your {lakeLabel}" },
+  { id: "out", name: "Apps & agents", tag: "you build and own" },
+  { id: "engines", name: "Engines · APIs · MCPs", tag: "answers, delivered anywhere" },
+  { id: "models", name: "Core ML models", tag: "26 patents · 38M+ meters" },
+  { id: "found", name: "Data foundation", tag: "in your {lakeLabel}" },
 ];
 
 const MODEL_TABS = [
@@ -1027,104 +1195,147 @@ function setEnv(kind, k) {
 }
 
 /* ---------- isometric platform stack ---------- */
-const STACK = { W: 640, H: 580, cx: 196, a: 168, b: 44, t: 14, top: 104, gap: 124 };
+const STACK = { W: 640, H: 620, cx: 196, a: 168, b: 44, t: 16, top: 160, gap: 116 };
 const LAYER_COPY = {
-  out: "Your apps, agents and automations. Built by your team or SI from Bidgely reference implementations and run on your own platforms.",
-  engines: "Engines turn raw model outputs into use-case-ready answers for grid planning and customer experience. APIs, MCP servers and apps carry those answers to every channel, dashboard and AI agent.",
-  models: "Bidgely's patented models, delivered as encrypted containers on confidential compute. Select a model to see what it detects.",
-  found: "What you already run. UtilityAI Pro reads your systems of record and keeps all of its data in your {lakeLabel}.",
+  out: "Apps, agents and automations you build and own.",
+  engines: "Engines turn outputs into answers. APIs and MCPs deliver them to every channel and agent.",
+  models: "Patented models, encrypted, running in your cloud. Click one.",
+  found: "Your systems of record, with all UtilityAI Pro data kept in your {lakeLabel}.",
 };
+const AI_TOOLS = [["claude", "Claude"], ["chatgpt", "ChatGPT"], ["copilot", "Copilot"], ["gemini", "Gemini"]];
+const logoAI = (k) => k === "copilot"
+  ? `<svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="10.5" height="10.5" fill="#F25022"/><rect x="12.5" y="1" width="10.5" height="10.5" fill="#7FBA00"/><rect x="1" y="12.5" width="10.5" height="10.5" fill="#00A4EF"/><rect x="12.5" y="12.5" width="10.5" height="10.5" fill="#FFB900"/></svg>`
+  : `<svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="${AI_LOGOS[k].c}" d="${AI_LOGOS[k].d}"/></svg>`;
 let selBand = "models";
 const bandIds = (id) => Object.keys(NODES).filter(k => NODES[k].band === id);
-const TILE_COLORS = { models: ["--c-cool", "--c-heat", "--c-ev", "--c-solar", "--c-pool", "--c-wh", "--c-ao", "--c-cool"] };
+const MODEL_COLORS = ["--c-cool", "--c-heat", "--c-ev", "--c-solar", "--c-pool", "--c-wh", "--c-ao", "--c-cool"];
+const LAKE_TINT = { databricks: ["#fff4f1", "#ffd9cf", "#ffc2b3"], snowflake: ["#eefaff", "#c9eefa", "#a7e1f4"], native: ["#f4f7fa", "#dbe4ec", "#c7d3de"] };
+function bandStyle(id, sel) {
+  const lt = LAKE_TINT[lake] || LAKE_TINT.native;
+  return ({
+    out:     { top: ["#ffffff", "#eef5fb"], L: "#dde8f1", R: "#c7d8e6", stroke: "#b6cadb" },
+    engines: { top: ["#123d5c", "#04121f"], L: "#082033", R: "#051624", stroke: "#1f6c96" },
+    models:  { top: ["#f5fcff", "#d8f0fb"], L: "#b7e1f4", R: "#8fcfec", stroke: "#86c7e6" },
+    found:   { top: ["#ffffff", lt[0]], L: lt[1], R: lt[2], stroke: lt[2] },
+  })[id];
+}
 
 function renderStack() {
   const S = STACK, svg = $("#stack-svg"); svg.innerHTML = "";
   svg.setAttribute("viewBox", `0 0 ${S.W} ${S.H}`);
   const defs = svgEl("defs", {}, svg);
-  defs.innerHTML = `
-    <linearGradient id="gTop" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9f6fd"/></linearGradient>
-    <linearGradient id="gTopSel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2fbff"/><stop offset="1" stop-color="#c9ebfa"/></linearGradient>
-    <linearGradient id="gFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#29abe2" stop-opacity=".10"/><stop offset="1" stop-color="#29abe2" stop-opacity=".02"/></linearGradient>`;
+  defs.innerHTML = `<linearGradient id="gFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#29abe2" stop-opacity=".14"/><stop offset="1" stop-color="#14b8a6" stop-opacity=".04"/></linearGradient>
+    <linearGradient id="gFlow" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#14b8a6"/><stop offset="1" stop-color="#29abe2"/></linearGradient>
+    <filter id="glow" x="-20%" y="-40%" width="140%" height="180%"><feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#29abe2" flood-opacity=".45"/></filter>`;
+  BANDS.forEach(B => { const st = bandStyle(B.id); defs.insertAdjacentHTML("beforeend", `<linearGradient id="gT-${B.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${st.top[0]}"/><stop offset="1" stop-color="${st.top[1]}"/></linearGradient>`); });
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const P = (x, y) => `${x.toFixed(1)},${y.toFixed(1)}`;
   const n = BANDS.length;
-  // cloud floor: the tenant boundary everything stands on
-  const fy = S.top + (n - 1) * S.gap + 30, fa = S.a + 26, fb = S.b + 16;
+  const fy = S.top + (n - 1) * S.gap + 34, fa = S.a + 26, fb = S.b + 16;
   svgEl("polygon", { points: [P(S.cx, fy - fb), P(S.cx + fa, fy), P(S.cx, fy + fb), P(S.cx - fa, fy)].join(" "), fill: "url(#gFloor)", stroke: cssv("--accent"), "stroke-width": 1.5, "stroke-dasharray": "6 5" }, svg);
-  // pillars and data rising from the lake to the top layer
+  // data rising from the lake through every layer, and on up to the AI tools
   const flowG = svgEl("g", { "aria-hidden": "true" }, svg);
-  const yTop = S.top + S.b, yBot = S.top + (n - 1) * S.gap;
+  const yTop = 70, yBot = S.top + (n - 1) * S.gap;
+  const AIX = [70, 154, 238, 322], AIY = [40, 78, 40, 78];
+  AIX.forEach((x, i) => svgEl("path", { d: `M${x},${AIY[i] + 12} L${x},${S.top - S.b + 20}`, stroke: cssv("--accent-line"), "stroke-width": 1.2, "stroke-dasharray": "3 4", fill: "none" }, flowG));
   [-96, 0, 96].forEach((dx, i) => {
-    svgEl("line", { x1: S.cx + dx, x2: S.cx + dx, y1: yTop, y2: yBot, stroke: cssv("--accent-line"), "stroke-width": 1.2, "stroke-dasharray": "3 5" }, flowG);
+    svgEl("line", { x1: S.cx + dx, x2: S.cx + dx, y1: S.top, y2: yBot, stroke: cssv("--accent-line"), "stroke-width": 1.2, "stroke-dasharray": "3 5" }, flowG);
     if (!reduce) for (let k = 0; k < 3; k++) {
-      const c = svgEl("circle", { cx: S.cx + dx, cy: yBot, r: 3.2, fill: cssv("--accent") }, flowG);
-      c.innerHTML = `<animate attributeName="cy" from="${yBot}" to="${yTop}" dur="3.2s" begin="${-(k * 1.07 + i * 0.4).toFixed(2)}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;1;0" dur="3.2s" begin="${-(k * 1.07 + i * 0.4).toFixed(2)}s" repeatCount="indefinite"/>`;
+      const c = svgEl("circle", { cx: S.cx + dx, cy: yBot, r: 3.4, fill: "url(#gFlow)" }, flowG);
+      const beg = -(k * 1.1 + i * 0.4).toFixed(2);
+      c.innerHTML = `<animate attributeName="cy" from="${yBot}" to="${S.top - S.b}" dur="3.4s" begin="${beg}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;1;0" dur="3.4s" begin="${beg}s" repeatCount="indefinite"/>`;
     }
   });
-  // slabs, bottom first so upper slabs paint over the pillars
+  if (!reduce) AIX.forEach((x, i) => { const c = svgEl("circle", { cx: x, cy: S.top - S.b + 20, r: 2.6, fill: cssv("--accent") }, flowG); c.innerHTML = `<animate attributeName="cy" from="${S.top - S.b + 20}" to="${AIY[i] + 12}" dur="1.8s" begin="${-i * 0.45}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="1.8s" begin="${-i * 0.45}s" repeatCount="indefinite"/>`; });
+
   const labels = $("#slab-labels"); labels.innerHTML = "";
+  AI_TOOLS.forEach(([k, name], i) => labels.append(el("span", { class: "ai-row", style: `left:${AIX[i] / S.W * 100}%;top:${AIY[i] / S.H * 100}%` }, `<span class="ai-pill">${logoAI(k)}<span>${name}</span></span>`)));
+  labels.append(el("span", { class: "ai-row", style: `left:${(AIX[3] + 120) / S.W * 100}%;top:${(AIY[0] + 19) / S.H * 100}%` }, `<span class="lbl" style="white-space:nowrap">Your AI tools, via MCP</span>`));
+
   [...BANDS].reverse().forEach((B) => {
-    const i = BANDS.indexOf(B), yc = S.top + i * S.gap, sel = B.id === selBand;
-    const g = svgEl("g", { class: "slab" + (sel ? " sel" : ""), "data-band": B.id, tabindex: "-1" }, svg);
+    const i = BANDS.indexOf(B), yc = S.top + i * S.gap, sel = B.id === selBand, st = bandStyle(B.id);
+    const g = svgEl("g", { class: "slab" + (sel ? " sel" : ""), "data-band": B.id, filter: sel ? "url(#glow)" : "" }, svg);
     const T = [S.cx, yc - S.b], R = [S.cx + S.a, yc], Bt = [S.cx, yc + S.b], L = [S.cx - S.a, yc];
-    const stroke = sel ? cssv("--accent") : "#a9d4ea";
-    svgEl("polygon", { points: [P(...L), P(...Bt), P(Bt[0], Bt[1] + S.t), P(L[0], L[1] + S.t)].join(" "), fill: sel ? "#7fcbee" : "#d3e9f5", stroke, "stroke-width": 1 }, g);
-    svgEl("polygon", { points: [P(...Bt), P(...R), P(R[0], R[1] + S.t), P(Bt[0], Bt[1] + S.t)].join(" "), fill: sel ? "#4fb6e5" : "#b9dbee", stroke, "stroke-width": 1 }, g);
-    svgEl("polygon", { points: [P(...T), P(...R), P(...Bt), P(...L)].join(" "), fill: sel ? "url(#gTopSel)" : "url(#gTop)", stroke, "stroke-width": sel ? 1.6 : 1 }, g);
-    // component tiles laid out on the top face: map (u,v) in the unit square onto the diamond
+    const stroke = sel ? cssv("--accent") : st.stroke;
+    svgEl("polygon", { points: [P(...L), P(...Bt), P(Bt[0], Bt[1] + S.t), P(L[0], L[1] + S.t)].join(" "), fill: st.L, stroke, "stroke-width": 1 }, g);
+    svgEl("polygon", { points: [P(...Bt), P(...R), P(R[0], R[1] + S.t), P(Bt[0], Bt[1] + S.t)].join(" "), fill: st.R, stroke, "stroke-width": 1 }, g);
+    svgEl("polygon", { points: [P(...T), P(...R), P(...Bt), P(...L)].join(" "), fill: `url(#gT-${B.id})`, stroke, "stroke-width": sel ? 1.8 : 1 }, g);
+    const map = (u, v) => [T[0] + u * (R[0] - T[0]) + v * (L[0] - T[0]), T[1] + u * (R[1] - T[1]) + v * (L[1] - T[1])];
+    const quad = (u0, v0, u1, v1) => [map(u0, v0), map(u1, v0), map(u1, v1), map(u0, v1)].map(p => P(...p)).join(" ");
     const ids = bandIds(B.id);
     const rows = B.id === "found" ? [ids.filter(k => NODES[k].row === "src"), ids.filter(k => NODES[k].row === "lake")] : ids.length > 12 ? [ids.slice(0, 5), ids.slice(5, 10), ids.slice(10)] : ids.length > 6 ? [ids.slice(0, Math.ceil(ids.length / 2)), ids.slice(Math.ceil(ids.length / 2))] : [ids];
-    const map = (u, v) => [T[0] + u * (R[0] - T[0]) + v * (L[0] - T[0]), T[1] + u * (R[1] - T[1]) + v * (L[1] - T[1])];
+    const hook = (node, id) => { hoverable(node, () => `<b>${esc(NODES[id].name)}</b><div>${esc(sub(NODES[id].sub))}</div>`); node.addEventListener("click", (e) => { e.stopPropagation(); selBand = B.id; renderStack(); renderLayer(id); if (NODES[id].tab) openModel(NODES[id].tab); }); };
+    const centers = [];
     rows.forEach((row, ri) => {
-      const nr = rows.length, v0 = nr === 1 ? 0.36 : nr === 2 ? 0.16 + ri * 0.42 : 0.1 + ri * 0.29, vh = nr === 1 ? 0.3 : nr === 2 ? 0.28 : 0.21;
+      const nr = rows.length, v0 = nr === 1 ? 0.34 : nr === 2 ? 0.14 + ri * 0.44 : 0.08 + ri * 0.3, vh = nr === 1 ? 0.32 : nr === 2 ? 0.3 : 0.22;
       row.forEach((id, ci) => {
-        const cw = 0.84 / row.length, u0 = 0.08 + ci * cw, u1 = u0 + cw * 0.78;
-        const pts = [map(u0, v0), map(u1, v0), map(u1, v0 + vh), map(u0, v0 + vh)].map(p => P(...p)).join(" ");
-        let fill = sel ? "#ffffff" : "#f4fbfe", st = sel ? cssv("--accent") : "#b7dcee";
-        if (B.id === "models") { fill = cssv(TILE_COLORS.models[ci + ri * 4] || "--c-cool"); st = "#ffffff"; }
-        if (B.id === "found" && ri === 1) { fill = sel ? "#dff3fc" : "#eaf7fd"; st = cssv("--accent"); }
-        const tile = svgEl("polygon", { points: pts, fill, stroke: st, "stroke-width": 1, opacity: B.id === "models" && !sel ? 0.75 : 1 }, g);
-        hoverable(tile, () => `<b>${esc(NODES[id].name)}</b><div>${esc(sub(NODES[id].sub))}</div>`);
-        tile.addEventListener("click", (e) => { e.stopPropagation(); selBand = B.id; renderStack(); renderLayer(id); if (NODES[id].tab) openModel(NODES[id].tab); });
+        const cw = 0.86 / row.length, u0 = 0.07 + ci * cw, u1 = u0 + cw * 0.8, cu = (u0 + u1) / 2, cv = v0 + vh / 2;
+        if (B.id === "out") { // app windows
+          hook(svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh), fill: "#ffffff", stroke: sel ? cssv("--accent") : "#b9cfe0", "stroke-width": 1 }, g), id);
+          svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh * 0.22), fill: sel ? cssv("--accent") : "#cfe3f1", "pointer-events": "none" }, g);
+          svgEl("polygon", { points: quad(u0 + (u1 - u0) * 0.15, v0 + vh * 0.45, u1 - (u1 - u0) * 0.3, v0 + vh * 0.58), fill: "#e3edf5", "pointer-events": "none" }, g);
+        } else if (B.id === "engines") { // chips on a circuit board
+          if (ci < row.length - 1) svgEl("polygon", { points: quad(u1, cv - 0.012, u0 + cw, cv + 0.012), fill: "#29abe2", opacity: 0.55, "pointer-events": "none" }, g);
+          hook(svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh), fill: "#0b2c44", stroke: "#29abe2", "stroke-width": 1 }, g), id);
+          svgEl("polygon", { points: quad(u0 + (u1 - u0) * 0.25, v0 + vh * 0.25, u1 - (u1 - u0) * 0.25, v0 + vh * 0.75), fill: NODES[id].group === "APIs, MCPs & apps" ? "#5eead4" : "#29abe2", opacity: 0.8, "pointer-events": "none" }, g);
+        } else if (B.id === "models") { // neural network nodes
+          centers.push([map(cu, cv), id, ci + ri * 4]);
+        } else { // foundation: source pads and lake cylinders
+          const [x, y] = map(cu, cv);
+          if (ri === 0) {
+            hook(svgEl("polygon", { points: quad(u0, v0, u1, v0 + vh), fill: "#ffffff", stroke: "#c7d3de", "stroke-width": 1 }, g), id);
+            svgEl("circle", { cx: x, cy: y, r: 2.4, fill: "#8aa0b3", "pointer-events": "none" }, g);
+          } else {
+            const w = 15, h = 13, cyl = svgEl("g", {}, g);
+            svgEl("path", { d: `M${x - w},${y - h / 2} v${h} a${w},${w * 0.35} 0 0 0 ${w * 2},0 v${-h}`, fill: lake === "databricks" ? "#ff8a6f" : lake === "snowflake" ? "#49c2ea" : "#8fa7bb", stroke: "#fff", "stroke-width": 1 }, cyl);
+            svgEl("ellipse", { cx: x, cy: y - h / 2, rx: w, ry: w * 0.35, fill: lake === "databricks" ? "#ffc0b0" : lake === "snowflake" ? "#b5e8f8" : "#d4dee8", stroke: "#fff", "stroke-width": 1 }, cyl);
+            hook(cyl, id);
+          }
+        }
       });
     });
+    if (B.id === "models") {
+      centers.forEach(([p1], a1) => centers.forEach(([p2], a2) => { if (a2 > a1 && Math.hypot(p1[0] - p2[0], p1[1] - p2[1]) < 120) svgEl("line", { x1: p1[0], y1: p1[1], x2: p2[0], y2: p2[1], stroke: "#7cc4e6", "stroke-width": 1, opacity: 0.7, "pointer-events": "none" }, g); }));
+      centers.forEach(([p, id, k]) => { const c = svgEl("circle", { cx: p[0], cy: p[1], r: 9, fill: cssv(MODEL_COLORS[k] || "--c-cool"), stroke: "#fff", "stroke-width": 2.5 }, g); hook(c, id); });
+    }
     g.addEventListener("click", () => { selBand = B.id; renderStack(); renderLayer(); });
-    // HTML label at the slab's right corner so text stays at the page's text sizes
     const lx = (S.cx + S.a + 16) / S.W * 100, ly = (yc + S.t / 2) / S.H * 100;
     const extra = B.id === "found" ? `${logo(lake === "native" ? "" : lake)}` : "";
-    const lab = el("button", { type: "button", class: "slab-label", style: `left:${lx}%;top:${ly}%`, "aria-pressed": sel },
-      `<b>${esc(B.name)}</b><span style="display:flex;align-items:center;gap:5px">${extra}${esc(sub(B.tag))}</span>`);
+    const lab = el("button", { type: "button", class: "slab-label", style: `left:${lx}%;top:${ly}%`, "aria-pressed": sel }, `<b>${esc(B.name)}</b><span>${extra}${esc(sub(B.tag))}</span>`);
     lab.addEventListener("click", () => { selBand = B.id; renderStack(); renderLayer(); });
     labels.append(lab);
     svgEl("line", { x1: R[0] + 2, y1: R[1] + S.t / 2, x2: R[0] + 14, y2: R[1] + S.t / 2, stroke: cssv("--line-2"), "stroke-width": 1 }, svg);
   });
-  const e = ENV();
-  $("#tenant-chip").innerHTML = `${logo(cloud)}${logo(lake === "native" ? "" : lake)}<span>${esc(e.tenant)}</span>`;
+  const e = ENV(), tc = $("#tenant-chip");
+  tc.innerHTML = `${logo(cloud)}${logo(lake === "native" ? "" : lake)}<span>${esc(e.tenant)}</span>`;
   $("#egress-net").textContent = e.network;
 }
 
 function renderLayer(focusId) {
   const B = BANDS.find(b => b.id === selBand), ids = bandIds(B.id), e = ENV();
   const card = (id) => {
-    const nd = NODES[id], click = !!nd.tab;
-    return `<${click ? "button type=\"button\"" : "div"} class="comp${click ? " clickable" : ""}${id === focusId ? " clickable" : ""}" data-id="${id}"${id === focusId ? ' style="border-color:var(--accent)"' : ""}>
-      <b>${esc(nd.name)}</b><span class="sub">${esc(sub(nd.sub))}</span><span>${esc(sub(nd.desc))}</span>${click ? '<span class="go">See what it detects →</span>' : ""}</${click ? "button" : "div"}>`;
+    const nd = NODES[id], click = !!nd.tab, tag = click ? "button" : "div";
+    return `<${tag}${click ? ' type="button"' : ""} class="comp${click ? " clickable" : ""}" data-id="${id}"${id === focusId ? ' style="border-color:var(--accent)"' : ""}>
+      <span class="ci">${icon(pickIcon(nd.name + " " + nd.sub))}</span><b>${esc(nd.name)}</b><span class="sub">${esc(sub(nd.sub))}</span>${click ? '<span class="go">Explore →</span>' : ""}</${tag}>`;
   };
   let grid;
   if (B.id === "found") {
     grid = `<div class="lbl group-h">Your systems of record</div>${ids.filter(k => NODES[k].row === "src").map(card).join("")}
-      <div class="lbl group-h" style="display:flex;align-items:center;gap:6px">${logo(lake === "native" ? "" : lake)}UtilityAI Pro data layer, inside your ${esc(e.lakeLabel)}</div>${ids.filter(k => NODES[k].row === "lake").map(card).join("")}`;
+      <div class="lbl group-h" style="display:flex;align-items:center;gap:6px">${logo(lake === "native" ? "" : lake)}In your ${esc(e.lakeLabel)}</div>${ids.filter(k => NODES[k].row === "lake").map(card).join("")}`;
   } else if (B.id === "engines") {
     grid = ["Grid & analytics", "Customer experience", "APIs, MCPs & apps"].map(gn => `<div class="lbl group-h">${gn}</div>` + ids.filter(k => NODES[k].group === gn).map(card).join("")).join("");
   } else grid = ids.map(card).join("");
-  const idx = BANDS.length - BANDS.indexOf(B);
-  $("#layer-panel").innerHTML = `<div class="layer-top"><span class="eyebrow">Layer ${idx} of ${BANDS.length}</span><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div><div class="comp-grid">${grid}</div>`;
-  $("#layer-panel").querySelectorAll(".comp[data-id]").forEach(c => { const nd = NODES[c.dataset.id]; if (nd.tab) c.addEventListener("click", () => openModel(nd.tab)); });
+  $("#layer-panel").innerHTML = `<div class="layer-top"><span class="eyebrow">Layer ${BANDS.length - BANDS.indexOf(B)} of ${BANDS.length}</span><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div><div class="comp-grid">${grid}</div>`;
+  $("#layer-panel").querySelectorAll(".comp[data-id]").forEach(c => {
+    const nd = NODES[c.dataset.id];
+    hoverable(c, () => `<b>${esc(nd.name)}</b><div>${esc(sub(nd.desc))}</div>`);
+    if (nd.tab) c.addEventListener("click", () => openModel(nd.tab));
+  });
 }
 function openModel(tab) {
+  const d = $("#model-dlg");
+  if (!d.open) { try { d.showModal(); } catch (e) { d.setAttribute("open", ""); } }
   setModelTab(tab);
-  $("#models").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }
 
 /* ---------- models ---------- */
@@ -1174,8 +1385,7 @@ const HM_SERIES = [
 function mDisagg() {
   const v = panel(`
     <h3>Appliance &amp; DER disaggregation</h3>
-    <p style="color:var(--ink-2)">Each heatmap is the same meter: one row per day, one column per hour. The left panel is what the meter records. The rest are what the model separates out. Hover to read values; click any row to open that day.</p>
-    <p class="small muted">Look for the EV stripe that appears in mid-January and moves to 11pm in June, solar arriving in spring, and the pool pump switching from two runs to one long variable-speed run.</p>`,
+    <p>One meter, one row per day. Raw reads on the left, what the model separates out on the right. Click a row.</p>`,
     [["Input", "AMI interval data (15-min or hourly), weather, bill cycles"], ["Output", "Hourly kWh per appliance per meter; monthly for cooking, laundry, entertainment"], ["Categories", "Always on, heating, cooling, water heating, refrigeration, lighting, pool pump, EV, solar, plus 3 monthly"], ["Written to", "Governed output tables in your data platform, every run"]]);
   v.append(el("div", { class: "viz-h" }, `<h4>8,760 hours, separated</h4><span class="xs muted mono">sample premise · Oct 2025 to Sep 2026</span>`));
   const wrap = el("div", { class: "hm-wrap" });
@@ -1280,9 +1490,8 @@ function drawDay() {
 /* Attributes */
 function mAttr() {
   const v = panel(`<h3>Appliance &amp; DER attributes</h3>
-    <p style="color:var(--ink-2)">Knowing a home has heating is useful. Knowing it runs electric resistance heat instead of a heat pump is what makes an electrification offer land. The attributes model profiles every detected appliance.</p>
-    <p class="small muted">A heat pump draws a steady, cycling load that rises gently as it gets colder. Resistance heat jumps in large steps and tracks temperature much more steeply.</p>`,
-    [["Input", "Disaggregation outputs, interval shape, weather"], ["Output", "Per-appliance attributes with confidence"], ["Examples", "Heating fuel, heat pump, pool pump type and runs, water heater type, EV charger amplitude, solar capacity, smart thermostat, battery"], ["Used for", "Electrification, BYOT DR, EV and battery programs, rebates"]]);
+    <p>Every detected appliance, profiled.</p>`,
+    [["Input", "Disaggregation outputs, interval shape, weather"], ["Output", "Per-appliance attributes with confidence"], ["Examples", "Heating fuel, heat pump, pool pump type and runs, water heater type, EV charger amplitude, solar capacity, smart thermostat, battery"]]);
   v.append(el("div", { class: "detect-list" }, [
     ["Heating fuel", "Electric", "--c-heat"], ["Heat pump", "Detected · 0.93", "--c-heat"], ["Pool pump", "Variable speed · 1 run/day", "--c-pool"],
     ["Water heater", "Electric resistance · 2 runs/day", "--c-wh"], ["EV charger", "Level 2 · 7.2 kW", "--c-ev"], ["Solar capacity", "6-7 kW DC", "--c-solar"],
@@ -1317,8 +1526,8 @@ function mAttr() {
 /* Inefficiency */
 function mIneff() {
   const v = panel(`<h3>Appliance inefficiency</h3>
-    <p style="color:var(--ink-2)">The model tracks how much energy each home's HVAC needs per degree of weather, season after season. Rising energy per degree means degradation. A ceiling on the hottest days means the unit is saturated and cannot keep up. Frequent short on-off patterns point to short cycling.</p>`,
-    [["Input", "Heating and cooling disaggregation, weather"], ["Output", "Degradation, short cycling and saturation flags per system"], ["Used for", "Tune-up and replacement offers, heat pump upgrades, EE program targeting"]]);
+    <p>Energy per degree, tracked season over season.</p>`,
+    [["Input", "Heating and cooling disaggregation, weather"], ["Output", "Degradation, short cycling and saturation flags per system"]]);
   const r = rng(77);
   const w = VW(), h = 280, ml = 42, mr = 16, mt = 16, mb = 34;
   const xT = (t) => ml + (t - 72) / (104 - 72) * (w - ml - mr), yK = (k) => mt + (60 - k) / 60 * (h - mt - mb);
@@ -1352,8 +1561,8 @@ const ARCH = [
 ];
 function mLife() {
   const v = panel(`<h3>Customer lifestyle</h3>
-    <p style="color:var(--ink-2)">Lifestyle archetypes cluster how and when a household uses energy across seasons and days of the week. They shape message timing, rate fit and program offers. The sample home is an Office Goer on weekdays and a Weekend Warrior on Saturdays.</p>`,
-    [["Input", "Annual, seasonal and daily usage patterns"], ["Output", "Archetype label per household"], ["Archetypes", "Dormant, Office Goer, Active, Weekend Warrior, Evening Consumer and more"], ["Used for", "Rate fit, message timing, DR availability"]]);
+    <p>How and when a household uses energy.</p>`,
+    [["Input", "Annual, seasonal and daily usage patterns"], ["Output", "Archetype label per household"], ["Archetypes", "Dormant, Office Goer, Active, Weekend Warrior, Evening Consumer and more"]]);
   const grid = el("div", { style: "display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px" });
   ARCH.forEach((a, j) => {
     const w = 200, h = 96, ml = 2, mr = 2, mt = 6, mb = 4;
@@ -1378,8 +1587,8 @@ const PROP = (() => { const r = rng(9); const a = []; for (let i = 0; i < 24000;
 let propT = 0.6;
 function mProp() {
   const v = panel(`<h3>DER propensity</h3>
-    <p style="color:var(--ink-2)">Propensity scores rank every customer by the likelihood of adopting an EV or installing solar. Planners use them as forecast inputs; program teams use them to reach likely adopters early. Existing owners, found by disaggregation, are excluded automatically.</p>`,
-    [["Input", "Usage patterns, home and lifestyle profile, area adoption"], ["Output", "EV and solar adoption likelihood per customer"], ["Used for", "Localized adoption forecasts, EV program outreach, solar offers"]]);
+    <p>Who is likely to adopt an EV or solar next.</p>`,
+    [["Input", "Usage patterns, home and lifestyle profile, area adoption"], ["Output", "EV and solar adoption likelihood per customer"]]);
   v.append(el("div", { class: "viz-h" }, `<h4>EV propensity across one network · 24,000 premises</h4><span class="xs muted mono">synthetic distribution</span>`));
   const holder = el("div"); v.append(holder);
   const ctl = el("div", { class: "range" }, `<label for="prop-t" class="small">Outreach threshold</label><input id="prop-t" type="range" min="0.2" max="0.9" step="0.05" value="${propT}"><span class="mono small" id="prop-tv">${propT.toFixed(2)}</span>`);
@@ -1410,8 +1619,8 @@ let incMode = "premise";
 const INC = (() => { const r = rng(31); const blocks = [0.12, 0.55, 0.3, 0.72, 0.2, 0.42]; const cells = []; for (let b = 0; b < 6; b++) for (let i = 0; i < 48; i++) { const truth = r() < blocks[b]; const p = clamp(truth ? 0.62 + r() * 0.35 : r() * 0.45 + (r() < 0.1 ? 0.25 : 0), 0, 1); cells.push({ b, truth, p, share: blocks[b] }); } return cells; })();
 function mInc() {
   const v = panel(`<h3>Customer income</h3>
-    <p style="color:var(--ink-2)">Census data tells you the share of income-eligible households in a block. It cannot tell you which households. The income model scores each premise from its energy profile combined with public income distribution data, so assistance programs reach the right doors.</p>`,
-    [["Input", "Energy profile, home attributes, census income distribution"], ["Output", "Likelihood of income eligibility per premise"], ["Used for", "Income-qualified EE and bill assistance, affordability reporting"]]);
+    <p>Income eligibility, scored per premise instead of per census block.</p>`,
+    [["Input", "Energy profile, home attributes, census income distribution"], ["Output", "Likelihood of income eligibility per premise"]]);
   const seg = el("div", { class: "seg", role: "group", "aria-label": "Targeting method" }, `<button type="button" data-m="census" aria-pressed="${incMode === "census"}">Census block average</button><button type="button" data-m="premise" aria-pressed="${incMode === "premise"}">Premise-level model</button>`);
   v.append(el("div", { class: "viz-h" }, `<h4>288 premises in six census blocks</h4>`));
   v.firstElementChild.append(seg);
@@ -1443,8 +1652,8 @@ function mInc() {
 /* Personalized insights */
 function mPI() {
   const v = panel(`<h3>Personalized insights</h3>
-    <p style="color:var(--ink-2)">Each home is compared with statistically similar homes nearby, by size, age, heating type and appliance mix, at the appliance level. The gap drives a ranked list of tips, so a customer sees the two things worth doing in their home instead of twenty generic ones.</p>`,
-    [["Input", "Disaggregation, home profile, similar-home cohort"], ["Output", "Efficiency score per appliance, ranked tips"], ["Used for", "Home energy reports, bill explanations, EE program savings"]]);
+    <p>Each home against similar homes, appliance by appliance.</p>`,
+    [["Input", "Disaggregation, home profile, similar-home cohort"], ["Output", "Efficiency score per appliance, ranked tips"]]);
   const rows = [["Cooling", 612, 430, 540], ["EV charging", 318, 250, 300], ["Pool pump", 205, 150, 240], ["Water heating", 180, 120, 160], ["Always on", 225, 170, 210], ["Lighting & other", 260, 220, 250]];
   const w = VW(), rh = 34, ml = 130, mr = 20, mt = 24, h = mt + rows.length * rh + 24;
   const mx = 700; const x = (vv) => ml + vv / mx * (w - ml - mr);
@@ -1468,9 +1677,9 @@ function mPI() {
 /* Revenue loss */
 function mRev() {
   const v = panel(`<h3>Revenue loss</h3>
-    <p style="color:var(--ink-2)">The revenue loss model compares each meter with its own history, its weather response and similar premises. When consumption drops in a way weather and behavior cannot explain, the case is flagged and categorized for investigation.</p>
+    <p>Drops that weather and behavior can't explain get flagged.</p>
     <div class="chips">${["Theft", "Rate misuse", "Tampering", "Load violation", "Power factor", "Terminal burn"].map(c => `<span class="tag">${c}</span>`).join("")}</div>`,
-    [["Input", "AMI usage, meter events, rate assignment, weather"], ["Output", "Anomaly flag, category and priority per meter"], ["Used for", "Revenue protection, field investigation, safety"]]);
+    [["Input", "AMI usage, meter events, rate assignment, weather"], ["Output", "Anomaly flag, category and priority per meter"]]);
   const r = rng(5); const n = 180, drop = 118;
   const exp = [], act = [];
   for (let d = 0; d < n; d++) { const e = 34 + 16 * Math.sin(2 * Math.PI * (d + 40) / 365 * 2) + (r() - 0.5) * 6; exp.push(e); act.push(d < drop ? e * (0.93 + r() * 0.14) : e * (0.38 + r() * 0.1)); }
@@ -1495,43 +1704,55 @@ function mRev() {
   v.append(el("div", { class: "kpis" }, `<div class="kpi"><b>Priority 1</b><span>Ranked for field investigation</span></div><div class="kpi"><b>~410 kWh</b><span>estimated unbilled per month</span></div><div class="kpi"><b>Tampering</b><span>Category, with meter event match</span></div>`));
 }
 
-/* ---------- use cases: tabs, visuals, MCP connect + assistant chat ---------- */
+/* ---------- use cases: card grid, detail, visuals, MCP connect + assistant chat ---------- */
 const ASSISTANTS = {
-  claude:  { name: "Claude", dot: "#d97757" },
-  chatgpt: { name: "ChatGPT", dot: "#10a37f" },
-  copilot: { name: "Microsoft Copilot", dot: "#0078d4" },
-  gemini:  { name: "Gemini", dot: "#4285f4" },
-  dev:     { name: "Your agent", dot: "#04121f" },
+  claude:  { name: "Claude" },
+  chatgpt: { name: "ChatGPT" },
+  copilot: { name: "Microsoft Copilot" },
+  gemini:  { name: "Gemini" },
+  dev:     { name: "Your agent" },
 };
-let ucId = "highbill", mcpTab = "claude", chatTimer = null;
+let ucId = null, mcpTab = "claude", chatTimer = null;
 const UC_ORDER = ["highbill", "forecast", "flex", "nws", "trend", "rates", "assistant", "alert", "web", "targeting", "analyst", "revenue"];
+const UC_META = {
+  highbill: ["bill", "CSR desktop"], forecast: ["chart", "Grid chart"], flex: ["battery", "Agent automation"], nws: ["bolt", "Scenario chart"],
+  trend: ["bot", "Agent automation"], rates: ["tag", "Customer app"], assistant: ["sun", "Customer app"], alert: ["mail", "Proactive email"],
+  web: ["phone", "Customer app"], targeting: ["target", "Agent automation"], analyst: ["search", "Analyst workspace"], revenue: ["shield", "Agent automation"],
+};
 const UCW = (host) => Math.max(280, Math.round(host.clientWidth || 600));
 const CHECK = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const money = (v) => "$" + Math.round(v).toLocaleString();
+const firstSentence = (t) => (t.match(/^[^.]*\./) || [t])[0];
 
 function buildUCTabs() {
-  const c = $("#uc-tabs"); c.innerHTML = "";
+  const c = $("#uc-grid"); c.innerHTML = "";
   UC_ORDER.forEach(id => {
-    const u = USE_CASES.find(x => x.id === id);
-    const b = el("button", { type: "button", class: "uc-tab", "data-id": id, "aria-pressed": id === ucId }, `<b>${esc(u.short)}</b><span>${esc(u.group)}</span>`);
-    b.addEventListener("click", () => { ucId = id; renderUC(); });
+    const u = USE_CASES.find(x => x.id === id), [ic, kind] = UC_META[id];
+    const b = el("button", { type: "button", class: "uc-c", "data-id": id, "aria-pressed": "false" },
+      `<span class="ico">${icon(ic)}</span><b>${esc(u.title)}</b><span class="meta"><span>${esc(u.group)}</span><span class="kind">${esc(kind)}</span></span>`);
+    b.addEventListener("click", () => openUC(id));
     c.append(b);
   });
 }
+function openUC(id) {
+  ucId = id; renderUC();
+  $("#uc-card").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+}
 
 function renderUC() {
-  document.querySelectorAll(".uc-tab").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === ucId));
+  document.querySelectorAll(".uc-c").forEach(b => b.setAttribute("aria-pressed", b.dataset.id === ucId));
+  const host = $("#uc-card");
+  if (!ucId) { host.innerHTML = ""; return; }
   const u = USE_CASES.find(x => x.id === ucId), m = UC_MCP[ucId], S = MCP_SERVERS[m.server];
   const used = new Set(m.turns.filter(t => t[0] === "tool").map(t => t[1]));
-  const ing = (cls, title, dot, items) => `<div class="ing ${cls}"><h6><i style="background:${dot}"></i>${title}</h6><ul>${items.map(i => `<li>${esc(sub(i))}</li>`).join("")}</ul></div>`;
+  const ing = (cls, title, dot, items) => `<div class="ing ${cls}"><h6><i style="background:${dot}"></i>${title}</h6><ul>${items.map(i => `<li>${icon(pickIcon(i))}<span>${esc(sub(i))}</span></li>`).join("")}</ul></div>`;
   const url = `https://upro.your-utility.com/mcp/${S.path}`;
-  $("#uc-card").innerHTML = `<article class="uc-card">
+  host.innerHTML = `
     <div class="uc-hero">
       <div class="panel">
-        <span class="eyebrow">${esc(u.group)}</span>
+        <div class="panel-top"><span class="eyebrow"><span class="spark" aria-hidden="true"></span>${esc(u.group)}</span><button type="button" class="btn sm" id="uc-close">Close</button></div>
         <h3>${esc(u.title)}</h3>
-        <div class="chips">${u.tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div>
-        <p>${esc(u.need)}</p>
+        <p>${esc(firstSentence(u.need))}</p>
         <ul class="value-list">${u.value.map(x => `<li>${CHECK}<span>${esc(x)}</span></li>`).join("")}</ul>
         ${u.proof ? `<p class="proof">${esc(u.proof)}</p>` : ""}
       </div>
@@ -1540,51 +1761,49 @@ function renderUC() {
 
     <div class="mcp">
       <div class="mcp-setup">
-        <span class="eyebrow">Connect it to your AI assistant</span>
-        <div class="srv"><span class="srv-ic"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7h12M4 13h12M7 4v12M13 4v12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
-          <div><b>${esc(S.name)}</b><span>MCP server in ${esc(ENV().tenant)} · for ${esc(S.who)}</span></div></div>
-        <div class="tool-chips">${S.tools.map(t => `<code class="${used.has(t) ? "used" : ""}">${t}</code>`).join("")}</div>
-        <div class="seg" role="group" aria-label="Where to connect" style="flex-wrap:wrap">${Object.entries(ASSISTANTS).map(([k, v]) => `<button type="button" data-t="${k}" aria-pressed="${mcpTab === k}">${k === "dev" ? "Developers" : k === "copilot" ? "Copilot" : v.name}</button>`).join("")}</div>
+        <span class="eyebrow"><span class="spark" aria-hidden="true"></span>Connect to your AI tools</span>
+        <div class="ai-tabs" role="group" aria-label="AI tool">${Object.keys(ASSISTANTS).map(k => `<button type="button" class="ai-tab" data-t="${k}" aria-pressed="${mcpTab === k}">${k === "dev" ? icon("code") : logoAI(k)}${k === "dev" ? "Developers" : k === "copilot" ? "Copilot" : ASSISTANTS[k].name}</button>`).join("")}</div>
         <div class="howto" id="howto"></div>
+        <div class="tool-chips">${S.tools.map(t => `<code class="${used.has(t) ? "used" : ""}">${t}</code>`).join("")}</div>
       </div>
       <div class="chat">
-        <div class="chat-top"><span class="who"><i aria-hidden="true" id="chat-dot"></i><span id="chat-name">Claude</span> · connected to ${esc(S.id)}</span><button type="button" class="btn sm" id="chat-replay">Replay</button></div>
+        <div class="chat-top"><span class="who"><span id="chat-logo"></span><span id="chat-name">Claude</span> · ${esc(S.id)}</span><button type="button" class="btn sm" id="chat-replay">Replay</button></div>
         <div class="chat-body" id="chat-body" aria-live="polite"></div>
       </div>
     </div>
 
-    <div class="two">
-      <div class="panel"><h4>The recipe</h4>
-        <div class="recipe">
-          ${ing("utility", "Your data", "var(--accent)", u.utility)}
-          ${ing("", "Models", "var(--c-ev)", u.models)}
-          ${ing("", "Engines", "var(--c-heat)", u.engines)}
-          ${ing("", "APIs · MCPs · Apps", "var(--c-cool)", u.access)}
-        </div>
+    <div class="panel">
+      <h4>The recipe</h4>
+      <div class="recipe">
+        ${ing("utility", "Your data", "var(--accent)", u.utility)}
+        ${ing("", "Models", "var(--c-ev)", u.models)}
+        ${ing("", "Engines", "var(--c-heat)", u.engines)}
+        ${ing("", "APIs · MCPs · Apps", "var(--c-cool)", u.access)}
       </div>
-      <div class="panel"><h4>How it runs</h4>
+      <details class="more"><summary>How it runs, step by step</summary>
         <ol class="steps">${u.steps.map(([t, who]) => `<li><span>${esc(sub(t))}<span class="who">${esc(who)}</span></span></li>`).join("")}</ol>
-        <div class="split"><div><span class="lbl">Bidgely delivers</span><ul>${u.bidgely.map(x => `<li>${esc(x)}</li>`).join("")}<li>Reference implementation and orchestration guide</li></ul></div>
-        <div><span class="lbl">You or your SI</span><ul>${u.you.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div></div>
-      </div>
-    </div>
-  </article>`;
+      </details>
+    </div>`;
 
   const setup = () => {
-    const h = $("#howto");
-    const e = ENV();
-    if (mcpTab === "claude") h.innerHTML = `<ol><li>In Claude, open <b>Settings → Connectors</b> and choose <b>Add custom connector</b>.</li><li>Name it <b>${esc(S.name)}</b> and paste the server URL.</li><li>Sign in with your company SSO. Tools and data follow your existing roles.</li><li>Ask a question like the one on the right.</li></ol>${cmd(url)}`;
-    else if (mcpTab === "chatgpt") h.innerHTML = `<ol><li>In ChatGPT (Business or Enterprise), an admin turns on developer mode under <b>Settings → Apps &amp; Connectors</b>.</li><li>Create a connector named <b>${esc(S.name)}</b> with the MCP server URL.</li><li>Authenticate with your company SSO, then enable the connector in a chat.</li></ol>${cmd(url)}`;
-    else if (mcpTab === "copilot") h.innerHTML = `<ol><li>In <b>Microsoft Copilot Studio</b>, open your agent and go to <b>Tools → Add a tool</b>.</li><li>Choose <b>Model Context Protocol</b> and enter the server URL, with OAuth through Entra ID.</li><li>Publish the agent to Teams or Microsoft 365 Copilot.</li></ol>${cmd(url)}`;
-    else if (mcpTab === "gemini") h.innerHTML = `<ol><li>In <b>Gemini Enterprise</b> or <b>Vertex AI Agent Builder</b>, add the server as an MCP tool for your agent.</li><li>Use Google Cloud identity or your SSO for authentication.</li><li>Share the agent with your teams in Gemini.</li></ol>${cmd(url)}`;
-    else h.innerHTML = `<p>Any MCP client can connect, including ${esc(e.agentsInt)}, ${esc(e.agentsExt)} and agents you build yourself. Customer-scoped tools can also run as a sub-agent behind your web chat and IVR.</p>${cmd(`claude mcp add --transport http ${S.id} ${url}`)}${cmd(`{"mcpServers":{"${S.id}":{"type":"http","url":"${url}"}}}`)}`;
-    const A = ASSISTANTS[mcpTab]; $("#chat-name").textContent = A.name; $("#chat-dot").style.background = A.dot;
+    const h = $("#howto"), e = ENV();
+    const steps = {
+      claude: `<ol><li><b>Settings → Connectors → Add custom connector</b></li><li>Paste the URL, sign in with SSO</li></ol>${cmd(url)}`,
+      chatgpt: `<ol><li><b>Settings → Apps &amp; Connectors</b>, developer mode on</li><li>Create a connector with the URL</li></ol>${cmd(url)}`,
+      copilot: `<ol><li>Copilot Studio: <b>Tools → Add a tool → MCP</b></li><li>Paste the URL, sign in with Entra ID</li></ol>${cmd(url)}`,
+      gemini: `<ol><li>Gemini Enterprise / Agent Builder: <b>add an MCP tool</b></li><li>Paste the URL, sign in with SSO</li></ol>${cmd(url)}`,
+      dev: `<p>Works with ${esc(e.agentsInt)} or any MCP client.</p>${cmd(`claude mcp add --transport http ${S.id} ${url}`)}`,
+    };
+    h.innerHTML = steps[mcpTab];
     h.querySelectorAll(".cmd button").forEach(b => b.addEventListener("click", () => copyText(b.previousElementSibling.textContent, b)));
-    document.querySelectorAll(".mcp .seg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.t === mcpTab));
+    document.querySelectorAll(".ai-tab").forEach(b => b.setAttribute("aria-pressed", b.dataset.t === mcpTab));
+    $("#chat-name").textContent = ASSISTANTS[mcpTab].name;
+    $("#chat-logo").innerHTML = mcpTab === "dev" ? icon("bot") : logoAI(mcpTab);
   };
-  document.querySelectorAll(".mcp .seg button").forEach(b => b.addEventListener("click", () => { mcpTab = b.dataset.t; setup(); }));
+  document.querySelectorAll(".ai-tab").forEach(b => b.addEventListener("click", () => { mcpTab = b.dataset.t; setup(); }));
   setup();
   $("#chat-replay").addEventListener("click", () => playChat(true));
+  $("#uc-close").addEventListener("click", () => { ucId = null; renderUC(); $("#usecases").scrollIntoView({ block: "start" }); });
   playChat(false);
   drawUCViz();
 }
@@ -1599,7 +1818,7 @@ function turnHtml(t, S) {
   if (t[0] === "user") return `<div class="msg user">${esc(t[1])}</div>`;
   if (t[0] === "assistant") return `<div class="msg assistant">${esc(t[1])}</div>`;
   const pretty = (j) => { try { return JSON.stringify(JSON.parse(j), null, 1).replace(/\n\s*/g, " "); } catch (e) { return j; } };
-  return `<details class="msg tool" open><summary><span class="dot"></span>Used <code>${esc(t[1])}</code><span class="srvname">${esc(S.id)}</span></summary><pre>Request  ${esc(pretty(t[2]))}\nResponse ${esc(pretty(t[3]))}</pre></details>`;
+  return `<details class="msg tool"><summary><span class="dot"></span>Used <code>${esc(t[1])}</code><span class="srvname">${esc(S.id)}</span></summary><pre>Request  ${esc(pretty(t[2]))}\nResponse ${esc(pretty(t[3]))}</pre></details>`;
 }
 function playChat(animate) {
   clearTimeout(chatTimer);
@@ -1615,13 +1834,10 @@ function playChat(animate) {
   step();
 }
 
-/* ---------- per-use-case visuals ---------- */
-let ucvState = {};
-function drawUCViz() { const host = $("#ucv"); if (!host) return; host.innerHTML = ""; (UCV[ucId] || (() => {}))(host); }
-function ucHead(host, title, note, controls = "") {
-  host.append(el("div", { class: "ucv-h" }, `<h4>${esc(title)}</h4>${controls}`));
-  if (note) host.append(el("span", { class: "xs muted" }, esc(note)));
-}
+/* ---------- visuals ---------- */
+let ucvState = {}, autoTimer = null;
+function drawUCViz() { const host = $("#ucv"); if (!host) return; clearTimeout(autoTimer); host.innerHTML = ""; (UCV[ucId] || (() => {}))(host); }
+function ucHead(host, title, controls = "") { host.append(el("div", { class: "ucv-h" }, `<h4>${esc(title)}</h4>${controls}`)); }
 function segCtl(key, opts, def) {
   if (ucvState[key] == null) ucvState[key] = def;
   return `<div class="seg" role="group">${opts.map(([v, l]) => `<button type="button" data-seg="${key}" data-v="${v}" aria-pressed="${String(ucvState[key]) === String(v)}">${esc(l)}</button>`).join("")}</div>`;
@@ -1629,9 +1845,32 @@ function segCtl(key, opts, def) {
 function wireSeg(host) { host.querySelectorAll("[data-seg]").forEach(b => b.addEventListener("click", () => { const v = b.dataset.v; ucvState[b.dataset.seg] = isNaN(+v) ? v : +v; drawUCViz(); })); }
 function legendHtml(items) { return `<div class="legend">${items.map(([c, n]) => `<span><span class="sw" style="background:${c}"></span>${esc(n)}</span>`).join("")}</div>`; }
 
+// An agent automation: trigger + steps across systems, a run log, and what it produced.
+function automation(host, cfg) {
+  host.insertAdjacentHTML("beforeend", `<div class="auto">
+    <div class="auto-head"><span class="auto-name"><span class="bot">${icon("bot")}</span><span>${esc(cfg.name)}<small>${esc(cfg.trigger)}</small></span></span><button type="button" class="btn sm dark" data-run>Run agent</button></div>
+    <div class="flow">${cfg.steps.map(s => `<div class="node-s"><span class="top">${icon(s[0])}${esc(s[1])}</span><span class="sys">${esc(s[2])}</span></div>`).join("")}</div>
+    <div class="runlog" aria-live="polite"></div>
+    <div class="out-card">${cfg.output}</div></div>`);
+  const nodes = [...host.querySelectorAll(".node-s")], log = host.querySelector(".runlog");
+  const fill = (k) => { log.innerHTML = cfg.log.slice(0, k).map(([t, m], i) => `<div><span class="t">${t}</span>${esc(m)}${i === cfg.log.length - 1 ? ' <span class="ok">done</span>' : ""}</div>`).join(""); };
+  const finish = () => { nodes.forEach(n => { n.classList.remove("run"); n.classList.add("done"); }); fill(cfg.log.length); };
+  finish();
+  host.querySelector("[data-run]").addEventListener("click", () => {
+    clearTimeout(autoTimer);
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return finish();
+    nodes.forEach(n => n.classList.remove("run", "done")); fill(0); let i = 0;
+    const tick = () => { nodes.forEach((n, j) => { n.classList.toggle("run", j === i); n.classList.toggle("done", j < i); }); fill(Math.round((i + 1) / nodes.length * cfg.log.length)); i++; if (i < nodes.length) autoTimer = setTimeout(tick, 900); else autoTimer = setTimeout(finish, 900); };
+    tick();
+  });
+}
+const phone = (inner) => `<div class="phone"><div class="phone-body">${inner}</div></div>`;
+const win = (title, inner, cls = "") => `<div class="mock ${cls}"><div class="mock-bar"><i></i><i></i><i></i><span>${esc(title)}</span></div><div class="mock-body">${inner}</div></div>`;
+const drv = (n, v, max, c, sign = "+") => `<div class="drv"><span>${esc(n)}</span><span class="track"><i style="width:${Math.abs(v) / max * 100}%;background:var(${c})"></i></span><b style="text-align:right">${v < 0 ? "−" : sign}${money(Math.abs(v))}</b></div>`;
+
 const UCV = {
   forecast(host) {
-    ucHead(host, "Network 12 design day, by end use", "Hourly MW on the summer design day. Hover for the stack at any hour.", segCtl("fy", [[2026, "2026"], [2030, "2030 forecast"]], 2026)); wireSeg(host);
+    ucHead(host, "Network 12 design day, by end use", segCtl("fy", [[2026, "2026"], [2030, "2030 forecast"]], 2026)); wireSeg(host);
     const yr = ucvState.fy, w = UCW(host), h = 250, ml = 40, mr = 12, mt = 12, mb = 24;
     const f = yr === 2030 ? 1 : 0;
     const base = (x) => 16 + 4 * Math.sin((x - 9) / 24 * 2 * Math.PI) + 3 * Math.exp(-((x - 19) ** 2) / 8);
@@ -1665,26 +1904,8 @@ const UCV = {
     host.append(s); host.insertAdjacentHTML("beforeend", legendHtml([...S.map(([n, c]) => [`var(${c})`, n]), ["var(--c-solar)", "Solar"]]));
   },
 
-  flex(host) {
-    ucHead(host, "Shiftable load by feeder, 4 to 8pm", "Unenrolled customers only. Feeders marked with a dot are at or near their rating.");
-    const rows = [["F-2231", 846, 755, 239, 1], ["F-1187", 700, 610, 200, 1], ["F-3020", 560, 590, 90, 0], ["F-0914", 520, 480, 150, 1], ["F-2210", 430, 470, 60, 0], ["F-1702", 380, 350, 110, 0], ["F-0455", 300, 360, 40, 0]];
-    const w = UCW(host), rh = 30, ml = 70, mr = 60, mt = 6, h = mt + rows.length * rh + 22, mx = 2000;
-    const x = (v) => ml + v / mx * (w - ml - mr);
-    const s = mkSvg(w, h, "Stacked bars of flexible kW per feeder");
-    [0, 500, 1000, 1500, 2000].forEach(t => { svgEl("line", { x1: x(t), x2: x(t), y1: mt, y2: h - 18, class: "grid-l" }, s); text(s, x(t), h - 4, t ? `${t / 1000} MW` : "0", { "text-anchor": "middle" }); });
-    const C = [["EV charging", "--c-ev"], ["HVAC", "--c-cool"], ["Batteries", "--c-wh"]];
-    rows.forEach((r, i) => {
-      const cy = mt + i * rh; let acc = 0;
-      text(s, ml - 10, cy + rh / 2 + 4, r[0], { "text-anchor": "end", class: "t-ink" });
-      C.forEach(([n, c], j) => { const v = r[1 + j]; const rect = svgEl("rect", { x: x(acc) + (j ? 1 : 0), y: cy + 6, width: Math.max(1, x(acc + v) - x(acc) - 1), height: rh - 12, rx: j === 2 ? 4 : 0, fill: cssv(c) }, s); hoverable(rect, `<b>${r[0]}</b><div class="r"><span>${n}</span><span>${v.toLocaleString()} kW</span></div>`); acc += v; });
-      text(s, x(acc) + 8, cy + rh / 2 + 4, `${(acc / 1000).toFixed(2)} MW`, {});
-      if (r[4]) svgEl("circle", { cx: ml - 58, cy: cy + rh / 2, r: 4, fill: cssv("--crit") }, s);
-    });
-    host.append(s); host.insertAdjacentHTML("beforeend", legendHtml(C.map(([n, c]) => [`var(${c})`, n])));
-  },
-
   nws(host) {
-    ucHead(host, "Network 7 peak vs. rating", "Forecast summer peak. Toggle the flexibility portfolio to see the deferral.", segCtl("nwp", [[0, "Baseline"], [1, "With portfolio"]], 1)); wireSeg(host);
+    ucHead(host, "Network 7 peak vs. rating", segCtl("nwp", [[0, "Baseline"], [1, "With portfolio"]], 1)); wireSeg(host);
     const on = ucvState.nwp === 1, yrs = [2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034];
     const base = yrs.map((_, i) => 27.4 + i * 0.95 + (i > 3 ? 0.15 * (i - 3) : 0)), port = base.map((v, i) => v - Math.min(2.6, i * 0.55));
     const rating = 30.6, w = UCW(host), h = 240, ml = 40, mr = 16, mt = 14, mb = 26, lo = 24, hi = 37;
@@ -1706,138 +1927,215 @@ const UCV = {
     host.append(s); host.insertAdjacentHTML("beforeend", legendHtml([["var(--c-heat)", "Baseline forecast"], ["var(--c-cool)", "With managed charging, thermostat DR and batteries"]]));
   },
 
-  trend(host) {
-    if (ucvState.tm == null) ucvState.tm = 20;
-    ucHead(host, "EV adoption by network", "Share of homes with detected EV charging. Drag the slider through time; outlined networks are above 10%.");
-    const nets = Array.from({ length: 24 }, (_, i) => { const r = rng(100 + i); const b = 0.015 + r() * 0.03, g = 0.0005 + r() * 0.0014; return { id: `N-${String(i + 1).padStart(2, "0")}`, b, g }; });
-    nets[17] = { id: "N-18", b: 0.05, g: 0.0031 }; nets[3] = { id: "N-04", b: 0.045, g: 0.0024 };
-    const months = Array.from({ length: 21 }, (_, i) => { const d = new Date(Date.UTC(2025, i, 1)); return `${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`; });
-    const grid = el("div", { style: "display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px" }); host.append(grid);
-    const ctl = el("div", { class: "range" }, `<label for="tm" class="small">Month</label><input id="tm" type="range" min="0" max="20" step="1" value="${ucvState.tm}"><span class="small" id="tmv" style="min-width:64px">${months[ucvState.tm]}</span>`); host.append(ctl);
-    const draw = () => {
-      const t = ucvState.tm, zero = cssv("--hm-zero"), hue = cssv("--c-ev"); grid.innerHTML = "";
-      nets.forEach(n => {
-        const v = n.b + n.g * t * (1 + t / 40), rgb = mix(zero, hue, clamp(v / 0.15, 0.05, 1)), hot = v >= 0.1;
-        const tile = el("div", { style: `background:rgb(${rgb});border-radius:10px;padding:8px;font-size:var(--fs-3);border:2px solid ${hot ? "var(--navy)" : "transparent"};color:${v > 0.09 ? "#fff" : "var(--ink)"}` }, `<b>${n.id}</b><div>${(v * 100).toFixed(1)}%</div>`);
-        grid.append(tile);
-      });
-      $("#tmv").textContent = months[t];
-    };
-    $("#tm").addEventListener("input", (e) => { ucvState.tm = +e.target.value; draw(); });
-    draw();
-  },
 
   highbill(host) {
-    ucHead(host, "Why the August bill went up $52", "Bill change decomposed against the prior month. Every channel shows this same explanation.");
-    const steps = [["July bill", 142, "base"], ["Cooling", 38, "--c-cool"], ["EV charging", 9, "--c-ev"], ["Rate change", 6, "--c-wh"], ["Extra days", 3, "--c-other"], ["Lighting", -4, "--c-ao"], ["August bill", 194, "base"]];
-    const w = UCW(host), h = 250, ml = 44, mr = 10, mt = 16, mb = 40, lo = 100, hi = 200;
-    const bw = (w - ml - mr) / steps.length, y = (v) => mt + (hi - v) / (hi - lo) * (h - mt - mb);
-    const s = mkSvg(w, h, "Waterfall of bill change drivers"); yAxis(s, ml, w - mr, y, [100, 125, 150, 175, 200], (t) => "$" + t);
-    let run = 0;
-    steps.forEach(([n, v, c], i) => {
-      const xx = ml + i * bw + 6, ww = bw - 12; let a, b;
-      if (c === "base") { a = lo; b = v; run = v; } else { a = run; b = run + v; run = b; }
-      const top = Math.max(a, b), bot = Math.min(a, b);
-      const r = svgEl("rect", { x: xx, y: y(top), width: ww, height: Math.max(2, y(bot) - y(top)), rx: 4, fill: c === "base" ? cssv("--navy") : cssv(c) }, s);
-      hoverable(r, `<b>${esc(n)}</b><div class="r"><span>${c === "base" ? "Total" : "Change"}</span><span>${c === "base" ? money(v) : (v > 0 ? "+" : "−") + money(Math.abs(v))}</span></div>`);
-      text(s, xx + ww / 2, y(top) - 6, c === "base" ? money(v) : (v > 0 ? "+" : "−") + money(Math.abs(v)), { "text-anchor": "middle", class: "t-ink" });
-      const words = n.split(" "); text(s, xx + ww / 2, h - 24, words.slice(0, 2).join(" "), { "text-anchor": "middle" }); if (words.length > 2) text(s, xx + ww / 2, h - 10, words.slice(2).join(" "), { "text-anchor": "middle" });
-    });
-    host.append(s);
+    ucHead(host, "What the CSR sees before saying hello");
+    host.insertAdjacentHTML("beforeend", win("CSR desktop · Account 40021887", `
+      <div class="mock-row"><div><div class="muted">August bill</div><div class="big">$194 <span class="up">▲ $52</span></div></div><span class="pill">${icon("check")}No billing anomaly</span></div>
+      <div class="lbl">Why it changed</div>
+      ${drv("Cooling (heat wave)", 38, 40, "--c-cool")}${drv("EV charging", 9, 40, "--c-ev")}${drv("Rate change", 6, 40, "--c-wh")}${drv("3 extra days", 3, 40, "--c-other")}${drv("Lighting", -4, 40, "--c-ao")}
+      <div class="mock-row"><span class="muted">Suggest</span><span class="pill-row"><span class="pill">TOU-EV plan</span><span class="pill">Pre-cool before 4pm</span></span></div>
+      <div class="mock-row"><span class="muted">Same answer in</span><span class="pill-row"><span class="tag">Web</span><span class="tag">App</span><span class="tag">IVR</span><span class="tag">Chat</span></span></div>`));
   },
 
-  alert(host) {
-    ucHead(host, "Bill projection through the cycle", "The projection is recomputed at checkpoints. The alert fires when it passes the threshold.");
-    const w = UCW(host), h = 240, ml = 44, mr = 14, mt = 14, mb = 26, hi = 200;
-    const x = (d) => ml + (d - 1) / 29 * (w - ml - mr), y = (v) => mt + (hi - v) / hi * (h - mt - mb);
-    const s = mkSvg(w, h, "Month-to-date cost and projected bill"); yAxis(s, ml, w - mr, y, [0, 50, 100, 150, 200], (t) => "$" + t);
-    const mtd = Array.from({ length: 21 }, (_, i) => { const d = i + 1; return d * (3.6 + (d > 8 ? 2.4 : 0) * Math.min(1, (d - 8) / 5)); });
-    svgEl("path", { d: mtd.map((v, i) => `${i ? "L" : "M"}${x(i + 1)},${y(v)}`).join("") + `L${x(21)},${y(0)}L${x(1)},${y(0)}Z`, fill: cssv("--c-cool"), opacity: 0.12 }, s);
-    svgEl("path", { d: mtd.map((v, i) => `${i ? "L" : "M"}${x(i + 1)},${y(v)}`).join(""), fill: "none", stroke: cssv("--c-cool"), "stroke-width": 2 }, s);
-    svgEl("line", { x1: ml, x2: w - mr, y1: y(120), y2: y(120), stroke: cssv("--muted"), "stroke-dasharray": "4 4" }, s); text(s, w - mr, y(120) + 14, "Baseline projection $120", { "text-anchor": "end" });
-    svgEl("line", { x1: ml, x2: w - mr, y1: y(168), y2: y(168), stroke: cssv("--crit"), "stroke-width": 1.5, "stroke-dasharray": "5 4" }, s); text(s, w - mr, y(168) - 6, "Alert threshold +40% ($168)", { "text-anchor": "end", class: "t-ink" });
-    [[10, 138], [15, 171], [20, 176]].forEach(([d, v]) => { const hot = v > 168; const c = svgEl("circle", { cx: x(d), cy: y(v), r: 6, fill: hot ? cssv("--crit") : cssv("--navy"), stroke: "#fff", "stroke-width": 2 }, s); hoverable(c, `<b>Day ${d} checkpoint</b><div class="r"><span>Projected bill</span><span>${money(v)}</span></div>`); text(s, x(d), y(v) - 12, money(v), { "text-anchor": "middle", class: "t-ink" }); });
-    text(s, x(15) + 10, y(171) + 22, "Alert email sent, day 15", { class: "t-2" });
-    [1, 10, 15, 20, 30].forEach(d => text(s, x(d), h - 6, `Day ${d}`, { "text-anchor": "middle" }));
-    host.append(s); host.insertAdjacentHTML("beforeend", legendHtml([["var(--c-cool)", "Month-to-date cost"], ["var(--navy)", "Checkpoint projection"], ["var(--crit)", "Over threshold"]]));
+  flex(host) {
+    ucHead(host, "Day-ahead DR event prep");
+    automation(host, {
+      name: "DR event prep agent", trigger: "Runs when tomorrow's forecast peak > 95°F",
+      steps: [["weather", "Heat forecast", "Weather feed"], ["battery", "Size flexible kW", "UtilityAI Pro engines"], ["pin", "Rank feeders", "GIS"], ["send", "Notify 6,420 customers", "Marketing cloud"], ["chart", "Measure kW delivered", "DERMS"]],
+      log: [["06:00", "Peak 98°F forecast for 4-8pm"], ["06:01", "1.84 MW shiftable on F-2231, 1.51 MW on F-1187"], ["06:02", "6,420 unenrolled high-flex customers selected"], ["06:05", "Pre-event messages queued"], ["20:15", "Delivered 2.9 MW, report sent to program team"]],
+      output: `<div class="oh">${icon("check")}Event summary</div><div class="mock-row"><span>Feeders covered</span><b>7</b></div><div class="mock-row"><span>kW per enrollee</span><b>2.4×</b></div>`,
+    });
+  },
+
+  trend(host) {
+    ucHead(host, "Always-on DER trend monitor");
+    automation(host, {
+      name: "DER trend monitor", trigger: "Runs after every nightly model run",
+      steps: [["ev", "New EV & solar detected", "Disaggregation"], ["clipboard", "Match interconnections", "Your records"], ["pin", "Roll up by network", "GIS"], ["bell", "Alert planners", "Microsoft Teams"]],
+      log: [["02:10", "318 new EV chargers, 96 new solar arrays"], ["02:11", "212 have no interconnection record"], ["02:12", "N-18 crossed 14% EV adoption"], ["02:12", "Alert posted to #distribution-planning"]],
+      output: `<div class="oh">${icon("chat")}Teams · #distribution-planning</div><div><b>N-18 EV adoption hit 14.2%</b>, up 4.1 pts since January. 212 unreported chargers attached for review.</div>`,
+    });
   },
 
   rates(host) {
-    ucHead(host, "Annual cost on each eligible plan", "Based on this home's actual interval data.", segCtl("shift", [[0, "As is"], [1, "Charge EV after 11pm"]], 1)); wireSeg(host);
-    const on = ucvState.shift === 1, plans = [["Standard", 2280, 2280], ["TOU", 2150, 1990], ["TOU-EV", 2090, 1860]];
-    const w = UCW(host), h = 220, ml = 50, mr = 10, mt = 20, mb = 28, hi = 2500;
-    const bw = (w - ml - mr) / plans.length, y = (v) => mt + (hi - v) / hi * (h - mt - mb);
-    const s = mkSvg(w, h, "Annual cost by rate plan"); yAxis(s, ml, w - mr, y, [0, 500, 1000, 1500, 2000, 2500], (t) => "$" + t.toLocaleString());
-    const vals = plans.map(p => on ? p[2] : p[1]), best = Math.min(...vals);
-    plans.forEach((p, i) => { const v = vals[i], xx = ml + i * bw + bw * 0.22, ww = bw * 0.56; const r = svgEl("rect", { x: xx, y: y(v), width: ww, height: y(0) - y(v), rx: 5, fill: v === best ? cssv("--accent") : cssv("--surface-3") }, s); hoverable(r, `<b>${p[0]}</b><div class="r"><span>Annual</span><span>${money(v)}</span></div>`); text(s, xx + ww / 2, y(v) - 6, money(v), { "text-anchor": "middle", class: "t-ink" }); text(s, xx + ww / 2, h - 8, p[0] + (i === 0 ? " (current)" : ""), { "text-anchor": "middle" }); });
-    host.append(s); host.insertAdjacentHTML("beforeend", `<div class="kpis"><div class="kpi"><b>${money(2280 - best)}/yr</b><span>savings on the best plan</span></div><div class="kpi"><b>${on ? "70%" : "38%"}</b><span>of EV charging off-peak</span></div><div class="kpi"><b>${on ? "TOU-EV" : "TOU-EV"}</b><span>recommended plan</span></div></div>`);
+    ucHead(host, "Rate coaching, in the customer's pocket");
+    host.insertAdjacentHTML("beforeend", `<div class="phones">${phone(`
+      <div class="notif"><span class="app">${icon("bolt")}Your Utility · now</span><b>Save $420 a year on TOU-EV</b><span>Charging after 11pm already fits the plan.</span></div>
+      <div class="lbl">Your annual cost</div>
+      ${drv("Standard (now)", 2280, 2300, "--c-other", "")}${drv("TOU", 1990, 2300, "--c-cool", "")}${drv("TOU-EV", 1860, 2300, "--c-ev", "")}
+      <button class="btn dark" type="button" style="justify-content:center">Switch plan</button>`)}</div>`);
   },
 
   assistant(host) {
-    ucHead(host, "Rooftop solar payback, 8.4 kW", "Cumulative savings minus net system cost, from the customer's own usage and rates.");
-    const w = UCW(host), h = 240, ml = 54, mr = 14, mt = 14, mb = 26, lo = -15000, hi = 35000;
-    const pts = Array.from({ length: 26 }, (_, yv) => -12900 + Array.from({ length: yv }, (_, k) => 1820 * Math.pow(0.995, k) * Math.pow(1.02, k) * 0.93).reduce((a, b) => a + b, 0));
-    const k = 32600 / pts[25]; const P = pts.map(v => v < 0 ? v : v * (v > 0 ? k : 1));
-    const x = (i) => ml + i / 25 * (w - ml - mr), y = (v) => mt + (hi - v) / (hi - lo) * (h - mt - mb);
-    const s = mkSvg(w, h, "Solar cumulative net savings over 25 years"); yAxis(s, ml, w - mr, y, [-10000, 0, 10000, 20000, 30000], (t) => (t < 0 ? "−$" : "$") + Math.abs(t / 1000) + "k");
-    svgEl("path", { d: P.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join("") + `L${x(25)},${y(0)}L${x(0)},${y(0)}Z`, fill: cssv("--c-solar"), opacity: 0.18 }, s);
-    svgEl("path", { d: P.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(""), fill: "none", stroke: cssv("--c-solar"), "stroke-width": 2.4 }, s);
-    const pb = 7.1; svgEl("circle", { cx: x(pb), cy: y(0), r: 6, fill: cssv("--navy"), stroke: "#fff", "stroke-width": 2 }, s); text(s, x(pb) + 10, y(0) + 18, "Pays back in 7.1 years", { class: "t-ink" });
-    svgEl("circle", { cx: x(25), cy: y(P[25]), r: 5, fill: cssv("--c-solar"), stroke: "#fff", "stroke-width": 2 }, s); text(s, x(25) - 8, y(P[25]) - 10, "+$32,600", { "text-anchor": "end", class: "t-ink" });
-    [0, 5, 10, 15, 20, 25].forEach(t => text(s, x(t), h - 6, `Yr ${t}`, { "text-anchor": "middle" }));
-    host.append(s); host.insertAdjacentHTML("beforeend", `<div class="kpis"><div class="kpi"><b>$12,900</b><span>net cost after rebates</span></div><div class="kpi"><b>$1,820/yr</b><span>first-year savings</span></div><div class="kpi"><b>21 × 400 W</b><span>about 200 sq ft of roof</span></div></div>`);
+    ucHead(host, "Solar what-if, inside your app");
+    host.insertAdjacentHTML("beforeend", `<div class="phones">${phone(`
+      <div class="msg user" style="max-width:100%">Is solar worth it for my home?</div>
+      <div class="notif"><span class="app">${icon("sun")}Solar estimate · 8.4 kW</span>
+        <div class="mock-row"><span>Net cost</span><b>$12,900</b></div><div class="mock-row"><span>Saves</span><b>$1,820/yr</b></div><div class="mock-row"><span>Payback</span><b>7.1 yrs</b></div></div>
+      <div style="height:54px;border-radius:10px;background:linear-gradient(90deg,rgba(208,59,59,.15) 0 28%,rgba(237,161,0,.25) 28% 100%);position:relative"><span style="position:absolute;left:28%;top:0;bottom:0;width:2px;background:var(--navy)"></span><span class="xs" style="position:absolute;left:31%;top:6px">break-even</span><span class="xs" style="position:absolute;right:8px;bottom:6px"><b>+$32,600</b> in 25 yrs</span></div>`)}</div>`);
+  },
+
+  alert(host) {
+    ucHead(host, "The email that arrives mid-cycle");
+    host.insertAdjacentHTML("beforeend", win("Inbox", `
+      <div class="hdr"><span><b>From</b> Your Utility</span><span><b>Subject</b> Your bill is trending higher than usual</span></div>
+      <div class="banner"><span class="muted">Projected bill</span><span class="big">$171 <span class="up">+42%</span></span><span class="muted">Usually about $120 · 15 days left in your cycle</span></div>
+      <div class="lbl">What's driving it</div>${drv("Cooling", 38, 40, "--c-cool")}${drv("EV charging", 9, 40, "--c-ev")}
+      <div class="tip-row">${icon("snow")}<span>Raise your thermostat 2°F between 2 and 7pm to save about $19.</span></div>
+      <div class="tip-row">${icon("clock")}<span>Pre-cool before 4pm while prices are lower.</span></div>`, "email"));
   },
 
   web(host) {
-    ucHead(host, "August bill by appliance", "What the customer sees in your app, from the Energy Details API.");
-    const rows = [["Cooling", 88, "--c-cool"], ["EV charging", 31, "--c-ev"], ["Always on", 24, "--c-ao"], ["Pool pump", 18, "--c-pool"], ["Water heating", 14, "--c-wh"], ["Lighting & other", 19, "--c-other"]];
-    const w = UCW(host), rh = 34, ml = 120, mr = 70, h = rows.length * rh + 8, mx = 100, x = (v) => ml + v / mx * (w - ml - mr);
-    const s = mkSvg(w, h, "Bill breakdown by appliance");
-    rows.forEach(([n, v, c], i) => { const cy = i * rh + 4; text(s, ml - 10, cy + rh / 2 + 3, n, { "text-anchor": "end", class: "t-ink" }); svgEl("rect", { x: ml, y: cy + 8, width: x(mx) - ml, height: rh - 16, rx: 6, fill: cssv("--surface-2") }, s); const r = svgEl("rect", { x: ml, y: cy + 8, width: x(v) - ml, height: rh - 16, rx: 6, fill: cssv(c) }, s); hoverable(r, `<b>${n}</b><div class="r"><span>Cost</span><span>${money(v)} · ${Math.round(v / 194 * 100)}%</span></div>`); text(s, x(v) + 8, cy + rh / 2 + 3, `${money(v)} · ${Math.round(v / 194 * 100)}%`, {}); });
-    host.append(s); host.insertAdjacentHTML("beforeend", `<div class="kpis"><div class="kpi"><b>$194</b><span>total energy charges</span></div><div class="kpi"><b>+24%</b><span>cooling vs. similar homes</span></div><div class="kpi"><b>3 tips</b><span>ranked for this home</span></div></div>`);
+    ucHead(host, "Energy details in your app");
+    const segs = [["--c-cool", 88], ["--c-ev", 31], ["--c-ao", 24], ["--c-pool", 18], ["--c-wh", 14], ["--c-other", 19]];
+    let acc = 0; const stops = segs.map(([c, v]) => { const a = acc; acc += v / 194 * 100; return `var(${c}) ${a}% ${acc}%`; }).join(",");
+    host.insertAdjacentHTML("beforeend", `<div class="phones">${phone(`
+      <div class="mock-row"><b>August</b><span class="muted">by appliance</span></div>
+      <div class="donut" style="background:conic-gradient(${stops})"><b>$194</b></div>
+      ${[["Cooling", 88, "--c-cool"], ["EV charging", 31, "--c-ev"], ["Always on", 24, "--c-ao"], ["Pool pump", 18, "--c-pool"]].map(([n, v, c]) => `<div class="mock-row"><span style="display:flex;align-items:center;gap:6px"><span class="sw" style="background:var(${c})"></span>${n}</span><b>${money(v)}</b></div>`).join("")}
+      <span class="pill">${icon("flame")}Cooling is 24% above similar homes</span>`)}</div>`);
   },
 
   targeting(host) {
-    ucHead(host, "Heat pump outreach segment", "Each filter is a model output or your own program data.");
-    const st = [["Residential customers", 1200000, "All accounts"], ["Electric resistance heat", 412000, "Attributes: heating fuel"], ["No heat pump yet", 318000, "Attributes: heat pump detection"], ["Likely income-qualified", 61300, "Customer income model"], ["Not already enrolled", 18240, "Your program history"]];
-    const w = UCW(host), rh = 42, h = st.length * rh + 6, max = st[0][1];
-    const s = mkSvg(w, h, "Funnel of segment filters");
-    st.forEach(([n, v, src], i) => { const bw = Math.max(60, (w * 0.62) * Math.pow(v / max, 0.35)), xx = (w * 0.62 - bw) / 2, cy = i * rh + 4; const r = svgEl("rect", { x: xx, y: cy, width: bw, height: rh - 8, rx: 8, fill: i === st.length - 1 ? cssv("--accent") : `rgb(${mix(cssv("--hm-zero"), cssv("--c-cool"), 0.2 + i * 0.13)})` }, s); hoverable(r, `<b>${n}</b><div class="r"><span>Homes</span><span>${v.toLocaleString()}</span></div><div>${src}</div>`); text(s, w * 0.31, cy + (rh - 8) / 2 + 4, v.toLocaleString(), { "text-anchor": "middle", class: "t-ink" }); text(s, w * 0.64, cy + 14, n, { class: "t-ink" }); text(s, w * 0.64, cy + 29, src, {}); });
-    host.append(s);
+    ucHead(host, "Heat pump campaign, built by an agent");
+    automation(host, {
+      name: "Campaign agent", trigger: "Asked in Copilot: “build a heat pump list”",
+      steps: [["brain", "Filter on model outputs", "Attributes · Income"], ["clipboard", "Exclude enrolled", "Program history"], ["dash", "Simulate uptake", "Analytics Workbench"], ["export", "Push the segment", "Salesforce Marketing Cloud"]],
+      log: [["09:02", "1.2M homes → 412k electric heat → 318k no heat pump"], ["09:02", "61,300 likely income-qualified"], ["09:03", "18,240 not yet enrolled"], ["09:04", "Est. 1,460 enrollments, 3.1 GWh/yr savings"], ["09:04", "Segment hp_lmi_q4 sent"]],
+      output: `<div class="oh">${icon("target")}hp_lmi_q4</div><div class="mock-row"><span>Homes</span><b>18,240</b></div><div class="mock-row"><span>Expected enrollments</span><b>1,460</b></div>`,
+    });
   },
 
   analyst(host) {
-    ucHead(host, "New EV homes this year, top networks", "The answer the assistant returned, with the governed query it ran.");
+    ucHead(host, "Ask the data, get the query");
     const rows = [["N-18", 1204], ["N-04", 988], ["N-12", 760], ["N-07", 512]];
-    const w = UCW(host), h = 200, ml = 40, mr = 10, mt = 20, mb = 26, hi = 1400, bw = (w - ml - mr) / rows.length, y = (v) => mt + (hi - v) / hi * (h - mt - mb);
-    const s = mkSvg(w, h, "Bar chart of new EV homes by network"); yAxis(s, ml, w - mr, y, [0, 400, 800, 1200]);
-    rows.forEach(([n, v], i) => { const xx = ml + i * bw + bw * 0.25, ww = bw * 0.5; const r = svgEl("rect", { x: xx, y: y(v), width: ww, height: y(0) - y(v), rx: 5, fill: cssv("--c-ev") }, s); hoverable(r, `<b>${n}</b><div class="r"><span>New EV homes</span><span>${v.toLocaleString()}</span></div>`); text(s, xx + ww / 2, y(v) - 6, v.toLocaleString(), { "text-anchor": "middle", class: "t-ink" }); text(s, xx + ww / 2, h - 8, n, { "text-anchor": "middle" }); });
-    host.append(s); host.insertAdjacentHTML("beforeend", `<div class="cmd"><code>SELECT network, COUNT(*) FROM upro.ev_detections WHERE first_seen &gt;= '2026-01-01' GROUP BY 1</code><button type="button">Copy</button></div>`);
+    host.insertAdjacentHTML("beforeend", win("Energy Analyst · governed workspace", `
+      <div class="tip-row">${icon("search")}<span>How many homes added an EV this year, by network?</span></div>
+      <div class="cmd"><code>SELECT network, COUNT(*) FROM upro.ev_detections WHERE first_seen &gt;= '2026-01-01' GROUP BY 1</code><button type="button">Copy</button></div>
+      <table class="tbl"><thead><tr><th>Network</th><th>New EV homes</th><th></th></tr></thead><tbody>${rows.map(([n, v]) => `<tr><td>${n}</td><td>${v.toLocaleString()}</td><td style="width:50%"><div class="bar"><i style="width:${v / 1300 * 100}%"></i></div></td></tr>`).join("")}</tbody></table>`));
     host.querySelector(".cmd button").addEventListener("click", (e) => copyText(e.target.previousElementSibling.textContent, e.target));
   },
 
   revenue(host) {
-    ucHead(host, "Meter M-55120, metered vs. expected", "Expected range comes from the meter's own history, weather response and similar premises.");
-    const r = rng(5), n = 120, drop = 78, exp = [], act = [];
-    for (let d = 0; d < n; d++) { const e = 34 + 14 * Math.sin(2 * Math.PI * (d + 40) / 180) + (r() - 0.5) * 5; exp.push(e); act.push(d < drop ? e * (0.93 + r() * 0.14) : e * (0.38 + r() * 0.1)); }
-    const w = UCW(host), h = 220, ml = 36, mr = 10, mt = 12, mb = 22, top = 60, x = (d) => ml + d / (n - 1) * (w - ml - mr), y = (v) => mt + (top - v) / top * (h - mt - mb);
-    const s = mkSvg(w, h, "Daily consumption with flagged drop"); yAxis(s, ml, w - mr, y, [0, 20, 40, 60]); text(s, 2, mt - 2, "kWh/day");
-    svgEl("rect", { x: x(drop), y: mt, width: x(n - 1) - x(drop), height: h - mt - mb, fill: cssv("--crit"), opacity: 0.06 }, s);
-    svgEl("path", { d: exp.map((e, i) => `${i ? "L" : "M"}${x(i)},${y(e * 1.12)}`).join("") + exp.slice().reverse().map((e, i) => `L${x(n - 1 - i)},${y(e * 0.88)}`).join("") + "Z", fill: cssv("--muted"), opacity: 0.15 }, s);
-    svgEl("path", { d: act.map((a, i) => `${i ? "L" : "M"}${x(i)},${y(a)}`).join(""), fill: "none", stroke: cssv("--c-cool"), "stroke-width": 2 }, s);
-    svgEl("circle", { cx: x(drop), cy: y(act[drop]), r: 5, fill: cssv("--crit"), stroke: "#fff", "stroke-width": 2 }, s);
-    text(s, x(drop) + 8, mt + 12, "Tampering suspected · usage down 58%", { class: "t-ink" });
-    host.append(s); host.insertAdjacentHTML("beforeend", legendHtml([["var(--c-cool)", "Metered"], ["rgba(102,119,136,.35)", "Expected range"], ["var(--crit)", "Flag"]]));
+    ucHead(host, "From anomaly to work order");
+    automation(host, {
+      name: "Revenue protection agent", trigger: "Runs weekly on revenue loss model outputs",
+      steps: [["shield", "Flag anomalies", "Revenue loss model"], ["table", "Rank & match events", "Meter events"], ["wrench", "Create work orders", "Maximo / SAP"], ["check", "Learn from outcomes", "Field results"]],
+      log: [["Mon 05:00", "14 priority-1 cases found"], ["Mon 05:01", "M-55120: usage −58%, cover-open event"], ["Mon 05:02", "14 work orders created"], ["Fri 17:00", "9 confirmed, thresholds tuned"]],
+      output: `<div class="oh">${icon("wrench")}WO-88213 · M-55120</div><div class="mock-row"><span>Category</span><b>Tampering</b></div><div class="mock-row"><span>Est. unbilled</span><b>410 kWh/mo</b></div>`,
+    });
   },
 };
 
+/* ---------- Ask UtilityAI Pro: a chat grounded in this page's content ---------- */
+const ASK_SUGG = [
+  ["Does any customer data leave our cloud?", "No. Models run as encrypted containers on confidential compute inside your tenant. They read inputs from your data lake and write outputs back to it as governed tables. Only two things cross the boundary: the attestation handshake that releases model keys, and operational counts such as job and row counts. Neither contains PII or consumption data.\nLINKS: layer:found, layer:models"],
+  ["How accurate is EV detection?", "On 15-minute data, Level 2/3 EV charging is detected with 85% precision, 92% recall and 98% overall accuracy, capturing about 90% (±5%) of actual EV consumption. Level 1 charging is harder: 65% precision and 75% recall. EV detection needs about 180 days of history, and each model is validated against your own ground truth before launch.\nLINKS: model:disagg, uc:trend"],
+  ["What helps with non-wires alternatives?", "Three use cases work together:\n- End-use load forecasting shows which appliances drive each network's peak.\n- Flexibility targeting sizes shiftable kW by feeder and customer.\n- NWS evaluation compares a build against a flexibility portfolio and returns pre- and post-program 8760s.\nLINKS: uc:nws, uc:forecast, uc:flex"],
+  ["How do I connect it to Copilot or ChatGPT?", "Each use case is exposed through a UtilityAI Pro MCP server running in your tenant. In Copilot Studio, add it under Tools → Add a tool → MCP. In ChatGPT, turn on developer mode under Settings → Apps & Connectors and create a connector with the server URL. Sign-in goes through your SSO, so data access follows existing roles.\nLINKS: uc:highbill, uc:analyst"],
+];
+let askTurns = [], askCtl = null, askSample;
+
+function askKnowledge() {
+  const e = ENV();
+  const nodes = Object.values(NODES).map(n => `- ${n.name} (${n.kind}): ${sub(n.desc)}`).join("\n");
+  const ucs = USE_CASES.map(u => `- [uc:${u.id}] ${u.title}. ${u.need} Value: ${u.value.join("; ")}.${u.proof ? " Proof: " + u.proof : ""} Uses: ${[...u.models, ...u.engines, ...u.access].join(", ")}.`).join("\n");
+  const acc = ACCURACY.map(a => `${a.a}: min ${a.days} days, precision ${a.p}%, recall ${a.r}%, accuracy ${a.acc}%, false positive ${a.fpr}, 100-MAPE ${a.est}±${a.pm}%`).join("\n");
+  const models = MODEL_TABS.map(t => `[model:${t.id}] ${t.name}`).join(", ");
+  const mcp = Object.values(MCP_SERVERS).map(s => `${s.name} (${s.id}): tools ${s.tools.join(", ")}`).join("\n");
+  return `PLATFORM: Bidgely UtilityAI Pro, a self-hosted AI platform for utilities. 38M+ meters, 45+ utility customers, 26 patents. Layers bottom to top: [layer:found] utility data foundation, [layer:models] core ML models, [layer:engines] engines + APIs + MCPs, [layer:out] applications and agents. Viewer's environment: ${e.tenant}. Model runtime: ${e.compute}. Data: ${e.data}.
+SECURITY: models are encrypted containers on attested confidential compute; keys released only to verified workloads; all processing in the utility tenant; only the key attestation handshake and operational telemetry counts (no PII, no consumption data) cross the boundary over ${e.network}. Validated against the utility's ground truth before each launch; regression tested each version.
+DEPLOYMENT: enterprise license, self-hosted in the utility cloud (Azure, GCP, AWS, OCI) on Databricks, Snowflake or cloud-native lakes; or Bidgely-hosted SaaS. Phases: Define, core models + Analytics Workbench, remaining models + Energy Analyst, data layer + CX APIs/MCP, then use case build by the utility or SI with Bidgely support.
+COMPONENTS:\n${nodes}
+MODELS: ${models}
+ACCURACY (15-minute data):\n${acc}
+USE CASES:\n${ucs}
+MCP SERVERS (connect to Claude, ChatGPT, Microsoft Copilot Studio, Gemini Enterprise or any MCP client; URLs are https://upro.<utility>.com/mcp/<server>; tool names illustrative):\n${mcp}`;
+}
+const ASK_RULES = () => `You are the UtilityAI Pro guide on Bidgely's platform page. Answer the visitor using ONLY the page content below. If the answer isn't there, say you don't have that detail and suggest asking the Bidgely team. Be brief: 2 to 4 short sentences, or up to 4 bullets starting with "- ". Plain text, no headings, no bold. Do not invent numbers, customers or prices.
+After the answer, add one final line starting "LINKS:" listing up to 3 relevant ids from the content, like "LINKS: uc:highbill, model:disagg, layer:models". Omit the line if nothing fits.
+
+PAGE CONTENT:
+${askKnowledge()}`;
+
+function fmtAnswer(t) {
+  const lines = esc(t).split("\n"), out = []; let ul = false;
+  lines.forEach(l => { if (/^\s*[-•]\s+/.test(l)) { if (!ul) { out.push("<ul>"); ul = true; } out.push(`<li>${l.replace(/^\s*[-•]\s+/, "")}</li>`); } else { if (ul) { out.push("</ul>"); ul = false; } if (l.trim()) out.push(`<p>${l}</p>`); } });
+  if (ul) out.push("</ul>");
+  return out.join("").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+}
+function splitLinks(t) { const m = t.match(/\n?LINKS:\s*(.+)\s*$/i); return m ? [t.slice(0, m.index).trim(), m[1].split(/[,\s]+/).filter(Boolean)] : [t.trim(), []]; }
+function linkChip(id) {
+  const [kind, key] = id.split(":");
+  if (kind === "uc") { const u = USE_CASES.find(x => x.id === key); return u ? `<button type="button" class="chip sm" data-go="${id}">${icon(UC_META[key][0])} ${esc(u.short)}</button>` : ""; }
+  if (kind === "model") { const t = MODEL_TABS.find(x => x.id === key); return t ? `<button type="button" class="chip sm" data-go="${id}">${icon("brain")} ${esc(t.name)}</button>` : ""; }
+  if (kind === "layer") { const b = BANDS.find(x => x.id === key); return b ? `<button type="button" class="chip sm" data-go="${id}">${icon("dash")} ${esc(b.name)}</button>` : ""; }
+  return "";
+}
+function go(id) {
+  const [kind, key] = id.split(":");
+  if (kind === "uc") openUC(key);
+  else if (kind === "model") openModel(key);
+  else if (kind === "layer") { selBand = key; renderStack(); renderLayer(); $("#platform").scrollIntoView({ behavior: "smooth" }); }
+}
+function answerBubble() {
+  const a = el("div", { class: "a" }, `<span class="who"><span class="spark" aria-hidden="true"></span>UtilityAI Pro</span><div class="body"><span class="thinking" aria-label="Thinking"><i></i><i></i><i></i></span></div><div class="links"></div>`);
+  $("#ask-thread").append(a); return a;
+}
+function fillBubble(a, text) {
+  const [body, links] = splitLinks(text);
+  a.querySelector(".body").innerHTML = fmtAnswer(body);
+  const L = a.querySelector(".links"); L.innerHTML = links.map(linkChip).join("");
+  L.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => go(b.dataset.go)));
+}
+
+async function ask(q) {
+  q = q.trim(); if (!q) return;
+  const input = $("#ask-input"), send = $("#ask-send");
+  input.value = ""; autoGrow();
+  $("#ask-thread").append(el("div", { class: "q" }, esc(q)));
+  const a = answerBubble();
+  const canned = ASK_SUGG.find(s => s[0] === q);
+  if (!askSample) { // no live model in this view: prewritten answers for the suggestions
+    setTimeout(() => fillBubble(a, canned ? canned[1] : "Live answers need this page open in Claude. Try one of the suggested questions below."), 450);
+    return;
+  }
+  askTurns.push({ role: "user", content: q });
+  askCtl?.abort(); askCtl = new AbortController(); send.disabled = true;
+  try {
+    const turns = [{ role: "user", content: ASK_RULES() }, ...askTurns.slice(-8)];
+    const { text } = await askSample(turns, { cache: false, modelTier: "quick", signal: askCtl.signal, onText: ({ text }) => fillBubble(a, text) });
+    fillBubble(a, text); askTurns.push({ role: "assistant", content: text });
+  } catch (e) {
+    askTurns.pop();
+    if (e.code === "cancelled") return;
+    if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e.code)) { askSample = null; $("#ask-note").textContent = "Live answers are off for this view. Suggested questions still work."; }
+    fillBubble(a, canned ? canned[1] : e.code === "rate_limited" ? "Too many questions at once. Try again in a moment." : "That didn't go through. Try asking again.");
+  } finally { send.disabled = false; }
+}
+function autoGrow() { const t = $("#ask-input"); t.style.height = "auto"; t.style.height = Math.min(160, t.scrollHeight) + "px"; }
+
+function initAsk() {
+  const sg = $("#ask-sugg");
+  sg.innerHTML = ASK_SUGG.map(([q]) => `<button type="button" class="chip">${icon("search")}${esc(q)}</button>`).join("");
+  sg.querySelectorAll("button").forEach((b, i) => b.addEventListener("click", () => ask(ASK_SUGG[i][0])));
+  $("#ask-form").addEventListener("submit", (e) => { e.preventDefault(); ask($("#ask-input").value); });
+  $("#ask-input").addEventListener("input", autoGrow);
+  $("#ask-input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask($("#ask-input").value); } });
+  if (window.claude && window.claude.use) window.claude.use("sample").then(s => { askSample = s; if (s) $("#ask-note").textContent = "Answers come from this page, using Claude on your account."; }).catch(() => {});
+}
+
 /* ---------- init ---------- */
 buildEnvChips(); renderStack(); renderLayer();
-buildModelTabs(); renderModel();
-buildUCTabs(); renderUC();
+buildModelTabs();
+buildUCTabs(); renderUC(); initAsk();
+$("#brand-logo").src = BIDGELY_LOGO;
+$("#model-close").addEventListener("click", () => $("#model-dlg").close());
+$("#model-dlg").addEventListener("click", (e) => { if (e.target.id === "model-dlg") e.target.close(); });
 
 let rz, lastVW = VW();
-addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (Math.abs(VW() - lastVW) > 8) { lastVW = VW(); renderModel(); } drawUCViz(); }, 140); });
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { renderModel(); drawUCViz(); });
+addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if ($("#model-dlg").open && Math.abs(VW() - lastVW) > 8) { lastVW = VW(); renderModel(); } drawUCViz(); }, 140); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawUCViz(); });
 
 })();</script>

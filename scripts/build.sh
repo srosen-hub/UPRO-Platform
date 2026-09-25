@@ -12,7 +12,7 @@ mkdir -p dist
   echo '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@600;700&display=swap">'
   echo '<style>'; cat src/styles.css; echo '</style>'
   cat src/body.html
-  echo '<script>(() => {"use strict";'; for f in logos data mcp core stack models usecases init; do cat src/$f.js; echo; done; echo '})();</script>'
+  echo '<script>(() => {"use strict";'; for f in brand logos icons data mcp core stack models usecases ask init; do cat src/$f.js; echo; done; echo '})();</script>'
 } > dist/upro-platform.html
 {
   echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'

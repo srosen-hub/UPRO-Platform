@@ -6,31 +6,37 @@ so it can be shown to any utility.
 
 ## What's on the page
 
-1. **Platform stack** (top of page): an isometric stack of four layers (data foundation in your lake,
-   core ML models, engines + APIs + MCPs, applications and agents) standing on your cloud
-   tenant. Pick the cloud (Azure, Google Cloud, AWS, Oracle Cloud) and data lake (Databricks,
-   Snowflake, cloud-native) to relabel it. Click a layer to list its components; click a model to
-   open its deep dive.
-2. **Model deep dives**: eight tabs with interactive visuals on a synthetic household.
-3. **Use cases & MCP**: twelve use cases, each with its own interactive visual, a "Connect it to your
-   AI assistant" panel (Claude, ChatGPT, Copilot Studio, Gemini, developers) with copyable server URL and command, a
-   replayable assistant conversation showing the MCP tool call, the recipe, and how it runs.
+1. **Platform stack**: an isometric stack of four layers, each with its own look (data foundation in
+   your lake, core ML models, engines + APIs + MCPs, apps and agents), wired up to Claude, ChatGPT,
+   Copilot and Gemini at the top. Pick the cloud and data lake to relabel it. Click a layer to list
+   its components; click a model to open its deep dive in a dialog.
+2. **Ask UtilityAI Pro**: a chat grounded in the page's own content. In the claude.ai viewer it
+   answers live through the artifact `sample` capability (the viewer's Claude account); elsewhere
+   the suggested questions return prewritten answers.
+3. **Use cases**: a grid of cards. Opening one shows its visual (CSR desktop, customer app, email,
+   agent automation run, or chart), a "Connect to your AI tools" panel with setup for Claude,
+   ChatGPT, Copilot Studio, Gemini and developers, a replayable conversation showing the MCP tool
+   call, and the recipe with icons.
 
-Light theme with Bidgely navy #04121f and Bidgely blue #29abe2, Sora + Manrope, and three text
-sizes (`--fs-1`, `--fs-2`, `--fs-3` in `src/styles.css`).
+AI-forward light theme: aurora gradients, glass surfaces, Bidgely navy #04121f and Bidgely blue
+#29abe2, the official Bidgely logo, Sora + Manrope, and three text sizes (`--fs-1`, `--fs-2`,
+`--fs-3` in `src/styles.css`).
 
 ## Structure
 
 ```
 src/styles.css   design tokens (light + dark) and layout
 src/body.html    static page structure
-src/logos.js     cloud and data platform marks (Simple Icons)
+src/brand.js     Bidgely logo (from the official logo PNG) as a data URI
+src/logos.js     cloud, data platform and AI assistant marks (Simple Icons)
+src/icons.js     line icons and the keyword picker for recipe items
 src/data.js      content: environments, platform nodes and layers, use cases, accuracy table
 src/mcp.js       MCP servers and the sample Claude conversation for each use case
 src/core.js      helpers, synthetic household data, SVG chart helpers
 src/stack.js     environment picker and the isometric platform stack
-src/models.js    model deep dives
-src/usecases.js  use case tabs, per-use-case visuals, MCP connect panel and chat replay
+src/models.js    model deep dives (shown in a dialog)
+src/usecases.js  use case cards, visuals and automations, MCP connect panel and chat replay
+src/ask.js       Ask UtilityAI Pro chat (sample capability with prewritten fallback)
 src/init.js      startup and resize handling
 scripts/build.sh assembles src/ into index.html and dist/upro-platform.html
 ```

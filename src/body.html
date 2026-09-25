@@ -1,13 +1,13 @@
 <nav class="nav" aria-label="Sections">
   <div class="wrap">
     <a class="brand" href="#platform" aria-label="Bidgely UtilityAI Pro">
-      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="3" height="8" rx="1.5" fill="currentColor"/><rect x="8" y="7" width="3" height="13" rx="1.5" fill="currentColor"/><rect x="13" y="4" width="3" height="16" rx="1.5" fill="currentColor"/><rect x="18" y="9" width="3" height="11" rx="1.5" fill="currentColor"/></svg>
-      <span class="brand-word">bidgely</span><span class="brand-sep"></span><span class="brand-prod">UtilityAI Pro</span>
+      <img id="brand-logo" alt="Bidgely" width="113" height="30">
+      <span class="brand-sep"></span><span class="brand-prod">UtilityAI Pro</span>
     </a>
     <div class="nav-links">
       <a href="#platform">Platform</a>
-      <a href="#models">Models</a>
-      <a href="#usecases">Use cases &amp; MCP</a>
+      <a href="#usecases">Use cases</a>
+      <a href="#ask" class="nav-ask"><span class="spark" aria-hidden="true"></span>Ask AI</a>
     </div>
   </div>
 </nav>
@@ -16,9 +16,9 @@
   <div class="wrap">
     <div class="plat-head">
       <div class="sec-head">
-        <span class="eyebrow">The platform</span>
-        <h2>UtilityAI Pro, stacked on your data</h2>
-        <p class="lede">Every layer runs inside your cloud and reads from and writes to your data lake. Pick your environment, then select a layer to see what's in it.</p>
+        <span class="eyebrow"><span class="spark" aria-hidden="true"></span>The AI platform for utilities</span>
+        <h2>UtilityAI Pro, <span class="grad">stacked on your data</span></h2>
+        <p class="lede">Runs in your cloud. Click any layer.</p>
       </div>
       <div class="env-picker" aria-label="Environment">
         <div class="env-row"><span class="lbl">Cloud</span><div class="chips" id="cloud-chips" role="group" aria-label="Cloud"></div></div>
@@ -26,46 +26,62 @@
       </div>
     </div>
     <div class="plat-grid">
-      <div class="stage" id="stage">
-        <svg id="stack-svg" viewBox="0 0 640 580" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
-        <div class="slab-labels" id="slab-labels"></div>
-        <span class="tenant-chip" id="tenant-chip"></span>
-        <div class="egress"><span><i></i>No customer data leaves the boundary</span><span>Only key attestation + operational counts cross, over <b id="egress-net">Private Link</b></span></div>
+      <div class="stage-wrap">
+        <div class="stage" id="stage">
+          <svg id="stack-svg" viewBox="0 0 640 620" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
+          <div class="slab-labels" id="slab-labels"></div>
+          <div class="egress"><span class="tenant-chip" id="tenant-chip"></span><span><i></i>No customer data leaves your cloud</span><span>Only key attestation + job counts cross, over <b id="egress-net">Private Link</b></span></div>
+        </div>
       </div>
       <div class="layer-panel" id="layer-panel" aria-live="polite"></div>
     </div>
   </div>
 </section>
 
-<section class="block" id="models">
+<section class="block ask-block" id="ask">
   <div class="wrap">
-    <div class="sec-head">
-      <span class="eyebrow">Core ML models</span>
-      <h2>What each model does</h2>
-      <p class="lede">Eight containerized models run in your environment and write per-meter outputs to your data lake on every run. The examples use a synthetic home with the signatures the models detect in production data.</p>
+    <div class="ask">
+      <div class="ask-head">
+        <span class="eyebrow"><span class="spark" aria-hidden="true"></span>Ask UtilityAI Pro</span>
+        <h2>What do you want to <span class="grad">know</span>?</h2>
+      </div>
+      <div class="ask-thread" id="ask-thread" aria-live="polite"></div>
+      <form class="ask-box" id="ask-form">
+        <label for="ask-input" class="sr">Ask a question about UtilityAI Pro</label>
+        <textarea id="ask-input" rows="1" placeholder="Ask about models, use cases, security or deployment…"></textarea>
+        <button type="submit" id="ask-send" aria-label="Send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </form>
+      <div class="ask-sugg chips" id="ask-sugg"></div>
+      <p class="ask-note" id="ask-note">Answers come from this page's content.</p>
     </div>
-    <div class="model-tabs" role="tablist" id="model-tabs" aria-label="Models"></div>
-    <div id="model-panels"></div>
   </div>
 </section>
 
 <section class="block" id="usecases">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Use cases &amp; MCP</span>
-      <h2>Put it to work in any AI assistant in minutes</h2>
-      <p class="lede">Each use case combines model outputs, engines and your own data. Every one is also reachable through a UtilityAI Pro MCP server in your tenant, so your teams can connect it to Claude, ChatGPT, Microsoft Copilot, Gemini or any MCP-compatible agent and start asking questions right away.</p>
+      <span class="eyebrow"><span class="spark" aria-hidden="true"></span>Use cases</span>
+      <h2>Built on the platform, <span class="grad">ready for any AI agent</span></h2>
+      <p class="lede">Pick a use case to see it run.</p>
     </div>
-    <div class="uc-tabs" id="uc-tabs" role="group" aria-label="Use cases"></div>
+    <div class="uc-grid" id="uc-grid"></div>
     <div id="uc-card"></div>
   </div>
 </section>
 
-
 <footer>
   <div class="wrap">
     <span>Bidgely UtilityAI Pro · Proprietary and confidential</span>
-    <span>Household, network and customer examples are synthetic. MCP tool names are illustrative.</span>
+    <span>Examples are synthetic. MCP tool names are illustrative.</span>
   </div>
 </footer>
+
+<dialog id="model-dlg" aria-labelledby="model-dlg-title">
+  <div class="dlg-head">
+    <div><span class="eyebrow"><span class="spark" aria-hidden="true"></span>Core ML models</span><h3 id="model-dlg-title">What each model does</h3></div>
+    <button type="button" class="btn sm" id="model-close">Close</button>
+  </div>
+  <div class="model-tabs" role="tablist" id="model-tabs" aria-label="Models"></div>
+  <div id="model-panels"></div>
+</dialog>
 <div class="tip" id="tip" hidden></div>
