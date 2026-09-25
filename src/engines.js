@@ -43,7 +43,7 @@ function openEngine(id) {
   renderEngine();
 }
 function renderEngine() {
-  const groups = ["Grid & analytics", "Customer experience", "APIs, MCPs & apps"];
+  const groups = ["Grid & analytics engines", "Customer experience engines", "APIs, MCPs & apps"];
   const ids = Object.keys(NODES).filter(k => NODES[k].band === "engines");
   $("#eng-list").innerHTML = groups.map(g => `<div class="lbl">${g}</div>` + ids.filter(k => NODES[k].group === g).map(k => `<button type="button" class="eng-btn" data-id="${k}" aria-pressed="${k === engSel}">${icon(pickIcon(NODES[k].name + " " + NODES[k].sub))}${esc(NODES[k].name)}</button>`).join("")).join("");
   $("#eng-list").querySelectorAll(".eng-btn").forEach(b => b.addEventListener("click", () => { engSel = b.dataset.id; renderEngine(); }));

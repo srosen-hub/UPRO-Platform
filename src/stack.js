@@ -147,6 +147,11 @@ function renderStack() {
   tc.innerHTML = `${logo(cloud)}${logo(lake === "native" ? "" : lake)}<span>${esc(e.tenant)}</span>`;
 }
 
+const SRC_VENDORS = [
+  ["AMI & MDM", [["Itron"], ["Landis+Gyr"], ["Sensus"], ["Aclara"], ["Siemens EnergyIP", "siemens"]]],
+  ["CIS & billing", [["SAP", "sap"], ["Oracle Utilities", "oracle"], ["Salesforce", "salesforce"]]],
+  ["GIS", [["Esri ArcGIS", "esri"]]],
+];
 function renderLayer(focusId) {
   const B = BANDS.find(b => b.id === selBand), ids = bandIds(B.id), e = ENV();
   const card = (id) => {
@@ -156,9 +161,11 @@ function renderLayer(focusId) {
   };
   let grid;
   if (B.id === "found") {
-    grid = `<div class="lbl group-h">Your systems of record</div>${ids.filter(k => NODES[k].row === "src").map(card).join("")}`;
+    grid = `<div class="lbl group-h">Your systems of record</div>${ids.filter(k => NODES[k].row === "src").map(card).join("")}
+      <div class="lbl group-h">Connects to the systems you already run</div>
+      <div class="vendors">${SRC_VENDORS.map(([g, vs]) => `<div class="vendor-row"><span class="lbl">${g}</span>${vs.map(([n, k]) => `<span class="vendor">${k ? logo(k) : ""}${esc(n)}</span>`).join("")}</div>`).join("")}</div>`;
   } else if (B.id === "engines") {
-    grid = ["Grid & analytics", "Customer experience", "APIs, MCPs & apps"].map(gn => `<div class="lbl group-h">${gn}</div>` + ids.filter(k => NODES[k].group === gn).map(card).join("")).join("");
+    grid = ["Grid & analytics engines", "Customer experience engines", "APIs, MCPs & apps"].map(gn => `<div class="lbl group-h">${gn}</div>` + ids.filter(k => NODES[k].group === gn).map(card).join("")).join("");
   } else grid = ids.map(card).join("");
   const stats = B.id === "models" ? `<div class="layer-stats">${[["38 Million", "meters"], ["45+", "utilities"], ["15 years", "of labeled ground truth"]].map(([v, l]) => `<span><strong>${v}</strong><em>${l}</em></span>`).join("")}</div>` : "";
   $("#layer-panel").innerHTML = `<div class="layer-top"><h3>${esc(B.name)}</h3><p>${esc(sub(LAYER_COPY[B.id]))}</p></div>${stats}<div class="comp-grid">${grid}</div>`;
