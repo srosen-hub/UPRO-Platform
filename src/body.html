@@ -20,11 +20,13 @@
         <div class="stage" id="stage">
           <button type="button" class="btn sm full-btn" id="full-btn" aria-pressed="false">⤢ Full screen</button>
           <div class="stack-legend"><span><i class="sw-plat"></i>UtilityAI Pro platform</span><span><i class="sw-exist"></i>Your existing investments</span></div>
-          <div class="stack-box">
-            <svg id="stack-svg" viewBox="0 0 640 620" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
-            <div class="slab-labels" id="slab-labels"></div>
+          <div class="tenant-frame">
+            <div class="egress"><span class="tenant-chip" id="tenant-chip"></span><span class="egress-lock"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>No customer data leaves your cloud</span></div>
+            <div class="stack-box">
+              <svg id="stack-svg" viewBox="0 0 640 620" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
+              <div class="slab-labels" id="slab-labels"></div>
+            </div>
           </div>
-          <div class="egress"><span class="tenant-chip" id="tenant-chip"></span><span class="egress-lock"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>No customer data leaves your cloud</span></div>
         </div>
       </div>
       <div class="layer-panel" id="layer-panel" aria-live="polite"></div>
@@ -41,7 +43,7 @@
       <div class="ask-thread" id="ask-thread" aria-live="polite"></div>
       <form class="ask-box" id="ask-form">
         <label for="ask-input" class="sr">Ask a question about UtilityAI Pro</label>
-        <textarea id="ask-input" rows="1" placeholder="Ask a question the models can answer…"></textarea>
+        <textarea id="ask-input" rows="1" placeholder="e.g. Which feeders will overload first as EV adoption grows?"></textarea>
         <button type="submit" id="ask-send" aria-label="Send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </form>
       <div class="ask-sugg chips" id="ask-sugg"></div>

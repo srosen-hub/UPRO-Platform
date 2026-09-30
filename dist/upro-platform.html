@@ -450,6 +450,10 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
 .slab-label.existing{border-style:dashed;border-left:2px dashed #9aa3ad;background:#f7f8f9}
 .dest-box{background:#f7f8f9;border:1px dashed #9aa3ad}
 @media (max-width:620px){.stack-legend{padding-right:0}}
+
+/* tenant boundary around the whole platform */
+.tenant-frame{position:relative;border:2px solid var(--good);border-radius:6px;padding:0 8px 8px;background:linear-gradient(180deg,rgba(18,161,80,.05),rgba(18,161,80,0) 120px)}
+.tenant-frame .egress{margin:0 -8px 6px;border:0;border-bottom:1px solid rgba(18,161,80,.35);border-radius:4px 4px 0 0;background:rgba(18,161,80,.08);padding:8px 12px}
 </style>
 <header class="nav" aria-label="Bidgely UtilityAI Pro">
   <div class="wrap">
@@ -473,11 +477,13 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
         <div class="stage" id="stage">
           <button type="button" class="btn sm full-btn" id="full-btn" aria-pressed="false">⤢ Full screen</button>
           <div class="stack-legend"><span><i class="sw-plat"></i>UtilityAI Pro platform</span><span><i class="sw-exist"></i>Your existing investments</span></div>
-          <div class="stack-box">
-            <svg id="stack-svg" viewBox="0 0 640 620" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
-            <div class="slab-labels" id="slab-labels"></div>
+          <div class="tenant-frame">
+            <div class="egress"><span class="tenant-chip" id="tenant-chip"></span><span class="egress-lock"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>No customer data leaves your cloud</span></div>
+            <div class="stack-box">
+              <svg id="stack-svg" viewBox="0 0 640 620" role="img" aria-label="UtilityAI Pro platform layers stacked inside your cloud"></svg>
+              <div class="slab-labels" id="slab-labels"></div>
+            </div>
           </div>
-          <div class="egress"><span class="tenant-chip" id="tenant-chip"></span><span class="egress-lock"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>No customer data leaves your cloud</span></div>
         </div>
       </div>
       <div class="layer-panel" id="layer-panel" aria-live="polite"></div>
@@ -494,7 +500,7 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
       <div class="ask-thread" id="ask-thread" aria-live="polite"></div>
       <form class="ask-box" id="ask-form">
         <label for="ask-input" class="sr">Ask a question about UtilityAI Pro</label>
-        <textarea id="ask-input" rows="1" placeholder="Ask a question the models can answer…"></textarea>
+        <textarea id="ask-input" rows="1" placeholder="e.g. Which feeders will overload first as EV adoption grows?"></textarea>
         <button type="submit" id="ask-send" aria-label="Send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </form>
       <div class="ask-sugg chips" id="ask-sugg"></div>

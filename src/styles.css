@@ -445,3 +445,7 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
 .slab-label.existing{border-style:dashed;border-left:2px dashed #9aa3ad;background:#f7f8f9}
 .dest-box{background:#f7f8f9;border:1px dashed #9aa3ad}
 @media (max-width:620px){.stack-legend{padding-right:0}}
+
+/* tenant boundary around the whole platform */
+.tenant-frame{position:relative;border:2px solid var(--good);border-radius:6px;padding:0 8px 8px;background:linear-gradient(180deg,rgba(18,161,80,.05),rgba(18,161,80,0) 120px)}
+.tenant-frame .egress{margin:0 -8px 6px;border:0;border-bottom:1px solid rgba(18,161,80,.35);border-radius:4px 4px 0 0;background:rgba(18,161,80,.08);padding:8px 12px}
