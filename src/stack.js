@@ -52,10 +52,10 @@ const MODEL_COLORS = ["--c-cool", "--c-heat", "--c-ev", "--c-solar", "--c-pool",
 const LAKE_TINT = { databricks: ["#fff4f1", "#ffd9cf", "#ffc2b3"], snowflake: ["#eefaff", "#c9eefa", "#a7e1f4"], native: ["#f4f7fa", "#dbe4ec", "#c7d3de"] };
 function bandStyle(id) {
   return ({
-    out:     { top: ["#ffffff", "#f6f7f9"], L: "#eceff2", R: "#dfe3e8", stroke: "#b7bec7" },
-    engines: { top: ["#141c26", "#0a0f16"], L: "#080c11", R: "#05080c", stroke: "#33404f" },
-    models:  { top: ["#ffffff", "#f3f5f7"], L: "#eceff2", R: "#dfe3e8", stroke: "#b7bec7" },
-    found:   { top: ["#ffffff", "#f6f7f9"], L: "#eceff2", R: "#dfe3e8", stroke: "#b7bec7" },
+    out:     { top: ["#f2f9fe", "#dcf0fa"], L: "#cbe8f6", R: "#b3dcf0", stroke: "#6fbde3" },
+    engines: { top: ["#0f3553", "#0a2740"], L: "#082036", R: "#06192a", stroke: "#29abe2" },
+    models:  { top: ["#e6f5fc", "#cdeaf8"], L: "#bfe2f3", R: "#a6d6ee", stroke: "#29abe2" },
+    found:   { top: ["#ffffff", "#f3f4f6"], L: "#e7e9ec", R: "#dadde2", stroke: "#b7bec7" },
   })[id];
 }
 
@@ -144,7 +144,7 @@ function renderStack() {
     g.addEventListener("click", () => { selBand = B.id; renderStack(); renderLayer(); });
     const lx = (S.cx + S.a + 16) / S.W * 100, ly = (yc + S.t / 2) / S.H * 100;
     const extra = B.id === "found" ? `${logo(lake === "native" ? "" : lake)}` : "";
-    const lab = el("button", { type: "button", class: "slab-label", style: `left:${lx}%;top:${ly}%`, "aria-pressed": sel }, `<b>${esc(B.name)}</b><span>${extra}${esc(sub(B.tag))}</span>`);
+    const lab = el("button", { type: "button", class: "slab-label" + (B.id === "found" ? " existing" : " platform"), style: `left:${lx}%;top:${ly}%`, "aria-pressed": sel }, `<b>${esc(B.name)}</b><span>${extra}${esc(sub(B.tag))}</span>`);
     lab.addEventListener("click", () => { selBand = B.id; renderStack(); renderLayer(); });
     labels.append(lab);
     svgEl("line", { x1: R[0] + 2, y1: R[1] + S.t / 2, x2: R[0] + 14, y2: R[1] + S.t / 2, stroke: cssv("--line-2"), "stroke-width": 1 }, svg);
