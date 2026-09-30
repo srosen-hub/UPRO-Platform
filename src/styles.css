@@ -426,12 +426,17 @@ dialog#model-dlg[open],dialog#eng-dlg[open]{display:flex;flex-direction:column;h
 .egress-lock{font-weight:600;color:var(--good)}
 .egress-lock svg{width:15px;height:15px}
 
-.outcomes{flex:1 1 100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line-2);border-left:1px solid var(--line-2);background:var(--surface)}
-.outcome{display:grid;align-content:start;gap:8px;padding:14px 16px;border-right:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
-.outcome b{display:flex;align-items:center;gap:8px;font-size:var(--fs-2);font-weight:600}
-.outcome b .ic{width:18px;height:18px;color:var(--accent);flex:none}
-.outcome ul{margin:0;padding-left:16px;display:grid;gap:4px;font-size:13px;line-height:1.4;color:var(--ink-2)}
+.outcomes{flex:1 1 100%;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid var(--line-2);border-left:1px solid var(--line-2);background:var(--surface)}
+.outcome{border-right:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
+.outcome summary{list-style:none;display:flex;align-items:center;gap:8px;padding:12px 14px;cursor:pointer}
+.outcome summary::-webkit-details-marker{display:none}
+.outcome summary:hover{background:var(--bg)}
+.outcome summary .ic{width:18px;height:18px;color:var(--accent);flex:none}
+.outcome summary b{font-size:13.5px;font-weight:600;line-height:1.25;flex:1}
+.outcome .chev{font-family:var(--f-mono);color:var(--muted);flex:none;transition:transform .2s}
+.outcome[open] .chev{transform:rotate(45deg)}
+.outcome ul{margin:0;padding:0 14px 14px 36px;display:grid;gap:4px;font-size:13px;line-height:1.4;color:var(--ink-2)}
 .outcome li::marker{color:var(--accent)}
-@media (max-width:900px){.outcomes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:1000px){.outcomes{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){.outcomes{grid-template-columns:1fr}}
 @media (max-width:620px){.full-btn{display:none}.dest-box{overflow:hidden}.dest-logos{gap:4px}.dest-logos svg{width:11px;height:11px}}

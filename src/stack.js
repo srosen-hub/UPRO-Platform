@@ -164,9 +164,12 @@ const OUTCOMES = [
   ["phone", "Customer Experience & Operations", ["Increase load shifting and call reduction from self-service & coaching", "Improve high bill call handling speed and increase IVR containment", "Reduce customer energy burden and improve affordability"]],
   ["bolt", "Grid / DER Planning", ["Identify and unlock existing grid flexibility from BTM DERs", "Defer capital expenses by identifying NWAs"]],
   ["brain", "IT and AI Innovation", ["Build a reusable asset for AI innovation via Bidgely MCP servers", "Drive utility-specific outcomes from horizontal AI platform investments (e.g., MSFT Copilot)"]],
+  ["gear", "Consolidate Technology Investments", ["Replace point solutions across CX, programs and grid with one platform", "Run in the cloud and data platform you already pay for, with no new data silo", "Reuse the same models and engines across every use case and vendor"]],
 ];
 function buildOutcomes() {
-  $("#outcomes").innerHTML = OUTCOMES.map(([k, t, pts]) => `<div class="outcome"><b>${icon(k)}${esc(t)}</b><ul>${pts.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>`).join("");
+  $("#outcomes").innerHTML = OUTCOMES.map(([k, t, pts]) => `<details class="outcome"><summary>${icon(k)}<b>${esc(t)}</b><span class="chev" aria-hidden="true">+</span></summary><ul>${pts.map(p => `<li>${esc(p)}</li>`).join("")}</ul></details>`).join("");
+  const all = [...$("#outcomes").querySelectorAll(".outcome")];
+  all.forEach(d => d.querySelector("summary").addEventListener("click", e => { e.preventDefault(); const open = !d.open; all.forEach(x => x.open = open); }));
 }
 function renderLayer(focusId) {
   const B = BANDS.find(b => b.id === selBand), ids = bandIds(B.id), e = ENV();
