@@ -14,4 +14,3 @@ $("#eng-dlg").addEventListener("click", (e) => { if (e.target.id === "eng-dlg") 
 const setFull = (on) => { document.body.classList.toggle("plat-full", on); const b = $("#full-btn"); b.setAttribute("aria-pressed", on); b.textContent = on ? "✕ Exit full screen" : "⤢ Full screen"; };
 $("#full-btn").addEventListener("click", () => setFull(!document.body.classList.contains("plat-full")));
 addEventListener("keydown", (e) => { if (e.key === "Escape" && document.body.classList.contains("plat-full") && !document.querySelector("dialog[open]")) setFull(false); });
-$("#top-search").addEventListener("submit", (e) => { e.preventDefault(); const q = $("#top-q").value; $("#top-q").value = ""; $("#ask").scrollIntoView({ behavior: "smooth" }); ask(q); });
