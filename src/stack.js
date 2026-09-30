@@ -159,9 +159,14 @@ const SRC_VENDORS = [
   ["CIS & billing", [["SAP", "sap"], ["Oracle Utilities", "oracle"], ["Salesforce", "salesforce"]]],
   ["GIS", [["Esri ArcGIS", "esri"]]],
 ];
-const OUTCOMES = [["phone", "Lower cost to serve"], ["user", "Higher customer satisfaction"], ["bolt", "Deferred grid capex"], ["target", "Stronger DER & EE programs"], ["shield", "Protected revenue"]];
+const OUTCOMES = [
+  ["target", "Customer Programs", ["Increase enrollment across VPP, Affordability, DSM, and electrification programs", "Improve cost-effectiveness by identifying high value candidates"]],
+  ["phone", "Customer Experience & Operations", ["Increase load shifting and call reduction from self-service & coaching", "Improve high bill call handling speed and increase IVR containment", "Reduce customer energy burden and improve affordability"]],
+  ["bolt", "Grid / DER Planning", ["Identify and unlock existing grid flexibility from BTM DERs", "Defer capital expenses by identifying NWAs"]],
+  ["brain", "IT and AI Innovation", ["Build a reusable asset for AI innovation via Bidgely MCP servers", "Drive utility-specific outcomes from horizontal AI platform investments (e.g., MSFT Copilot)"]],
+];
 function buildOutcomes() {
-  $("#outcomes").innerHTML = `<span class="lbl">Business outcomes</span><div class="outcome-row">${OUTCOMES.map(([k, t]) => `<span class="outcome">${icon(k)}<b>${esc(t)}</b></span>`).join("")}</div>`;
+  $("#outcomes").innerHTML = OUTCOMES.map(([k, t, pts]) => `<div class="outcome"><b>${icon(k)}${esc(t)}</b><ul>${pts.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>`).join("");
 }
 function renderLayer(focusId) {
   const B = BANDS.find(b => b.id === selBand), ids = bandIds(B.id), e = ENV();
