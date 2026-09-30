@@ -45,8 +45,8 @@ const HM_SERIES = [
 function mDisagg() {
   const v = panel(`
     <h3>Appliance &amp; DER disaggregation</h3>
-    <p>One meter, one row per day. Raw reads on the left, what the model separates out on the right. Click a row.</p>`,
-    [["Input", "AMI interval data (15-min or hourly), weather, bill cycles"], ["Output", "Hourly kWh per appliance per meter; monthly for cooking, laundry, entertainment"], ["Categories", "Always on, heating, cooling, water heating, refrigeration, lighting, pool pump, EV, solar, plus 3 monthly"], ["Written to", "Governed output tables in your data platform, every run"]]);
+    <p>Detect appliance ownership and usage at AMI interval frequency for the following categories: Always On, Heating, Cooling, Water Heating, Refrigeration, Lighting, Pool pumps, EV charging, Solar Generation.</p>`,
+    [["Input", "AMI interval data (15-min or hourly), weather, bill cycles"], ["Output", "Appliance ownership and kWh per appliance at AMI interval frequency"], ["Categories", "Always On, Heating, Cooling, Water Heating, Refrigeration, Lighting, Pool pumps, EV charging, Solar Generation"], ["Written to", "Governed output tables in your data platform, every run"]]);
   v.append(el("div", { class: "viz-h" }, `<h4>8,760 hours, separated</h4><span class="mono">sample premise · Oct 2025 to Sep 2026</span>`));
   // Instrument panel: raw AMI in, six end-use channels out. Rows are days, columns are hours.
   const panelEl = el("div", { class: "hm-panel" });
@@ -159,7 +159,7 @@ function drawDay() {
 /* Attributes */
 function mAttr() {
   const v = panel(`<h3>Appliance &amp; DER attributes</h3>
-    <p>Every detected appliance, profiled.</p>`,
+    <p>Provides detailed profiles for detected appliances, including characteristics like heating fuel type, heat pump detection, pool pump type, EV charger amplitude, solar capacity, and more.</p>`,
     [["Input", "Disaggregation outputs, interval shape, weather"], ["Output", "Per-appliance attributes with confidence"], ["Examples", "Heating fuel, heat pump, pool pump type and runs, water heater type, EV charger amplitude, solar capacity, smart thermostat, battery"]]);
   v.append(el("div", { class: "detect-list" }, [
     ["Heating fuel", "Electric", "--c-heat"], ["Heat pump", "Detected · 0.93", "--c-heat"], ["Pool pump", "Variable speed · 1 run/day", "--c-pool"],
@@ -195,7 +195,7 @@ function mAttr() {
 /* Inefficiency */
 function mIneff() {
   const v = panel(`<h3>Appliance inefficiency</h3>
-    <p>Energy per degree, tracked season over season.</p>`,
+    <p>Detects inefficiencies in the performance of HVAC units, including Appliance saturation, short cycling, and degradation.</p>`,
     [["Input", "Heating and cooling disaggregation, weather"], ["Output", "Degradation, short cycling and saturation flags per system"]]);
   const r = rng(77);
   const w = VW(), h = 280, ml = 42, mr = 16, mt = 16, mb = 34;
@@ -230,7 +230,7 @@ const ARCH = [
 ];
 function mLife() {
   const v = panel(`<h3>Customer lifestyle</h3>
-    <p>How and when a household uses energy.</p>`,
+    <p>Clusters consumption patterns based on Seasonal and Daily usage (e.g., evening consumer). Classifies households into distinct lifestyle archetypes such as 'Dormant', 'Office Goer', 'Active', or 'Weekend Warrior'.</p>`,
     [["Input", "Annual, seasonal and daily usage patterns"], ["Output", "Archetype label per household"], ["Archetypes", "Dormant, Office Goer, Active, Weekend Warrior, Evening Consumer and more"]]);
   const grid = el("div", { style: "display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px" });
   ARCH.forEach((a, j) => {
@@ -256,7 +256,7 @@ const PROP = (() => { const r = rng(9); const a = []; for (let i = 0; i < 24000;
 let propT = 0.6;
 function mProp() {
   const v = panel(`<h3>DER propensity</h3>
-    <p>Who is likely to adopt an EV or solar next.</p>`,
+    <p>Provide likelihood scores for each customer to adopt an EV or purchase a PV system.</p>`,
     [["Input", "Usage patterns, home and lifestyle profile, area adoption"], ["Output", "EV and solar adoption likelihood per customer"]]);
   v.append(el("div", { class: "viz-h" }, `<h4>EV propensity across one network · 24,000 premises</h4><span class="xs muted mono">synthetic distribution</span>`));
   const holder = el("div"); v.append(holder);
@@ -288,7 +288,7 @@ let incMode = "premise";
 const INC = (() => { const r = rng(31); const blocks = [0.12, 0.55, 0.3, 0.72, 0.2, 0.42]; const cells = []; for (let b = 0; b < 6; b++) for (let i = 0; i < 48; i++) { const truth = r() < blocks[b]; const p = clamp(truth ? 0.62 + r() * 0.35 : r() * 0.45 + (r() < 0.1 ? 0.25 : 0), 0, 1); cells.push({ b, truth, p, share: blocks[b] }); } return cells; })();
 function mInc() {
   const v = panel(`<h3>Customer income</h3>
-    <p>Income eligibility, scored per premise instead of per census block.</p>`,
+    <p>Determines the likelihood that a customer qualifies as income eligible based on the information available in the customer’s Energy Profile, in combination with available external public data sources such as Income Distribution Census data.</p>`,
     [["Input", "Energy profile, home attributes, census income distribution"], ["Output", "Likelihood of income eligibility per premise"]]);
   const seg = el("div", { class: "seg", role: "group", "aria-label": "Targeting method" }, `<button type="button" data-m="census" aria-pressed="${incMode === "census"}">Census block average</button><button type="button" data-m="premise" aria-pressed="${incMode === "premise"}">Premise-level model</button>`);
   v.append(el("div", { class: "viz-h" }, `<h4>288 premises in six census blocks</h4>`));
@@ -321,7 +321,7 @@ function mInc() {
 /* Personalized insights */
 function mPI() {
   const v = panel(`<h3>Personalized insights</h3>
-    <p>Each home against similar homes, appliance by appliance.</p>`,
+    <p>Measures a customer’s energy efficiency on total usage and on specific appliance categories, by comparing the customer’s usage against that of “Similar Homes.” Also generates a ranked list of valuable savings tips and recommendations, starting from a catalog of tips.</p>`,
     [["Input", "Disaggregation, home profile, similar-home cohort"], ["Output", "Efficiency score per appliance, ranked tips"]]);
   const rows = [["Cooling", 612, 430, 540], ["EV charging", 318, 250, 300], ["Pool pump", 205, 150, 240], ["Water heating", 180, 120, 160], ["Always on", 225, 170, 210], ["Lighting & other", 260, 220, 250]];
   const w = VW(), rh = 34, ml = 130, mr = 20, mt = 24, h = mt + rows.length * rh + 24;
@@ -346,7 +346,7 @@ function mPI() {
 /* Revenue loss */
 function mRev() {
   const v = panel(`<h3>Revenue loss</h3>
-    <p>Drops that weather and behavior can't explain get flagged.</p>
+    <p>Anomaly Detection &amp; Categorization: Theft, Rate Misuse, Tampering, Load Violation, Power Factor, Terminal Burn.</p>
     <div class="chips">${["Theft", "Rate misuse", "Tampering", "Load violation", "Power factor", "Terminal burn"].map(c => `<span class="tag">${c}</span>`).join("")}</div>`,
     [["Input", "AMI usage, meter events, rate assignment, weather"], ["Output", "Anomaly flag, category and priority per meter"]]);
   const r = rng(5); const n = 180, drop = 118;
