@@ -416,7 +416,8 @@ const S = {
 function newProject(name) {
   return {
     v: 1, id: uid('p'), name: name || 'Untitled RFP', example: false,
-    context: { client: '', bidding: '', notes: '', winThemes: '' },
+    type: 'rfp', context: { client: '', bidding: '', notes: '', winThemes: '', sources: [], stakeholders: [] },
+    sourcePlan: { hints: '', glean: true, salesforce: true, figma: true },
     files: [], assets: [], library: [], requirements: [], objectives: [], topics: [],
     formatRules: {}, formatBasis: '', basisNote: '',
     sections: [], pending: null, changeLog: [], risks: [], matrix: [],
@@ -434,7 +435,7 @@ function numberSections(p = S.project) {
 }
 const secById = id => S.project.sections.find(s => s.id === id);
 const reqById = id => S.project.requirements.find(r => r.id === id);
-const blockById = id => S.project.library.find(b => b.id === id);
+const blockById = id => S.project.library.find(b => b.id === id) || WS.pinnedBlocks.find(b => b.id === id);
 const assetById = id => S.project.assets.find(a => a.id === id);
 const fileById = id => S.project.files.find(f => f.id === id);
 
@@ -513,7 +514,7 @@ function sanitize(html) {
   return markGaps(root.innerHTML);
 }
 function markGaps(html) {
-  return html.replace(/(?<!gapmark">)\[(NEEDS (?:INPUT|VISUAL)[^\]]*)\]/g, '<span class="gapmark">[$1]</span>');
+  return html.replace(/(?<!gapmark">)\[((?:NEEDS (?:INPUT|VISUAL)|CONFIRM)[^\]]*)\]/g, '<span class="gapmark">[$1]</span>');
 }
 function textToHtml(t) {
   return String(t || '').split(/\n{2,}/).map(p => p.trim()).filter(Boolean)
@@ -600,17 +601,45 @@ const ICON = {
   logo: '<svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.7"><path d="M4 2h6l3 3v9H4z"/><path d="M6.5 8.5l1.5 1.5 3-3"/></svg>',
 };
 
-/* ---- style.js ---- */
-// Voice and style: house rules sent with every drafting prompt, and a checker that flags
-// wording that reads as machine-written before anything reaches a customer.
+/* ---- workspace.js ---- */
+// Team workspace: the style guide, knowledge sources and response templates every project uses.
+// Shared through the artifact's database when available (editors change it, everyone reads it),
+// otherwise kept in this browser.
 
-const DEFAULT_STYLE = {
+const RESPONSE_TYPES = [
+  { id: 'rfp', label: 'RFP response' },
+  { id: 'rfi', label: 'RFI response' },
+  { id: 'security', label: 'Security questionnaire' },
+  { id: 'proposal', label: 'Unsolicited proposal' },
+  { id: 'sow', label: 'Statement of work' },
+  { id: 'other', label: 'Other response' },
+];
+
+/* Trust tiers decide how a source may be used in a draft. */
+const TIERS = {
+  approved: { label: 'Approved library', short: 'Approved', rank: 4, use: 'Approved boilerplate. May be used word for word.' },
+  product: { label: 'Latest product thinking', short: 'Product', rank: 3, use: 'Current roadmap and positioning. Use for direction; anything not yet shipped is written as planned and marked [CONFIRM: ...] for the product owner.' },
+  past: { label: 'Past responses', short: 'Past response', rank: 2, use: 'Earlier submitted answers. Reuse and tailor; check facts against newer sources.' },
+  reference: { label: 'Internal reference', short: 'Reference', rank: 2, use: 'Internal documentation. Tailor; do not copy internal wording.' },
+  internal: { label: 'Internal discussion', short: 'Discussion', rank: 1, use: 'Slack, email and meeting notes. Context only. Never quote; any fact taken from it is marked [CONFIRM: ...].' },
+};
+
+const DEFAULT_TEMPLATES = {
+  rfp: '1 Executive Summary\n2 Understanding of Needs\n3 Proposed Solution\n  3.1 Capabilities\n  3.2 Integration and Security\n4 Approach and Implementation Plan\n5 Project Team\n6 Relevant Experience and References\n7 Pricing\n8 Appendices',
+  rfi: '1 Company Overview\n2 Understanding of Needs\n3 Solution Overview\n4 Relevant Experience\n5 Responses to Questions\n6 Next Steps',
+  security: '1 Security Program Overview\n2 Certifications and Audits\n3 Data Protection\n4 Access Control\n5 Incident Response\n6 Questionnaire Responses',
+  proposal: '1 Executive Summary\n2 The Opportunity\n3 Proposed Approach\n4 Outcomes and Measures\n5 Timeline\n6 Investment\n7 Why Us',
+  sow: '1 Background and Objectives\n2 Scope of Work\n3 Deliverables\n4 Timeline and Milestones\n5 Roles and Responsibilities\n6 Assumptions\n7 Acceptance Criteria\n8 Fees and Payment',
+  other: '1 Introduction\n2 Response\n3 Supporting Information',
+};
+
+const DEFAULT_STYLE_GUIDE = {
   tone: 'Confident, plain and specific. Write like an experienced proposal manager who knows the client. Warm but not salesy.',
   rules: [
     'Use the client\'s name and their own terms from the RFP.',
     'Lead with the answer, then the evidence. Short paragraphs of 2 to 4 sentences.',
     'Vary sentence length. Mix short sentences with longer ones.',
-    'Prefer concrete facts, numbers and named examples from the library over adjectives.',
+    'Prefer concrete facts, numbers and named examples over adjectives.',
     'Use active voice and "we" for our company, "you" or the client name for the client.',
     'No em dashes or en dashes. Use commas, periods, colons or parentheses.',
     'No rhetorical questions, no exclamation marks, no emoji.',
@@ -619,6 +648,17 @@ const DEFAULT_STYLE = {
     'Do not end paragraphs with a summarizing moral or a restatement of the point.',
     'Bullets only for lists of parallel items, never for the whole section.',
   ].join('\n'),
+  formatting: [
+    'Headings in title case.',
+    'Spell out numbers one to nine; use numerals for 10 and above, percentages and money.',
+    'Dates as "October 30, 2026".',
+    'Use the Oxford comma.',
+  ].join('\n'),
+  terminology: [
+    'customers | users, end users',
+    'utility | utility company',
+  ].join('\n'),
+  facts: '',
   banned: [
     'delve', 'delving', 'tapestry', 'seamless', 'seamlessly', 'leverage', 'leveraging', 'robust', 'cutting-edge',
     'state-of-the-art', 'game-changer', 'game-changing', 'revolutionize', 'unlock', 'unleash', 'empower', 'elevate',
@@ -632,33 +672,138 @@ const DEFAULT_STYLE = {
   voiceSample: '',
 };
 
-function styleOf(p = S.project) {
-  if (!p.style) p.style = JSON.parse(JSON.stringify(DEFAULT_STYLE));
-  return p.style;
-}
-function bannedList(p = S.project) {
-  return styleOf(p).banned.split(/[,\n]/).map(s => s.trim().toLowerCase()).filter(Boolean);
+function defaultWorkspace() {
+  return {
+    v: 1,
+    styleGuide: JSON.parse(JSON.stringify(DEFAULT_STYLE_GUIDE)),
+    sources: {
+      glean: { enabled: true, recencyMonths: 18, hints: '' },
+      pinned: [],
+    },
+    templates: JSON.parse(JSON.stringify(DEFAULT_TEMPLATES)),
+    updatedAt: 0,
+  };
 }
 
-function styleRulesText(p = S.project) {
-  const st = styleOf(p);
-  return `VOICE AND STYLE (mandatory, the text goes to a customer and must read as written by our proposal team):
+const WS = { data: defaultWorkspace(), db: null, mode: 'local', canEdit: true, unsub: null, pinnedBlocks: [] };
+const WS_DOC = 'workspace/settings';
+
+async function loadWorkspace() {
+  // Local copy first so the page renders at once.
+  try { const raw = await idbGet('workspace'); if (raw) WS.data = Object.assign(defaultWorkspace(), JSON.parse(raw)); } catch { }
+  try { const raw = await idbGet('pinnedBlocks'); if (raw) WS.pinnedBlocks = JSON.parse(raw); } catch { }
+  for (let i = 0; i < 40 && !(window.claude && window.claude.use); i++) await sleep(250);
+  let db = null, user = null;
+  try { db = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch { db = null; }
+  try { user = window.claude && window.claude.use ? await window.claude.use('user') : null; } catch { user = null; }
+  if (!db) { WS.mode = 'local'; renderMain(); return; }
+  WS.db = db;
+  WS.mode = 'shared';
+  WS.canEdit = user ? (user.isOwner() || user.canEdit()) : false;
+  try {
+    WS.unsub = db.doc(WS_DOC).onSnapshot(snap => {
+      const d = snap && (typeof snap.data === 'function' ? snap.data() : snap.data);
+      if (d && d.styleGuide) {
+        WS.data = Object.assign(defaultWorkspace(), d);
+        idbSet('workspace', JSON.stringify(WS.data));
+        if (!isTyping()) renderMain();
+      } else if (WS.canEdit && WS.data.updatedAt) {
+        saveWorkspace(); // first editor seeds the shared copy from their local one
+      }
+    }, () => { WS.mode = 'local'; renderMain(); });
+  } catch { WS.mode = 'local'; }
+  renderMain();
+}
+function isTyping() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT' || a.isContentEditable); }
+
+let wsTimer = null;
+function saveWorkspace() {
+  WS.data.updatedAt = Date.now();
+  idbSet('workspace', JSON.stringify(WS.data));
+  clearTimeout(wsTimer);
+  wsTimer = setTimeout(async () => {
+    if (WS.mode !== 'shared' || !WS.db || !WS.canEdit) return;
+    try { await WS.db.doc(WS_DOC).set(JSON.parse(JSON.stringify(WS.data))); }
+    catch (e) { toast(e && e.code === 'not_granted' ? 'Only editors of this page can change the team settings.' : 'Team settings could not be saved. Your changes are kept in this browser.', { err: true }); }
+  }, 800);
+}
+
+function sg() { return WS.data.styleGuide; }
+function wsEditable() { return WS.mode === 'local' || WS.canEdit; }
+
+function templateSections(type) {
+  const t = WS.data.templates[type] || WS.data.templates.rfp || '';
+  return t.split('\n').filter(l => l.trim()).map(l => {
+    const level = /^\s{2,}|\t/.test(l) ? 2 : 1;
+    return { title: l.trim().replace(/^[\d.]+\s+/, ''), level };
+  });
+}
+
+function terminologyPairs() {
+  return sg().terminology.split('\n').map(l => l.split('|').map(s => s.trim())).filter(x => x[0] && x[1])
+    .map(([use, avoid]) => ({ use, avoid: avoid.split(',').map(s => s.trim()).filter(Boolean) }));
+}
+
+/* Import a style guide from a document: Claude maps it onto the guide's fields. */
+function promptStyleImport(text) {
+  return `Turn this company writing style guide into structured fields. Keep the company's own wording where possible.
+
+"""
+${text.slice(0, 60000)}
+"""
+
+Return JSON:
+{"tone":"2 to 3 sentences","rules":"one rule per line","formatting":"one convention per line (headings, numbers, dates, punctuation, units)","terminology":"one per line as: preferred term | terms to avoid, comma separated","banned":"comma separated words and phrases to never use","facts":"approved company facts and figures, one per line, only if the guide lists them"}
+Leave a field as "" when the guide says nothing about it.`;
+}
+async function importStyleGuide(text) {
+  const res = await askJSON(promptStyleImport(text), { label: 'Reading the style guide' });
+  if (!res) return;
+  const g = sg();
+  for (const k of ['tone', 'rules', 'formatting', 'terminology', 'facts']) if (res[k]) g[k] = res[k];
+  if (res.banned) g.banned = [...new Set(g.banned.split(',').map(s => s.trim()).concat(res.banned.split(',').map(s => s.trim())).filter(Boolean))].join(', ');
+  saveWorkspace();
+}
+
+/* ---- style.js ---- */
+// Voice and style: house rules sent with every drafting prompt, and a checker that flags
+// wording that reads as machine-written before anything reaches a customer.
+
+// The style guide itself lives in the team workspace (workspace.js).
+const DEFAULT_STYLE = DEFAULT_STYLE_GUIDE;
+function styleOf() { return sg(); }
+function bannedList() {
+  return sg().banned.split(/[,\n]/).map(s => s.trim().toLowerCase()).filter(Boolean);
+}
+
+function styleRulesText() {
+  const st = sg();
+  const terms = terminologyPairs();
+  return `HOUSE STYLE GUIDE (mandatory, the text goes to a client and must read as written by our proposal team):
 Tone: ${st.tone}
-Rules:
+Writing rules:
 ${st.rules}
-Never use these words or phrases: ${bannedList(p).join(', ')}.
-Do not mention AI, Claude, models, drafts, prompts, the content library, block ids or this process anywhere in the prose.
+${st.formatting ? 'Formatting conventions:\n' + st.formatting : ''}
+${terms.length ? 'Terminology (use the first term, never the others):\n' + terms.map(t => `${t.use} (not: ${t.avoid.join(', ')})`).join('\n') : ''}
+${st.facts ? 'Approved company facts and figures (use these exact values; never contradict them):\n' + st.facts : ''}
+Never use these words or phrases: ${bannedList().join(', ')}.
+Do not mention AI, Claude, models, drafts, prompts, the content library, block ids, source systems or this process anywhere in the prose.
 ${st.voiceSample ? `Match the rhythm and word choice of this sample of our own past writing:\n"""\n${st.voiceSample.slice(0, 2500)}\n"""` : ''}`;
 }
 
 /* Checker: returns issues with a short label and the matched text. Runs on plain text. */
-function styleIssues(text, p = S.project) {
+function styleIssues(text) {
   const out = [];
   const lower = text.toLowerCase();
-  for (const w of bannedList(p)) {
+  for (const w of bannedList()) {
     const re = new RegExp('(^|[^a-z])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[^a-z])', 'gi');
     const n = (lower.match(re) || []).length;
     if (n) out.push({ kind: 'banned', label: `"${w}"`, n });
+  }
+  for (const t of terminologyPairs()) for (const a of t.avoid) {
+    const re = new RegExp('(^|[^a-z])' + a.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[^a-z])', 'gi');
+    const n = (lower.match(re) || []).length;
+    if (n) out.push({ kind: 'term', label: `"${a}" (use "${t.use}")`, n });
   }
   const dashes = (text.match(/[—–]|\s--\s/g) || []).length;
   if (dashes) out.push({ kind: 'dash', label: 'Em or en dash', n: dashes });
@@ -677,7 +822,7 @@ function styleIssues(text, p = S.project) {
     if (sd / mean < 0.28) out.push({ kind: 'rhythm', label: 'Sentence lengths too uniform', n: 1 });
   }
   if (/\b(as an ai|language model|claude|chatgpt|generated by|this draft)\b/i.test(text)) out.push({ kind: 'leak', label: 'Mentions AI or drafting', n: 1 });
-  if (/\b(B-\d{3}|R-\d{3}|A-\d{3})\b/.test(text)) out.push({ kind: 'leak', label: 'Internal id in text', n: 1 });
+  if (/\b(B-\d{3}|R-\d{3}|A-\d{3})\b/.test(text) || /\b(glean|salesforce|slack|confluence)\b/i.test(text)) out.push({ kind: 'leak', label: 'Internal id in text', n: 1 });
   return out;
 }
 function blockText(b) {
@@ -710,7 +855,7 @@ function autoFixText(html) {
 }
 
 function promptRestyle(p, sec, items) {
-  return `Rewrite these passages from section "${sec.title}" of an RFP response so they read as written by an experienced human proposal writer. Keep every fact, number, name and [NEEDS INPUT: ...] marker exactly. Do not add new claims. Keep the same HTML tags (<p>, <ul>, <li>, <b>, <i>).
+  return `Rewrite these passages from section "${sec.title}" of an RFP response so they read as written by an experienced human proposal writer. Keep every fact, number, name and every [NEEDS INPUT: ...] and [CONFIRM: ...] marker exactly. Apply the terminology list. Do not add new claims. Keep the same HTML tags (<p>, <ul>, <li>, <b>, <i>).
 
 ${styleRulesText(p)}
 
@@ -759,16 +904,19 @@ const AI_ERRORS = {
   prompt_too_large: 'That input is too large for one request. Try a smaller file or fewer sections.',
   invalid_json: 'Claude returned a response the engine could not read. Try again.',
   cancelled: 'Stopped.',
+  tools_unavailable: 'Guided search is not available here. Try again; the engine will search requirement by requirement.',
 };
 
-async function askJSON(prompt, { label = 'Working', tier = 'default' } = {}) {
+async function askJSON(prompt, { label = 'Working', tier = 'default', tools } = {}) {
   if (!AI.sample) throw new Error('AI steps need the claude.ai viewer. Open this page on claude.ai to use them.');
   AI.ctrl = new AbortController();
   AI.busy = label;
   renderBar();
   toast(label + '…', { sticky: true, cancel: true });
   try {
-    return await AI.sample.json(prompt, { modelTier: tier, cache: false, signal: AI.ctrl.signal });
+    const opts = { modelTier: tier, cache: false, signal: AI.ctrl.signal };
+    if (tools) opts.tools = tools;
+    return await AI.sample.json(prompt, opts);
   } catch (e) {
     throw new Error(AI_ERRORS[e && e.code] || (e && e.message) || 'Claude request failed.');
   } finally {
@@ -779,7 +927,14 @@ async function askJSON(prompt, { label = 'Working', tier = 'default' } = {}) {
 }
 function cancelAI() { if (AI.ctrl) AI.ctrl.abort(); }
 
-const RULES_NO_FAB = `Never invent facts, numbers, client names, certifications, dates or results. Every factual claim must come from the provided library blocks or the RFP text. When something needed is not in the provided material, write a marker like [NEEDS INPUT: what is missing] instead of guessing.`;
+const RULES_NO_FAB = `Never invent facts, numbers, client names, certifications, dates or results. Every factual claim must come from the provided library blocks or the RFP text. When something needed is not in the provided material, write a marker like [NEEDS INPUT: what is missing] instead of guessing.
+Source tiers decide how material may be used:
+${Object.entries(TIERS).map(([k, t]) => `- ${t.label} (${k}): ${t.use}`).join('\n')}
+When sources disagree, prefer the approved library and approved facts, then the most recently updated source, and list the disagreement under "conflicts" when the output format has that field.`;
+
+function typeLabel(p) { return (RESPONSE_TYPES.find(t => t.id === p.type) || RESPONSE_TYPES[0]).label; }
+function aType(p) { const l = typeLabel(p); return (/^[aeiou]|^RF|^SOW/i.test(l) && !/^U(?!n)/.test(l) ? 'an ' : 'a ') + l; }
+function tierTag(b) { const t = TIERS[b.tier || 'approved']; return `${t ? t.short : 'Approved'}${b.updated ? ', updated ' + String(b.updated).slice(0, 10) : ''}${b.origin === 'glean' || b.origin === 'pinned' ? ', internal source' : ''}`; }
 
 function ctxText(p) {
   const c = p.context;
@@ -787,14 +942,15 @@ function ctxText(p) {
     c.client && 'Client: ' + c.client,
     c.bidding && 'What we are bidding on: ' + c.bidding,
     c.winThemes && 'Win themes: ' + c.winThemes,
-    c.notes && 'Notes from client conversations: ' + c.notes,
+    'Response type: ' + typeLabel(p),
+    c.notes && 'Internal notes on the client (context only, never quote them or name people from them unless the RFP does): ' + c.notes,
     p.objectives.length && 'Client objectives: ' + p.objectives.map((o, i) => (i + 1) + '. ' + o).join(' '),
   ].filter(Boolean).join('\n');
 }
 
 /* 1. Requirement extraction, one chunk of one RFP file at a time. */
 function promptExtract(file, chunk, ci, cn) {
-  return `You are a proposal analyst reading a client's RFP package. Extract every requirement from this excerpt.
+  return `You are a proposal analyst reading a client's document package for ${aType(S.project)}. Extract every requirement from this excerpt.
 
 File: "${file.name}" (part ${ci + 1} of ${cn})
 Excerpt (page markers look like [[PAGE n]], sheet rows look like [[ROW sheet:n]]):
@@ -845,7 +1001,8 @@ ${reqs}
 Decide the structure in this order of precedence:
 1. If the RFP mandates a structure, mirror it exactly, including its numbering (put the RFP number in "fixedNum").
 2. Else if it gives evaluation criteria, order the sections to match the criteria.
-3. Else use a sensible default: Executive Summary, Understanding of Needs, Proposed Solution, Approach and Implementation Plan, Project Team, Relevant Experience, Pricing, Appendices.
+3. Else use the team's template for ${aType(p)} (level 2 lines are indented):
+${templateSections(p.type || 'rfp').map(t => (t.level === 2 ? '   ' : '') + t.title).join('\n')}
 
 Map every requirement that needs a response to at least one section (instruction and submission items can stay unmapped). Use level 2 sections for sub-parts. Mark sections that summarize the rest (executive summary, conclusion, cover letter) with "summarizes": true.
 
@@ -923,8 +1080,8 @@ What it must do: ${sec.guidance || 'n/a'}
 Requirements it must answer:
 ${reqs.map(r => `${r.id} (${r.mandatory ? 'mandatory' : 'optional'}): ${r.text}`).join('\n') || 'none mapped'}
 
-Candidate library blocks (already filtered by topic and matched on requirement text):
-${cands.map(b => `### ${b.id} | ${b.title} | tags: ${b.tags.join(', ')}\n${b.text.slice(0, 650)}`).join('\n\n') || 'none'}
+Candidate source blocks (already filtered by topic and matched on requirement text; tier and freshness in brackets):
+${cands.map(b => `### ${b.id} | ${b.title} | [${tierTag(b)}] | tags: ${b.tags.join(', ')}\n${b.text.slice(0, 650)}`).join('\n\n') || 'none'}
 
 Candidate images:
 ${imgs.map(a => `${a.id} | ${a.source === 'figma' ? 'PRODUCT (Figma library)' : a.source === 'example' ? 'example' : 'uploaded, non-product'} | ${a.caption || a.name} | tags: ${(a.tags || []).join(', ')}`).join('\n') || 'none'}
@@ -938,16 +1095,17 @@ Return JSON:
  "blocks": [{"id":"B-...","reason":"one line on why it fits","mode":"verbatim" | "tailored" | "synthesized"}],
  "gaps": [{"text":"what is missing and why it matters","owner":"who likely has it, e.g. pricing lead, SME"}],
  "visuals": [{"assetId":"A-... or null","need":"what the visual shows","reason":"why it helps here"}],
- "tables": [{"kind":"compliance" | "timeline" | "team" | "custom","title":"...","reason":"..."}]
+ "tables": [{"kind":"compliance" | "timeline" | "team" | "custom","title":"...","reason":"..."}],
+ "conflicts": [{"text":"what disagrees, e.g. customer count 31 in B-001 vs 34 in B-014","sources":["B-..."],"resolution":"which value to use and why"}]
 }
-Rules: only choose blocks from the candidates. Use "verbatim" for approved boilerplate that fits as is, "tailored" when names or objectives need swapping in, "synthesized" when several blocks combine. List a gap only when no candidate covers the point. Suggest a visual only when it adds something; use assetId null when no image fits (that becomes a NEEDS VISUAL marker).`;
+Rules: only choose blocks from the candidates. Use "verbatim" only for approved-tier boilerplate that fits as is, never for other tiers, "tailored" when names or objectives need swapping in, "synthesized" when several blocks combine. List a gap only when no candidate covers the point. Suggest a visual only when it adds something; use assetId null when no image fits (that becomes a NEEDS VISUAL marker).`;
 }
 
 /* 6. Drafting, one section at a time. */
 function promptDraft(p, sec, chosen, verbatim, others) {
   const reqs = sec.reqIds.map(reqById).filter(Boolean);
   const prior = sec.blocks.filter(b => b.type === 'text' || b.type === 'callout').map(b => htmlToText(b.html)).join('\n\n').slice(0, 5000);
-  return `Write section ${sec.num} "${sec.title}" of an RFP response.
+  return `Write section ${sec.num} "${sec.title}" of ${aType(p)}.
 
 ${ctxText(p)}
 
@@ -957,8 +1115,9 @@ Key points agreed in the outline:
 ${sec.keyPoints.map(k => '- ' + k).join('\n') || '- none'}
 Known gaps (do not fill these, mark them): ${sec.gaps.map(g => g.text).join('; ') || 'none'}
 
-Library blocks to tailor or synthesize from (cite their ids):
-${chosen.map(b => `### ${b.id} | ${b.title} | mode: ${b._mode}\n${b.text.slice(0, 2500)}`).join('\n\n') || 'none'}
+Source blocks to tailor or synthesize from (cite their ids; tier in brackets decides how each may be used):
+${chosen.map(b => `### ${b.id} | ${b.title} | mode: ${b._mode} | [${tierTag(b)}]\n${b.text.slice(0, 2500)}`).join('\n\n') || 'none'}
+${(sec.conflicts || []).length ? 'Resolved conflicts to respect: ' + sec.conflicts.map(c => c.text + ' -> ' + c.resolution).join('; ') : ''}
 
 Library blocks that will be inserted word for word (do not repeat their content; you may place them with {"type":"verbatim"}):
 ${verbatim.map(b => `${b.id} | ${b.title} | ${b.text.slice(0, 200)}`).join('\n') || 'none'}
@@ -990,6 +1149,307 @@ ${rows.map(r => `=== ${r.req.id}: ${r.req.text}\nCandidate blocks:\n${r.cands.ma
 ${RULES_NO_FAB}
 Return JSON: {"rows":[{"reqId":"R-001","status":"Comply" | "Partial" | "Roadmap" | "Does not comply" | "Needs input","comment":"1 to 3 sentences for the client","sources":["B-..."],"confidence":"high" | "medium" | "low"}]}
 Use "Needs input" with low confidence when the candidates do not answer the row.`;
+}
+
+/* ---- knowledge.js ---- */
+// Internal knowledge through the viewer's connectors: Glean (company search across Drive, Confluence,
+// Slack, email and meeting notes) and Salesforce (opportunity, contacts and activity).
+
+const GLEAN = 'Glean';
+const SFDC = 'Salesforce - sobject-reads';
+const KN = { mcp: null, state: 'connecting', pinSeq: 0 };
+
+(async function connectKnowledge() {
+  for (let i = 0; i < 40 && !(window.claude && window.claude.use); i++) await sleep(250);
+  try { KN.mcp = window.claude && window.claude.use ? await window.claude.use('mcp') : null; } catch { KN.mcp = null; }
+  KN.state = KN.mcp ? 'on' : 'off';
+  if (typeof renderMain === 'function') renderMain();
+})();
+
+const KN_ERRORS = {
+  server_not_connected: 'is not connected to your Claude account. Connect it in claude.ai settings.',
+  needs_reauth: 'needs to be reconnected in claude.ai settings.',
+  not_granted: 'access was declined for this page.',
+  consent_required: 'needs your permission for this page first.',
+  rate_limited: 'is rate limiting requests. Try again in a minute.',
+  tool_error: 'could not complete that request.',
+};
+async function kcall(server, tool, input) {
+  if (!KN.mcp) throw new Error('Connected sources work when this page is open on claude.ai.');
+  try { return await KN.mcp.callTool(server, tool, input, { cache: false }); }
+  catch (e) { const name = server === GLEAN ? 'Glean' : 'Salesforce'; throw new Error(`${name} ${KN_ERRORS[e && e.code] || (e && e.message) || 'request failed.'}`); }
+}
+function kText(res) {
+  if (!res) return '';
+  if (typeof res.payload === 'string') return res.payload;
+  const t = (res.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n');
+  return t || (res.payload ? JSON.stringify(res.payload) : '');
+}
+function kJson(res) {
+  if (res && res.payload && typeof res.payload === 'object') return res.payload;
+  try { return JSON.parse(kText(res)); } catch { return null; }
+}
+
+/* Glean search results come back as Markdown: "## 1. Title", "**Source:** … • **Updated:** …", "**Link:** url", "> snippet". */
+function parseGleanSearch(text) {
+  const out = [];
+  for (const part of text.split(/\n(?=## \d+\.\s)/)) {
+    const m = part.match(/^## \d+\.\s+(.+)/);
+    if (!m) continue;
+    const link = (part.match(/\*\*Link:\*\*\s*(\S+)/) || [])[1];
+    if (!link) continue;
+    out.push({
+      title: m[1].trim(), url: link,
+      datasource: ((part.match(/\*\*Source:\*\*\s*([^•\n]+)/) || [])[1] || '').trim(),
+      updated: ((part.match(/\*\*Updated:\*\*\s*([^•\n]+)/) || [])[1] || '').trim(),
+      owner: ((part.match(/\*\*Owner:\*\*\s*([^•\n]+)/) || [])[1] || '').trim(),
+      snippet: part.split('\n').filter(l => l.startsWith('>')).map(l => l.replace(/^>\s?/, '')).join(' ').slice(0, 400),
+    });
+  }
+  return out;
+}
+
+/* Glean read_document returns a YAML-like listing: "  - datasource: …", "snippets[n]: "…"", "title: …", "url: "…"". */
+function unq(s) { s = (s || '').trim(); if (s.startsWith('"')) { try { return JSON.parse(s); } catch { return s.slice(1, -1); } } return s; }
+function parseGleanDocs(text, payload) {
+  if (payload && Array.isArray(payload.documents)) {
+    return payload.documents.map(d => ({ title: d.title || '', url: d.url || '', datasource: d.datasource || '', updated: d.updateTime || '', owner: (d.owner && d.owner.name) || '', text: [].concat(d.snippets || []).map(s => typeof s === 'string' ? s : s.text || '').join('\n\n') || (d.richDocumentData && d.richDocumentData.content) || '' }));
+  }
+  const docs = [];
+  for (const seg of text.split(/\n\s*- datasource:\s*/).slice(1)) {
+    const datasource = seg.split('\n')[0].trim();
+    const field = k => { const m = seg.match(new RegExp('\\n\\s{2,6}' + k + ':\\s*(.*)')); return m ? unq(m[1]) : ''; };
+    let body = '';
+    const sm = seg.match(/snippets\[\d+\]:\s*("(?:[^"\\]|\\.)*")/);
+    if (sm) body = unq(sm[1]);
+    else { const lm = seg.match(/snippets\[\d+\]:\s*\n([\s\S]*?)\n\s{4}\w+:/); if (lm) body = lm[1].split(/\n\s*-\s*/).map(unq).join('\n\n'); }
+    docs.push({ datasource, title: field('title'), url: field('url'), updated: field('updateTime'), owner: ((seg.match(/owner:\s*\n\s*name:\s*(.*)/) || [])[1] || '').trim(), text: body.replace(/\\n/g, '\n') });
+  }
+  return docs;
+}
+
+async function gleanSearch(query, { n = 8, updated } = {}) {
+  const input = { query, _user_goal: 'Find internal sources for an RFP response: ' + query, num_results: n };
+  if (updated) input.updated = updated;
+  return parseGleanSearch(kText(await kcall(GLEAN, 'search', input)));
+}
+async function gleanRead(urls) {
+  if (!urls.length) return [];
+  const res = await kcall(GLEAN, 'read_document', { urls, _user_goal: 'Read internal sources for an RFP response' });
+  return parseGleanDocs(kText(res), kJson(res));
+}
+
+/* Tier from what the source is: discussions are context only, roadmaps are product thinking, old answers are past responses. */
+function guessTier(d) {
+  const ds = (d.datasource || '').toLowerCase(), t = (d.title || '').toLowerCase();
+  if (/slack|gmail|email|outlook|zoom|gong|meeting|teams|calendar/.test(ds) || /meeting notes|sync|standup|1:1|call notes|transcript/.test(t)) return 'internal';
+  if (/roadmap|prd|strategy|vision|product brief|positioning|launch|release notes|pricing strategy/.test(t)) return 'product';
+  if (/rfp|rfi|proposal|response|questionnaire|sow\b/.test(t)) return 'past';
+  if (/library|lego|boilerplate|approved|messaging/.test(t)) return 'approved';
+  return 'reference';
+}
+function pinnedTier(url) { const p = WS.data.sources.pinned.find(x => x.url === url); return p && p.tier; }
+
+/* Long documents become retrievable blocks, split on headings and paragraphs. */
+function docToBlocks(d, tier, origin) {
+  const blocks = [];
+  const text = (d.text || '').replace(/\r/g, '');
+  let title = d.title, buf = '';
+  const flush = () => {
+    const t = buf.trim();
+    if (t.length > 60) blocks.push({ id: origin === 'pinned' ? 'P-' + String(++KN.pinSeq).padStart(3, '0') : nextBlockId(), title: (title || d.title).slice(0, 120), text: t, fileId: null, fileName: d.title, loc: d.datasource || 'internal', tags: [], summary: '', tier, origin, url: d.url, updated: d.updated, owner: d.owner });
+    buf = '';
+  };
+  for (const para of text.split(/\n{2,}/)) {
+    const line = para.trim();
+    if (!line) continue;
+    const isHead = line.length < 90 && !/[.:;,]$/.test(line) && !line.includes('\n') && /^[A-Z0-9#]/.test(line);
+    if ((isHead && buf.length > 200) || buf.length > 1600) flush();
+    if (isHead && !buf) { title = line.replace(/^#+\s*/, ''); continue; }
+    buf += (buf ? '\n\n' : '') + line;
+    if (blocks.length > 120) break;
+  }
+  flush();
+  return blocks;
+}
+
+/* Pinned sources: documents the team marks as the RFP library, product thinking and so on. Synced into a shared cache. */
+async function syncPinned() {
+  const pins = WS.data.sources.pinned.filter(p => p.url);
+  if (!pins.length) throw new Error('Add at least one pinned document first.');
+  const all = [];
+  KN.pinSeq = 0;
+  for (let i = 0; i < pins.length; i += 4) {
+    toast(`Reading pinned sources ${i + 1}–${Math.min(i + 4, pins.length)} of ${pins.length}…`, { sticky: true });
+    const docs = await gleanRead(pins.slice(i, i + 4).map(p => p.url));
+    for (const d of docs) {
+      const pin = pins.find(p => p.url === d.url) || pins[i];
+      if (pin && !pin.title) pin.title = d.title;
+      if (pin) pin.syncedAt = Date.now(), pin.updated = d.updated;
+      all.push(...docToBlocks(d, (pin && pin.tier) || guessTier(d), 'pinned'));
+    }
+  }
+  toast('');
+  WS.pinnedBlocks = all;
+  idbSet('pinnedBlocks', JSON.stringify(all));
+  saveWorkspace();
+  return all.length;
+}
+
+/* Research: find the best internal sources for one section, read them, and add their passages to the project library.
+   With tool use, Claude searches iteratively; otherwise the engine runs one search per requirement. */
+async function researchSection(sec) {
+  const p = S.project;
+  const reqs = sec.reqIds.map(reqById).filter(Boolean);
+  const months = WS.data.sources.glean.recencyMonths || 18;
+  const since = new Date(Date.now() - months * 30 * 864e5).toISOString().slice(0, 10);
+  let picks = [];
+  const caps = AI.sample && AI.sample.limits ? await AI.sample.limits().catch(() => null) : null;
+  if (caps && caps.tools) {
+    const seen = new Map();
+    const tools = [{
+      name: 'search_company',
+      description: 'Search the company\'s internal knowledge (Drive, Confluence, Slack, email, meeting notes) and return up to 8 results with title, url, source system, last updated date and a snippet. Use short keyword queries.',
+      inputSchema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
+      execute: async input => {
+        const r = await gleanSearch(String(input.query || ''), { n: 8 });
+        r.forEach(x => seen.set(x.url, x));
+        return r.map(x => ({ title: x.title, url: x.url, source: x.datasource, updated: x.updated, snippet: x.snippet }));
+      },
+    }];
+    const res = await askJSON(promptResearch(p, sec, reqs, since), { label: `Researching sources for ${sec.num} ${sec.title}`, tools });
+    picks = ((res && res.sources) || []).filter(s => s.url && seen.has(s.url)).slice(0, 5).map(s => Object.assign({}, seen.get(s.url), { tier: TIERS[s.tier] ? s.tier : guessTier(seen.get(s.url)), why: s.why || '' }));
+  } else {
+    const queries = [sec.title + ' ' + (p.topics || []).slice(0, 2).join(' ')].concat(reqs.filter(r => r.mandatory).slice(0, 3).map(r => tokens(r.text).slice(0, 7).join(' ')));
+    const hits = new Map();
+    for (const q of queries) {
+      toast(`Searching internal sources: ${q.slice(0, 50)}…`, { sticky: true });
+      for (const [i, h] of (await gleanSearch(q, { n: 6 })).entries()) {
+        const prev = hits.get(h.url);
+        const score = (prev ? prev.score : 0) + (6 - i) + (TIERS[pinnedTier(h.url) || guessTier(h)].rank) + (h.updated >= since ? 2 : 0);
+        hits.set(h.url, Object.assign(h, { score }));
+      }
+    }
+    toast('');
+    picks = [...hits.values()].sort((a, b) => b.score - a.score).slice(0, 4).map(h => Object.assign(h, { tier: pinnedTier(h.url) || guessTier(h) }));
+  }
+  const known = new Set(p.library.map(b => b.url).filter(Boolean));
+  const fresh = picks.filter(x => !known.has(x.url));
+  if (fresh.length) {
+    const docs = await gleanRead(fresh.map(x => x.url));
+    for (const d of docs) {
+      const pick = fresh.find(x => x.url === d.url) || {};
+      const blocks = docToBlocks(Object.assign({}, pick, d), pick.tier || guessTier(d), 'glean');
+      p.library.push(...blocks);
+    }
+  }
+  sec.research = { at: Date.now(), sources: picks.map(x => ({ title: x.title, url: x.url, tier: x.tier, updated: x.updated, why: x.why || '' })) };
+  logChange('engine', `Found ${plural(picks.length, 'internal source')} for ${sec.num} ${sec.title}.`);
+  save();
+}
+
+function promptResearch(p, sec, reqs, since) {
+  return `Find the best internal company sources for one section of ${aType(p)}.
+${ctxText(p)}
+Section: ${sec.title}${sec.guidance ? ' (' + sec.guidance + ')' : ''}
+Requirements it answers:
+${reqs.map(r => '- ' + r.text).join('\n') || '- none mapped'}
+${WS.data.sources.glean.hints ? 'Where the team keeps things: ' + WS.data.sources.glean.hints : ''}
+Pinned team sources (prefer these): ${WS.data.sources.pinned.map(x => `${x.title || x.url} [${x.tier}]`).join('; ') || 'none'}
+
+Use search_company two to four times with different short queries. Prefer, in order: approved library or boilerplate, the latest product thinking (roadmaps, PRDs) updated after ${since}, past responses to similar clients, then other internal docs. Use Slack, email or meeting notes only for client-specific context.
+Return JSON: {"sources":[{"url":"exact url from a search result","title":"...","tier":"approved" | "product" | "past" | "reference" | "internal","why":"one line"}]}  (at most 5, best first)`;
+}
+
+/* Bid context from Salesforce and internal notes. */
+function soqlStr(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+async function findOpportunities(client) {
+  const q = `SELECT Id, Name, StageName, Amount, CloseDate, Type, Account.Name, LastModifiedDate FROM Opportunity WHERE Account.Name LIKE '%${soqlStr(client)}%' OR Name LIKE '%${soqlStr(client)}%' ORDER BY LastModifiedDate DESC LIMIT 8`;
+  const j = kJson(await kcall(SFDC, 'soqlQuery', { q }));
+  return ((j && j.records) || []).map(r => ({ id: r.Id, name: r.Name, stage: r.StageName, amount: r.Amount, close: r.CloseDate, type: r.Type, account: r.Account && r.Account.Name }));
+}
+async function opportunityDetail(id) {
+  const safe = soqlStr(id);
+  const one = async q => { try { return (kJson(await kcall(SFDC, 'soqlQuery', { q })) || {}).records || []; } catch { return []; } };
+  const [opp] = await one(`SELECT Id, Name, StageName, Amount, CloseDate, Type, Description, NextStep, LeadSource, Account.Name, Account.Industry, Account.Description, Owner.Name FROM Opportunity WHERE Id = '${safe}' LIMIT 1`);
+  const contacts = await one(`SELECT Role, IsPrimary, Contact.Name, Contact.Title FROM OpportunityContactRole WHERE OpportunityId = '${safe}' LIMIT 25`);
+  const tasks = await one(`SELECT Subject, Description, ActivityDate, Status FROM Task WHERE WhatId = '${safe}' ORDER BY ActivityDate DESC LIMIT 20`);
+  const events = await one(`SELECT Subject, Description, ActivityDate FROM Event WHERE WhatId = '${safe}' ORDER BY ActivityDate DESC LIMIT 20`);
+  return { opp, contacts, activity: tasks.concat(events) };
+}
+
+async function pullBidContext(oppId) {
+  const p = S.project;
+  const client = (p.context.client || '').trim();
+  if (!client && !oppId) throw new Error('Enter the client name first.');
+  const sources = [];
+  let sf = null;
+  if (oppId) {
+    toast('Reading the Salesforce opportunity…', { sticky: true });
+    sf = await opportunityDetail(oppId);
+    if (sf.opp) sources.push({ kind: 'salesforce', title: 'Salesforce: ' + sf.opp.Name, id: sf.opp.Id });
+  }
+  const name = client || (sf && sf.opp && sf.opp.Account && sf.opp.Account.Name) || '';
+  toast('Searching meeting notes and internal docs…', { sticky: true });
+  const hits = new Map();
+  for (const q of [`${name} meeting notes`, `${name} RFP`, `${name} call`, name]) {
+    try { for (const h of await gleanSearch(q, { n: 6, updated: 'past_year' })) if (!hits.has(h.url)) hits.set(h.url, h); } catch (e) { if (!hits.size && q === name) throw e; }
+  }
+  const top = [...hits.values()].sort((a, b) => (b.updated || '').localeCompare(a.updated || '')).slice(0, 6);
+  const docs = top.length ? await gleanRead(top.map(h => h.url)).catch(() => []) : [];
+  for (const d of docs) sources.push({ kind: 'glean', title: d.title, url: d.url, updated: d.updated, datasource: d.datasource });
+  toast('');
+  const res = await askJSON(promptContext(p, name, sf, docs), { label: 'Summarizing the bid context', tier: 'complex' });
+  return { res: res || {}, sources };
+}
+
+function promptContext(p, client, sf, docs) {
+  return `Build the internal bid context for a response to ${client}. This is for our proposal team only and is never sent to the client.
+
+${sf && sf.opp ? `Salesforce opportunity:\n${JSON.stringify(sf.opp).slice(0, 6000)}\nContacts:\n${JSON.stringify(sf.contacts).slice(0, 4000)}\nRecent activity:\n${JSON.stringify(sf.activity).slice(0, 12000)}` : 'No Salesforce opportunity selected.'}
+
+Internal documents and notes (newest first):
+${docs.map(d => `### ${d.title} (${d.datasource}, updated ${d.updated})\n${(d.text || '').slice(0, 9000)}`).join('\n\n') || 'none found'}
+
+Current fields (keep anything still accurate):
+${JSON.stringify(p.context)}
+
+Return JSON:
+{
+ "client": "client's proper name",
+ "bidding": "1 to 3 sentences on what we are bidding on: products, scope, size",
+ "winThemes": "2 to 4 win themes, one per line, each tied to something the client said or cares about",
+ "notes": "short lines covering: decision makers and their priorities, incumbent and how they are performing, budget and timeline, competitors, concerns and objections heard, open questions. Say where each point came from in brackets, e.g. [Salesforce] or [meeting notes, Sep 12]. Skip anything not supported by the material.",
+ "stakeholders": [{"name":"...","title":"...","role":"decision maker | influencer | evaluator | champion | unknown"}]
+}
+Only use what is in the material. Do not invent names, numbers or dates.`;
+}
+
+/* Content library panel: search the tools the user picked, guided by their description of where things live. */
+async function findSourcesFromPlan() {
+  const p = S.project;
+  const plan = p.sourcePlan;
+  if (!plan.glean) throw new Error('Turn on company search (Glean) to look through internal tools.');
+  if (p.sections.length) {
+    for (const s of p.sections) { await researchSection(s); renderMain(); }
+    return;
+  }
+  const hintLines = (plan.hints + '\n' + WS.data.sources.glean.hints).split(/\n|;/).map(s => s.trim()).filter(Boolean);
+  const queries = hintLines.slice(0, 4).map(h => h.replace(/^(look in|check|search|use)\s+/i, '').slice(0, 80))
+    .concat([p.context.client && p.context.bidding ? p.context.bidding.split(/[.,]/)[0] : '', (p.topics || []).slice(0, 3).join(' ')]).filter(Boolean);
+  if (!queries.length) throw new Error('Describe where to look, or add bid context first.');
+  const hits = new Map();
+  for (const q of queries) {
+    toast(`Searching: ${q.slice(0, 50)}…`, { sticky: true });
+    for (const h of await gleanSearch(q, { n: 6 })) if (!hits.has(h.url)) hits.set(h.url, Object.assign(h, { tier: pinnedTier(h.url) || guessTier(h) }));
+  }
+  toast('');
+  const known = new Set(p.library.map(b => b.url).filter(Boolean));
+  const top = [...hits.values()].filter(h => !known.has(h.url)).sort((a, b) => TIERS[b.tier].rank - TIERS[a.tier].rank || (b.updated || '').localeCompare(a.updated || '')).slice(0, 6);
+  const docs = await gleanRead(top.map(h => h.url));
+  for (const d of docs) { const h = top.find(x => x.url === d.url) || {}; p.library.push(...docToBlocks(Object.assign({}, h, d), h.tier || guessTier(d), 'glean')); }
+  logChange('engine', `Added ${plural(docs.length, 'internal document')} to the library from company search.`);
+  save();
 }
 
 /* ---- figma.js ---- */
@@ -1256,7 +1716,7 @@ function splitLibrary(f, parsed) {
   const add = (title, text, loc) => {
     text = text.trim();
     if (text.length < 40) return;
-    blocks.push({ id: nextBlockId(), title: title.slice(0, 120) || f.name, text, fileId: f.id, fileName: f.name, loc, tags: [], summary: '' });
+    blocks.push({ id: nextBlockId(), title: title.slice(0, 120) || f.name, text, fileId: f.id, fileName: f.name, loc, tags: [], summary: '', tier: f.tier || 'approved', origin: 'upload' });
   };
   if (parsed.kind === 'sheet') {
     for (const sh of parsed.sheets) {
@@ -1306,8 +1766,10 @@ function splitLibrary(f, parsed) {
 const STOP = new Set('the a an and or of to in for on with by be is are as at from that this it its will shall must should may can vendor proposer proposal respondent provide describe include including any all each their your our'.split(' '));
 function tokens(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !STOP.has(w)); }
 let idxCache = null;
+function allBlocks() { return S.project.library.concat(WS.pinnedBlocks || []); }
+function idxKey() { const lib = allBlocks(); return lib.length + ':' + lib.map(b => b.tags.length + (b.tier || '')[0]).join(''); }
 function buildIndex() {
-  const lib = S.project.library;
+  const lib = allBlocks();
   const df = new Map(), docs = [];
   for (const b of lib) {
     const tf = new Map();
@@ -1317,13 +1779,14 @@ function buildIndex() {
     tf.forEach((_, w) => df.set(w, (df.get(w) || 0) + 1));
   }
   const avg = docs.reduce((a, d) => a + d.len, 0) / (docs.length || 1);
-  idxCache = { df, docs, avg, n: docs.length, key: lib.length + ':' + lib.map(b => b.tags.length).join('') };
+  idxCache = { df, docs, avg, n: docs.length, key: idxKey() };
   return idxCache;
 }
 function retrieve(query, { k = 8, tags = [] } = {}) {
-  const lib = S.project.library;
+  const lib = allBlocks();
   if (!lib.length) return [];
-  const key = lib.length + ':' + lib.map(b => b.tags.length).join('');
+  const key = idxKey();
+  const fresh = Date.now() - (WS.data.sources.glean.recencyMonths || 18) * 30 * 864e5;
   const ix = idxCache && idxCache.key === key ? idxCache : buildIndex();
   const q = [...new Set(tokens(query))];
   const tagSet = new Set(tags.map(t => t.toLowerCase()));
@@ -1335,7 +1798,11 @@ function retrieve(query, { k = 8, tags = [] } = {}) {
       s += idf * (f * 2.2) / (f + 1.2 * (.25 + .75 * d.len / ix.avg));
     }
     const tagHits = (d.b.tags || []).filter(t => tagSet.has(t.toLowerCase()) || q.includes(t.toLowerCase())).length;
-    return { b: d.b, s: s + tagHits * 1.5, tagHits };
+    if (s <= 0 && !tagHits) return { b: d.b, s: 0, tagHits };
+    // Trust and freshness: approved and product sources rank higher, stale ones lower, discussions lowest.
+    const tier = TIERS[d.b.tier || 'approved'] || TIERS.reference;
+    const age = d.b.updated ? (Date.parse(d.b.updated) >= fresh ? 0.6 : -0.6) : 0;
+    return { b: d.b, s: s + tagHits * 1.5 + tier.rank * 0.35 + age, tagHits };
   });
   // Tag filter first: when enough blocks share a tag with the query, rank only those.
   const tagged = scored.filter(x => x.tagHits > 0);
@@ -1570,6 +2037,9 @@ function applyPending() {
 /* Outline */
 async function outlineSection(sec) {
   const p = S.project;
+  if (KN.state === 'on' && p.sourcePlan && p.sourcePlan.glean && !sec.research) {
+    try { await researchSection(sec); } catch (e) { toast(e.message, { err: true }); await sleep(1200); }
+  }
   const q = sectionQuery(sec) + ' ' + p.topics.join(' ');
   const cands = retrieve(q, { k: 10, tags: p.topics });
   const imgs = retrieveImages(q, 8);
@@ -1581,6 +2051,7 @@ async function outlineSection(sec) {
   sec.gaps = (res.gaps || []).map(g => ({ text: g.text || String(g), owner: g.owner || '' }));
   sec.visuals = (res.visuals || []).map(v => ({ assetId: v.assetId && assetById(v.assetId) ? v.assetId : null, need: v.need || '', reason: v.reason || '' }));
   sec.tables = (res.tables || []).map(t => ({ kind: t.kind || 'custom', title: t.title || 'Table', reason: t.reason || '' }));
+  sec.conflicts = (res.conflicts || []).filter(c => c && c.text).map(c => ({ text: c.text, sources: (c.sources || []).filter(blockById), resolution: c.resolution || '' }));
   if (sec.status === 'empty') sec.status = 'outlined';
   save();
 }
@@ -1604,14 +2075,14 @@ async function draftSection(sec) {
   const chosen = [], verbatim = [];
   for (const r of sec.blockRefs) {
     const b = blockById(r.id); if (!b) continue;
-    if (r.mode === 'verbatim') verbatim.push(b); else chosen.push(Object.assign({}, b, { _mode: r.mode }));
+    if (r.mode === 'verbatim' && (b.tier || 'approved') === 'approved') verbatim.push(b); else chosen.push(Object.assign({}, b, { _mode: r.mode }));
   }
   let others = '';
   if (sec.summarizes) {
     others = p.sections.filter(s => s !== sec && s.blocks.length)
       .map(s => `${s.num} ${s.title}: ${s.blocks.filter(b => b.type === 'text').map(b => htmlToText(b.html)).join(' ').slice(0, 450)}`).join('\n');
   }
-  const prompt = promptDraft(p, sec, chosen, verbatim, others) + '\n\n' + styleRulesText(p);
+  const prompt = promptDraft(p, sec, chosen, verbatim, others) + '\n\n' + styleRulesText();
   const res = await askJSON(prompt, { label: `Drafting ${sec.num} ${sec.title}`, tier: 'complex' });
   const items = (res && res.items) || [];
   const fresh = [];
@@ -1679,7 +2150,7 @@ async function answerMatrix() {
   if (!rows.length) throw new Error('No matrix-style requirements found. Set a requirement\'s response type to compliance-matrix to include it.');
   for (let i = 0; i < rows.length; i += 12) {
     const batch = rows.slice(i, i + 12).map(req => ({ req, cands: retrieve(req.text, { k: 5, tags: p.topics }) }));
-    const res = await askJSON(promptMatrix(p, batch) + '\n\n' + styleRulesText(p), { label: `Answering matrix rows ${i + 1}–${Math.min(i + 12, rows.length)} of ${rows.length}` });
+    const res = await askJSON(promptMatrix(p, batch) + '\n\n' + styleRulesText(), { label: `Answering matrix rows ${i + 1}–${Math.min(i + 12, rows.length)} of ${rows.length}` });
     for (const r of (res && res.rows) || []) {
       const existing = p.matrix.find(m => m.reqId === r.reqId);
       const row = { reqId: r.reqId, status: r.status || 'Needs input', comment: autoFixText(r.comment || ''), sources: (r.sources || []).filter(blockById), confidence: r.confidence || 'low' };
@@ -1732,6 +2203,10 @@ function renderRail() {
     if (st.group !== group) { group = st.group; html += `<div class="rail-group">${group}</div>`; }
     html += `<button class="step ${S.ui.step === st.id ? 'on' : ''} ${done[st.id] ? 'done' : ''}" data-act="go" data-step="${st.id}"><span class="step-n">${done[st.id] ? '✓' : st.n}</span><span>${st.label}</span><span class="step-meta">${meta[st.id] || ''}</span></button>`;
   }
+  html += '<div class="rail-group">Team</div>';
+  for (const [id, label, n] of [['styleguide', 'Style guide', 'S'], ['sources', 'Sources', 'K'], ['templates', 'Templates', 'T']]) {
+    html += `<button class="step ${S.ui.step === id ? 'on' : ''}" data-act="go" data-step="${id}"><span class="step-n">${n}</span><span>${label}</span><span class="step-meta">${id === 'sources' ? WS.data.sources.pinned.length || '' : ''}</span></button>`;
+  }
   $('#rail').innerHTML = html;
 }
 
@@ -1750,10 +2225,14 @@ function fileRow(f) {
   const ext = (f.ext || '').slice(0, 4);
   const meta = f.role === 'rfp'
     ? [f.docType && `<span class="pill acc">${esc(f.docType)}</span>`, f.processed ? `${f.reqCount} requirements` : '<span class="pill warn">Not read yet</span>', f.isChange && '<span class="pill crit">New client input</span>']
-    : [`${f.blockCount || 0} blocks`];
+    : [`${f.blockCount || 0} passages`, tierSelect('data-file-tier', f.id, f.tier || 'approved')];
   return `<div class="file"><span class="file-ic ${esc(ext)}">${esc(ext.toUpperCase())}</span>
     <div style="min-width:0"><div class="file-name">${esc(f.name)}</div><div class="file-meta">${meta.filter(Boolean).join('<span class="faint">·</span>')}${f.pages && f.pages.length > 1 ? `<span class="faint">·</span>${f.pages.length} pages` : ''}</div></div>
     <button class="icon-btn" data-act="rm-file" data-id="${f.id}" aria-label="Remove ${esc(f.name)}">${ICON.x}</button></div>`;
+}
+
+function tierSelect(attr, id, val) {
+  return `<select class="select" ${attr}="${id}" style="width:auto;padding:1px 4px;font-size:11px" aria-label="Source tier">${Object.entries(TIERS).map(([k, t]) => `<option value="${k}" ${val === k ? 'selected' : ''}>${t.short}</option>`).join('')}</select>`;
 }
 
 function viewInputs() {
@@ -1764,65 +2243,131 @@ function viewInputs() {
   const fig = p.figma || {};
   const figAssets = p.assets.filter(a => a.source === 'figma');
   const upAssets = p.assets.filter(a => a.source !== 'figma');
-  const st = styleOf();
+  const plan = p.sourcePlan || (p.sourcePlan = { hints: '', glean: true, salesforce: true, figma: true });
+  const internal = p.library.filter(b => b.origin === 'glean');
+  const pinnedN = (WS.pinnedBlocks || []).length;
+  const kn = KN.state === 'on';
+  const ctx = p.context;
   return `${exampleBanner()}${aiBanner()}
-  <div class="head"><div><h1>Inputs</h1><p>Load the client's RFP package and your content library, then tell the engine what you are bidding on. Uploading an addendum later runs it through the change review.</p></div>
+  <div class="head"><div><h1>Inputs</h1><p>Load the client's documents, tell the engine where your own knowledge lives, and pull in what the team already knows about this client. Uploading an addendum later runs it through the change review.</p></div>
     <div class="actions"><button class="btn primary" data-act="extract" ${!unread || AI.state !== 'on' ? 'disabled' : ''}>${ICON.spark} Extract requirements${unread ? ` (${unread})` : ''}</button></div></div>
   <div class="grid2">
-    <section class="panel"><div class="panel-h"><h2>Client RFP files</h2><span class="hint">Instructions, scope, requirements, forms, addenda</span></div>
+    <section class="panel"><div class="panel-h"><h2>Client documents</h2>
+      <select class="select" id="resp-type" style="width:auto" aria-label="Response type">${RESPONSE_TYPES.map(t => `<option value="${t.id}" ${p.type === t.id ? 'selected' : ''}>${t.label}</option>`).join('')}</select></div>
       <div class="panel-b stack-s">
-        <div class="drop" data-drop="rfp" tabindex="0" role="button"><strong>Drop RFP files here or click to choose</strong>PDF, Word, Excel, CSV or text</div>
-        <div class="files">${rfp.map(fileRow).join('') || '<p class="hint">No RFP files yet.</p>'}</div>
+        <div class="drop" data-drop="rfp" tabindex="0" role="button"><strong>Drop the client's files here or click to choose</strong>Instructions, scope, requirements, questionnaires, forms, addenda. PDF, Word, Excel, CSV or text.</div>
+        <div class="files">${rfp.map(fileRow).join('') || '<p class="hint">No client files yet.</p>'}</div>
       </div></section>
-    <section class="panel"><div class="panel-h"><h2>Content library</h2><span class="hint">${p.library.length} blocks · ${p.library.filter(b => b.tags.length).length} tagged</span></div>
+    <section class="panel"><div class="panel-h"><h2>Content library</h2><span class="hint">${p.library.length} passages · ${internal.length} from internal tools${pinnedN ? ` · ${pinnedN} pinned team passages` : ''}</span></div>
       <div class="panel-b stack-s">
-        <div class="drop" data-drop="library" tabindex="0" role="button"><strong>Drop library files here or click to choose</strong>Capability write-ups, case studies, past answers, bios. Images are allowed for non-product visuals.</div>
-        <div class="files">${lib.map(fileRow).join('') || '<p class="hint">No library files yet.</p>'}</div>
-        <div class="row"><button class="btn sm" data-act="tag-lib" ${AI.state !== 'on' || !p.library.some(b => !b.tags.length) ? 'disabled' : ''}>Tag untagged blocks</button><button class="btn sm ghost" data-act="go" data-step="library">Browse library</button></div>
+        <div class="drop" data-drop="library" tabindex="0" role="button"><strong>Upload library files</strong>Capability write-ups, case studies, past answers, bios. Set each file's trust level after upload.</div>
+        <div class="files">${lib.map(fileRow).join('')}</div>
+        <p class="label" style="margin-top:6px">Also look through</p>
+        <label class="row" style="flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" data-plan="glean" ${plan.glean ? 'checked' : ''}><span><b>Company search</b> <span class="hint">Drive, Confluence, Slack, email and meeting notes, through Glean</span></span></label>
+        <label class="row" style="flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" data-plan="salesforce" ${plan.salesforce ? 'checked' : ''}><span><b>Salesforce</b> <span class="hint">Opportunity, contacts and activity, for bid context</span></span></label>
+        <label class="row" style="flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" data-plan="figma" ${plan.figma ? 'checked' : ''}><span><b>Figma</b> <span class="hint">Product images from the team library</span></span></label>
+        <div class="field"><label for="plan-hints">Where to look</label><textarea class="textarea" id="plan-hints" rows="3" placeholder="e.g. Past RFPs are in the 'RFP Response Examples' Drive folder. Product roadmap is in the Product Confluence space. Ignore anything before 2025.">${esc(plan.hints)}</textarea>
+          <span class="hint">Plain language. Used for every search on this project, on top of the team's sources.</span></div>
+        <div class="row"><button class="btn sm primary" data-act="find-sources" ${!kn || AI.state !== 'on' || !plan.glean ? 'disabled' : ''}>${ICON.spark} Find sources now</button>
+          <button class="btn sm" data-act="tag-lib" ${AI.state !== 'on' || !p.library.some(b => !b.tags.length) ? 'disabled' : ''}>Tag untagged passages</button>
+          <button class="btn sm ghost" data-act="go" data-step="library">Browse library</button></div>
+        ${!kn ? `<p class="hint">${KN.state === 'connecting' ? 'Connecting to your tools…' : 'Internal tools work when this page is open on claude.ai with the connectors set up.'}</p>` : '<p class="hint">Sources are also found section by section when you build the outline.</p>'}
       </div></section>
     <section class="panel"><div class="panel-h"><h2>Product images from Figma</h2><span class="hint">${figAssets.length} frames${fig.syncedAt ? ' · synced ' + new Date(fig.syncedAt).toLocaleString() : ''}</span></div>
       <div class="panel-b stack-s">
-        <p class="hint">Product visuals come only from the latest Figma library, through your Figma connector. Put each image in its own top-level frame on a library page, then link that page.</p>
+        <p class="hint">Product visuals come only from the latest Figma library. Put each image in its own top-level frame on a library page, then link that page.</p>
         <div class="field"><label for="fig-url">Figma library link</label><input class="input" id="fig-url" placeholder="https://www.figma.com/design/…?node-id=…" value="${esc(fig.url || '')}"></div>
-        <div class="row"><button class="btn sm primary" data-act="fig-sync" ${FIG.state !== 'on' ? 'disabled' : ''}>Sync from Figma</button>
+        <div class="row"><button class="btn sm primary" data-act="fig-sync" ${FIG.state !== 'on' || !plan.figma ? 'disabled' : ''}>Sync from Figma</button>
           ${FIG.state !== 'on' ? `<span class="hint">${FIG.state === 'connecting' ? 'Connecting…' : 'Available when this page is open on claude.ai with Figma connected.'}</span>` : ''}</div>
         ${figAssets.length ? `<div class="thumbs">${figAssets.slice(0, 12).map(a => `<div class="thumb">${a.thumb ? `<img src="${a.thumb}" alt="">` : '<img alt="">'}<div title="${esc(a.name)}">${a.stale ? '⚠ ' : ''}${esc(a.name)}</div></div>`).join('')}</div>` : ''}
         ${upAssets.length ? `<p class="hint">${plural(upAssets.length, 'other image')} from uploads or the example (non-product use only).</p>` : ''}
       </div></section>
-    <section class="panel"><div class="panel-h"><h2>Bid context</h2></div>
+    <section class="panel"><div class="panel-h"><h2>Bid context</h2>
+      <button class="btn sm primary" data-act="pull-context" ${!kn || AI.state !== 'on' || (!plan.glean && !plan.salesforce) ? 'disabled' : ''}>${ICON.spark} Pull from Salesforce and notes</button></div>
       <div class="panel-b stack-s">
-        <div class="field"><label for="ctx-client">Client</label><input class="input" id="ctx-client" data-ctx="client" value="${esc(p.context.client)}"></div>
-        <div class="field"><label for="ctx-bidding">What we are bidding on</label><textarea class="textarea" id="ctx-bidding" data-ctx="bidding">${esc(p.context.bidding)}</textarea></div>
-        <div class="field"><label for="ctx-win">Win themes</label><textarea class="textarea" id="ctx-win" data-ctx="winThemes">${esc(p.context.winThemes)}</textarea></div>
-        <div class="field"><label for="ctx-notes">Notes from client conversations</label><textarea class="textarea" id="ctx-notes" data-ctx="notes">${esc(p.context.notes)}</textarea></div>
+        <div class="field"><label for="ctx-client">Client</label><input class="input" id="ctx-client" data-ctx="client" value="${esc(ctx.client)}"></div>
+        <div class="field"><label for="ctx-bidding">What we are bidding on</label><textarea class="textarea" id="ctx-bidding" data-ctx="bidding">${esc(ctx.bidding)}</textarea></div>
+        <div class="field"><label for="ctx-win">Win themes</label><textarea class="textarea" id="ctx-win" data-ctx="winThemes">${esc(ctx.winThemes)}</textarea></div>
+        <div class="field"><label for="ctx-notes">Notes on the client</label><textarea class="textarea" id="ctx-notes" data-ctx="notes" rows="5">${esc(ctx.notes)}</textarea><span class="hint">Internal only. Drafts use these for context and never quote them.</span></div>
+        ${(ctx.stakeholders || []).length ? `<div><p class="label">Stakeholders</p>${ctx.stakeholders.map(s => `<div class="blockref"><b>${esc(s.name)}</b><span class="hint">${esc(s.title || '')}</span><span class="tag">${esc(s.role || '')}</span></div>`).join('')}</div>` : ''}
+        ${(ctx.sources || []).length ? `<div><p class="label">Pulled from</p>${ctx.sources.map(s => `<div class="blockref"><span class="pill ${s.kind === 'salesforce' ? 'acc' : ''}">${s.kind === 'salesforce' ? 'Salesforce' : esc(s.datasource || 'Internal')}</span>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>` : esc(s.title)}${s.updated ? `<span class="hint">${esc(String(s.updated).slice(0, 10))}</span>` : ''}</div>`).join('')}</div>` : ''}
       </div></section>
-    <section class="panel" style="grid-column:1/-1"><div class="panel-h"><h2>Voice and style</h2><span class="hint">Sent with every drafting request and enforced by the style check before export</span></div>
-      <div class="panel-b grid2">
-        <div class="stack-s">
-          <div class="field"><label for="st-tone">Tone</label><textarea class="textarea" id="st-tone" data-style="tone">${esc(st.tone)}</textarea></div>
-          <div class="field"><label for="st-rules">Writing rules</label><textarea class="textarea" id="st-rules" data-style="rules" rows="9">${esc(st.rules)}</textarea></div>
-        </div>
-        <div class="stack-s">
-          <div class="field"><label for="st-banned">Banned words and phrases</label><textarea class="textarea" id="st-banned" data-style="banned" rows="6">${esc(st.banned)}</textarea><span class="hint">Comma separated. These read as machine-written and are flagged anywhere they appear.</span></div>
-          <div class="field"><label for="st-voice">Sample of our own writing (optional)</label><textarea class="textarea" id="st-voice" data-style="voiceSample" rows="5" placeholder="Paste a few paragraphs from a past winning proposal. Drafts will match its rhythm and word choice.">${esc(st.voiceSample)}</textarea></div>
-          <button class="btn sm ghost" data-act="style-reset" style="align-self:flex-start">Reset to defaults</button>
-        </div>
-      </div></section>
+    <section class="panel" style="grid-column:1/-1"><div class="panel-h"><h2>House style</h2><button class="btn sm" data-act="go" data-step="styleguide">Open style guide</button></div>
+      <div class="panel-b"><p class="hint">Every draft follows the team style guide: tone, writing rules, terminology, approved facts and banned phrases. The style check flags anything that reads as machine-written before export.</p></div></section>
   </div>`;
+}
+
+/* Team workspace pages */
+function wsBanner() {
+  const shared = WS.mode === 'shared';
+  return `<div class="banner ${shared ? '' : 'warn'}"><span class="grow">${shared
+    ? (WS.canEdit ? '<b>Team settings.</b> Changes here apply to every project and everyone this page is shared with.' : '<b>Team settings, read only.</b> Editors of this page maintain them.')
+    : '<b>Saved in this browser only.</b> Open this page on claude.ai to share these settings with your team.'}</span></div>`;
+}
+function viewStyleGuide() {
+  const g = sg(), ro = wsEditable() ? '' : 'readonly';
+  const field = (k, label, rows, hint) => `<div class="field"><label for="sg-${k}">${label}</label><textarea class="textarea" id="sg-${k}" data-sg="${k}" rows="${rows}" ${ro}>${esc(g[k])}</textarea>${hint ? `<span class="hint">${hint}</span>` : ''}</div>`;
+  return `${wsBanner()}
+  <div class="head"><div><h1>Style guide</h1><p>Sent with every drafting request and checked before export. Import an existing guide or edit the fields directly.</p></div>
+    <div class="actions"><button class="btn" data-act="sg-import-file" ${!wsEditable() || AI.state !== 'on' ? 'disabled' : ''}>Import from a file</button><button class="btn" data-act="sg-import-url" ${!wsEditable() || AI.state !== 'on' || KN.state !== 'on' ? 'disabled' : ''}>Import from a link</button><button class="btn ghost" data-act="style-reset" ${!wsEditable() ? 'disabled' : ''}>Reset to defaults</button></div></div>
+  <div class="grid2">
+    <section class="panel"><div class="panel-h"><h2>Voice</h2></div><div class="panel-b stack-s">
+      ${field('tone', 'Tone', 3)}
+      ${field('rules', 'Writing rules', 10, 'One rule per line.')}
+      ${field('voiceSample', 'Sample of our own writing', 6, 'A few paragraphs from a winning response. Drafts match its rhythm and word choice.')}
+    </div></section>
+    <section class="panel"><div class="panel-h"><h2>Words and facts</h2></div><div class="panel-b stack-s">
+      ${field('terminology', 'Terminology', 5, 'One per line: preferred term | terms to avoid, comma separated. The checker flags the avoided terms.')}
+      ${field('facts', 'Approved facts and figures', 5, 'Customer counts, certifications, years in business. Drafts use these exact values.')}
+      ${field('formatting', 'Formatting conventions', 4, 'Headings, numbers, dates, punctuation.')}
+      ${field('banned', 'Banned words and phrases', 6, 'Comma separated. These read as machine-written and block export.')}
+    </div></section>
+  </div>`;
+}
+function viewSources() {
+  const src = WS.data.sources, ro = !wsEditable();
+  return `${wsBanner()}
+  <div class="head"><div><h1>Knowledge sources</h1><p>Where the engine looks for content, and how far to trust each source. Pinned documents are read in full and searched first. Company search fills in the rest.</p></div>
+    <div class="actions"><button class="btn primary" data-act="sync-pinned" ${KN.state !== 'on' || !src.pinned.length || ro ? 'disabled' : ''}>Sync pinned sources</button></div></div>
+  <div class="grid-main">
+    <section class="panel"><div class="panel-h"><h2>Pinned documents</h2><button class="btn sm" data-act="pin-add" ${ro ? 'disabled' : ''}>${ICON.plus} Add</button></div>
+      <div class="panel-b">${src.pinned.map((x, i) => `<div class="blockref" style="flex-wrap:wrap">
+        <input class="input" data-pin-url="${i}" value="${esc(x.url)}" placeholder="Link to a Drive doc, Confluence page or folder" style="flex:1;min-width:220px" ${ro ? 'readonly' : ''}>
+        ${tierSelect('data-pin-tier', i, x.tier)}
+        <button class="icon-btn" data-act="pin-rm" data-i="${i}" aria-label="Remove" ${ro ? 'disabled' : ''}>${ICON.x}</button>
+        <div class="hint" style="flex-basis:100%">${x.title ? esc(x.title) + ' · ' : ''}${x.syncedAt ? 'synced ' + new Date(x.syncedAt).toLocaleDateString() : 'not synced yet'}${x.updated ? ' · source updated ' + esc(String(x.updated).slice(0, 10)) : ''}</div></div>`).join('') || '<p class="hint">Pin your RFP library, approved boilerplate, product roadmap and positioning docs here.</p>'}
+        <p class="hint" style="margin-top:8px">${plural((WS.pinnedBlocks || []).length, "passage")} cached from pinned documents.</p></div></section>
+    <div class="stack">
+      <section class="panel"><div class="panel-h"><h2>Company search</h2></div><div class="panel-b stack-s">
+        <label class="row"><input type="checkbox" id="ws-glean" ${src.glean.enabled ? 'checked' : ''} ${ro ? 'disabled' : ''}> Search internal tools through Glean</label>
+        <div class="field"><label for="ws-recency">Prefer sources updated in the last</label><div class="row"><input class="input" id="ws-recency" value="${src.glean.recencyMonths}" style="width:70px" inputmode="numeric" ${ro ? 'readonly' : ''}> months</div></div>
+        <div class="field"><label for="ws-hints">Where things live</label><textarea class="textarea" id="ws-hints" rows="4" ${ro ? 'readonly' : ''} placeholder="e.g. Approved answers are in the Proposal Library Drive folder. Roadmaps live in the Product Confluence space.">${esc(src.glean.hints)}</textarea></div>
+      </div></section>
+      <section class="panel"><div class="panel-h"><h2>Trust tiers</h2></div><div class="panel-b stack-s">
+        ${Object.values(TIERS).map(t => `<div><b>${t.label}</b><div class="hint">${esc(t.use)}</div></div>`).join('')}
+      </div></section>
+    </div>
+  </div>`;
+}
+function viewTemplates() {
+  const ro = wsEditable() ? '' : 'readonly';
+  return `${wsBanner()}
+  <div class="head"><div><h1>Templates</h1><p>The structure used when a client does not mandate one. One section per line; indent with two spaces for a sub-section.</p></div></div>
+  <div class="grid2">${RESPONSE_TYPES.map(t => `<section class="panel"><div class="panel-h"><h2>${t.label}</h2></div><div class="panel-b"><textarea class="textarea mono" data-tpl="${t.id}" rows="10" ${ro}>${esc(WS.data.templates[t.id] || '')}</textarea></div></section>`).join('')}</div>`;
 }
 
 /* Library browser (reached from Inputs) */
 function viewLibrary() {
   const p = S.project;
   const q = (S.ui.libQuery || '').toLowerCase();
-  const items = p.library.filter(b => !q || (b.title + ' ' + b.text + ' ' + b.tags.join(' ')).toLowerCase().includes(q));
+  const items = allBlocks().filter(b => !q || (b.title + ' ' + b.text + ' ' + b.tags.join(' ')).toLowerCase().includes(q));
   return `<div class="head"><div><h1>Content library</h1><p>${p.library.length} text blocks and ${p.assets.length} images. Tags drive retrieval: the engine filters by topic first, then matches on the requirement text.</p></div>
     <div class="actions"><input class="input" id="lib-q" placeholder="Search blocks" value="${esc(S.ui.libQuery || '')}" style="width:220px"><button class="btn" data-act="go" data-step="inputs">Back to inputs</button></div></div>
   <div class="grid2">
     <section class="panel"><div class="panel-h"><h2>Text blocks</h2><span class="hint">${items.length} shown</span></div><div class="panel-b">
       ${items.slice(0, 200).map(b => `<div class="lib-item"><div class="row"><span class="rid" data-act="src" data-t="lib" data-id="${b.id}">${b.id}</span><h4>${esc(b.title)}</h4></div>
         <p>${esc(b.summary || b.text.slice(0, 240))}</p>
-        <div class="row" style="margin-top:4px">${b.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}<span class="hint">${esc(b.fileName)} · ${esc(b.loc)}</span></div></div>`).join('') || '<p class="hint">No blocks match.</p>'}
+        <div class="row" style="margin-top:4px"><span class="pill ${b.tier === 'internal' ? 'warn' : b.tier === 'product' ? 'acc' : ''}">${(TIERS[b.tier || 'approved'] || TIERS.reference).short}</span>${b.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}<span class="hint">${esc(b.fileName)} · ${esc(b.loc)}${b.updated ? ' · ' + esc(String(b.updated).slice(0, 10)) : ''}</span></div></div>`).join('') || '<p class="hint">No blocks match.</p>'}
     </div></section>
     <section class="panel"><div class="panel-h"><h2>Images</h2></div><div class="panel-b">
       <div class="thumbs">${p.assets.map(a => `<div class="thumb"><img src="${a.thumb || a.dataUrl || ''}" alt=""><div title="${esc(a.caption || a.name)}"><span class="pill ${a.source === 'figma' ? 'acc' : ''}">${a.source === 'figma' ? 'Figma' : a.source === 'example' ? 'Example' : 'Upload'}</span> ${esc(a.caption || a.name)}</div></div>`).join('') || '<p class="hint">No images yet.</p>'}</div>
@@ -1984,8 +2529,12 @@ function outlineCard(s) {
       <div><p class="label">Requirements</p>${reqs.map(r => `<div class="blockref"><span class="rid" data-act="src" data-t="req" data-id="${r.id}">${r.id}</span>${r.mandatory ? '<span class="pill m">M</span>' : ''}<span>${esc(r.text.slice(0, 140))}${r.text.length > 140 ? '…' : ''}</span></div>`).join('') || '<p class="hint">None mapped.</p>'}</div>
       <div><p class="label">Key points</p>
         <textarea class="textarea" data-kp="${s.id}" rows="${Math.max(3, s.keyPoints.length + 1)}" placeholder="One point per line">${esc(s.keyPoints.join('\n'))}</textarea></div>
+      <div><p class="label">Internal sources found</p>
+        ${s.research ? (s.research.sources.map(x => `<div class="blockref"><span class="pill ${x.tier === 'internal' ? 'warn' : x.tier === 'product' ? 'acc' : ''}">${(TIERS[x.tier] || TIERS.reference).short}</span><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>${x.updated ? `<span class="hint">${esc(String(x.updated).slice(0, 10))}</span>` : ''}${x.why ? `<div class="hint" style="flex-basis:100%">${esc(x.why)}</div>` : ''}</div>`).join('') || '<p class="hint">Nothing relevant found.</p>') : `<p class="hint">${KN.state === 'on' ? 'Found automatically when you outline.' : 'Company search is off.'}</p>`}
+        <button class="btn sm ghost" data-act="research-one" data-id="${s.id}" style="margin-top:4px" ${KN.state !== 'on' || AI.state !== 'on' ? 'disabled' : ''}>${s.research ? 'Search again' : 'Search now'}</button>
+        ${(s.conflicts || []).length ? `<p class="label" style="margin-top:10px">Conflicts between sources</p>${s.conflicts.map(c => `<div class="blockref"><span class="pill warn">Conflict</span><span>${esc(c.text)}${c.resolution ? `<br><span class="hint">Use: ${esc(c.resolution)}</span>` : ''}</span></div>`).join('')}` : ''}</div>
       <div><p class="label">Library blocks</p>
-        ${s.blockRefs.map((r, i) => { const b = blockById(r.id); return b ? `<div class="blockref"><span class="rid" data-act="src" data-t="lib" data-id="${b.id}">${b.id}</span><b>${esc(b.title)}</b>
+        ${s.blockRefs.map((r, i) => { const b = blockById(r.id); return b ? `<div class="blockref"><span class="rid" data-act="src" data-t="lib" data-id="${b.id}">${b.id}</span><span class="pill ${b.tier === 'internal' ? 'warn' : b.tier === 'product' ? 'acc' : ''}">${(TIERS[b.tier || 'approved'] || TIERS.reference).short}</span><b>${esc(b.title)}</b>
           <select class="select" data-mode="${s.id}:${i}" style="width:auto;padding:0 4px;font-size:11px">${MODES.map(m => `<option ${r.mode === m ? 'selected' : ''}>${m}</option>`).join('')}</select>
           <button class="icon-btn" data-act="rm-ref" data-id="${s.id}" data-i="${i}" aria-label="Remove block">${ICON.x}</button>
           ${r.reason ? `<div class="hint" style="flex-basis:100%">${esc(r.reason)}</div>` : ''}</div>` : ''; }).join('') || '<p class="hint">None chosen yet.</p>'}
@@ -2057,12 +2606,14 @@ function exportChecks() {
   const p = S.project;
   const checks = [];
   const c = coverage();
-  let markers = 0, missingVis = 0, ids = 0;
+  let markers = 0, missingVis = 0, ids = 0, confirms = 0, fromDiscussion = 0;
   for (const s of p.sections) for (const b of s.blocks) {
     const t = blockText(b);
     markers += (t.match(/\[NEEDS (INPUT|VISUAL)/g) || []).length;
+    confirms += (t.match(/\[CONFIRM/g) || []).length;
+    if ((b.sources || []).some(x => x.t === 'lib' && (blockById(x.id) || {}).tier === 'internal')) fromDiscussion++;
     if (b.type === 'image' && !b.assetId) missingVis++;
-    if (/\b(B|R|A)-\d{3}\b/.test(t)) ids++;
+    if (/\b(B|R|A|P)-\d{3}\b/.test(t)) ids++;
   }
   const empty = p.sections.filter(s => !s.blocks.length);
   const style = projectStyleIssues();
@@ -2070,9 +2621,11 @@ function exportChecks() {
   const stale = p.assets.filter(a => a.stale && p.sections.some(s => s.blocks.some(b => b.assetId === a.id)));
   const fileNames = p.files.map(f => f.name).filter(n => n.length > 6);
   let nameLeaks = 0;
-  for (const s of p.sections) for (const b of s.blocks) { const t = blockText(b); for (const n of fileNames) if (t.includes(n)) nameLeaks++; }
+  for (const s of p.sections) for (const b of s.blocks) { const t = blockText(b); for (const n of fileNames.concat(allBlocks().filter(b => b.url).map(b => b.fileName).filter(n => n && n.length > 8))) if (t.includes(n)) nameLeaks++; }
   const overPages = p.sections.filter(s => s.pageLimit && s._pages && s._pages > s.pageLimit + 0.05);
   checks.push({ ok: !markers, sev: 'crit', text: markers ? `${plural(markers, 'gap marker')} still in the text ([NEEDS INPUT] or [NEEDS VISUAL])` : 'No gap markers left' });
+  checks.push({ ok: !confirms, sev: 'crit', text: confirms ? `${plural(confirms, 'claim')} waiting for confirmation ([CONFIRM: ...], usually roadmap items or facts from internal discussion)` : 'No unconfirmed claims' });
+  checks.push({ ok: !fromDiscussion, sev: 'warn', text: fromDiscussion ? `${plural(fromDiscussion, 'passage')} drawing on Slack, email or meeting notes. Check nothing internal shows through.` : 'Nothing drawn from internal discussion' });
   checks.push({ ok: !missingVis, sev: 'crit', text: missingVis ? `${plural(missingVis, 'visual placeholder')} without an image` : 'Every visual has an image' });
   checks.push({ ok: !c.unmapped.length, sev: 'crit', text: c.unmapped.length ? `${plural(c.unmapped.length, 'mandatory requirement')} not mapped to a section` : 'All mandatory requirements mapped' });
   checks.push({ ok: c.addressed >= c.total, sev: 'warn', text: `${c.addressed}/${c.total} mandatory requirements cited in the drafted text` });
@@ -2138,7 +2691,7 @@ function renderDrawer() {
     const b = blockById(d.id);
     if (!b) return '';
     title = `${b.id} · ${b.title}`;
-    body = `<dl class="kv" style="margin-bottom:12px"><dt>File</dt><dd>${esc(b.fileName)}</dd><dt>Location</dt><dd>${esc(b.loc)}</dd><dt>Tags</dt><dd>${b.tags.map(t => `<span class="tag">${esc(t)}</span>`).join(' ') || 'None'}</dd></dl>
+    body = `<dl class="kv" style="margin-bottom:12px"><dt>Trust</dt><dd>${esc((TIERS[b.tier || 'approved'] || TIERS.reference).label)}</dd><dt>${b.url ? 'Document' : 'File'}</dt><dd>${b.url ? `<a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.fileName)}</a>` : esc(b.fileName)}</dd><dt>Location</dt><dd>${esc(b.loc)}</dd>${b.updated ? `<dt>Updated</dt><dd>${esc(String(b.updated).slice(0, 10))}</dd>` : ''}${b.owner ? `<dt>Owner</dt><dd>${esc(b.owner)}</dd>` : ''}<dt>Tags</dt><dd>${b.tags.map(t => `<span class="tag">${esc(t)}</span>`).join(' ') || 'None'}</dd></dl>
       ${fileById(b.fileId) && fileById(b.fileId).ext === 'pdf' && /^p\. \d+/.test(b.loc) ? `<canvas class="pdfpage" id="pdf-canvas" data-file="${b.fileId}" data-page="${b.loc.replace('p. ', '')}"></canvas><p class="hint" style="margin:6px 0 12px">${esc(b.loc)} of ${esc(b.fileName)}</p>` : ''}
       <p class="label">Matched passage</p><pre><mark>${esc(b.text)}</mark></pre>
       <p class="label" style="margin-top:12px">Used in</p><p>${S.project.sections.filter(s => s.blocks.some(k => (k.sources || []).some(x => x.id === b.id))).map(s => esc(s.num + ' ' + s.title)).join(', ') || 'Not used yet'}</p>`;
@@ -2192,8 +2745,8 @@ function modalSecReqs(secId) {
 function modalAddRef(secId) {
   const s = secById(secId);
   const ranked = retrieve(sectionQuery(s), { k: 30 });
-  const rest = S.project.library.filter(b => !ranked.includes(b));
-  const list = ranked.concat(rest).filter(b => !s.blockRefs.some(r => r.id === b.id)).slice(0, 80);
+  const rest = allBlocks();
+  const list = ranked.concat(rest.filter(b => !ranked.includes(b))).filter(b => !s.blockRefs.some(r => r.id === b.id)).slice(0, 80);
   S.ui.modal = {
     title: `Add library blocks to ${s.num}`,
     body: list.map(b => `<label class="row" style="flex-wrap:nowrap;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)"><input type="checkbox" data-addref="${b.id}"><span class="rid">${b.id}</span><span><b>${esc(b.title)}</b><br><span class="hint">${esc((b.summary || b.text).slice(0, 160))}</span></span></label>`).join('') || '<p class="hint">The library is empty.</p>',
@@ -2212,6 +2765,55 @@ function modalExportBlockers(checks) {
 function modalConfirm(title, text, act, data = '') {
   S.ui.modal = { title, body: `<p>${esc(text)}</p>`, foot: `<button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" data-act="${act}" ${data}>Confirm</button>` };
   renderOverlay();
+}
+
+/* Bid context: pick the Salesforce opportunity, then review what the engine proposes before it fills the fields. */
+async function startPullContext() {
+  const p = S.project;
+  const plan = p.sourcePlan;
+  if (plan.salesforce && p.context.client) {
+    let opps = [];
+    try { toast('Looking up opportunities in Salesforce…', { sticky: true }); opps = await findOpportunities(p.context.client); }
+    catch (e) { toast(e.message, { err: true }); await sleep(1500); }
+    toast('');
+    if (opps.length) {
+      S.ui.modal = {
+        title: 'Which opportunity is this?',
+        body: opps.map((o, i) => `<label class="row" style="flex-wrap:nowrap;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)"><input type="radio" name="opp" value="${esc(o.id)}" ${i ? '' : 'checked'}><span><b>${esc(o.name)}</b><br><span class="hint">${esc(o.account || '')} · ${esc(o.stage || '')}${o.close ? ' · close ' + esc(o.close) : ''}${o.type ? ' · ' + esc(o.type) : ''}</span></span></label>`).join('')
+          + `<label class="row" style="padding:6px 0;border-top:1px solid var(--line)"><input type="radio" name="opp" value=""><span>None of these, use notes only</span></label>`,
+        foot: '<button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" data-act="pull-context-go">Continue</button>',
+      };
+      renderOverlay();
+      return;
+    }
+  }
+  await runPullContext('');
+}
+async function runPullContext(oppId) {
+  S.ui.modal = null; renderOverlay();
+  try {
+    const { res, sources } = await pullBidContext(oppId);
+    S.ui.pendingContext = { res, sources };
+    const p = S.project, rows = [['client', 'Client'], ['bidding', 'What we are bidding on'], ['winThemes', 'Win themes'], ['notes', 'Notes on the client']];
+    S.ui.modal = {
+      title: 'Review bid context',
+      body: `<p class="hint" style="margin-bottom:8px">From ${plural(sources.length, 'source')}. Tick the fields to fill in. Unticked fields keep what you have.</p>`
+        + rows.filter(([k]) => res[k]).map(([k, l]) => `<div style="padding:8px 0;border-top:1px solid var(--line)"><label class="row"><input type="checkbox" data-ctxpick="${k}" ${!p.context[k] ? 'checked' : ''}><b>${l}</b>${p.context[k] ? '<span class="pill warn">Replaces what you have</span>' : ''}</label><pre style="white-space:pre-wrap;font:inherit;margin:6px 0 0">${esc(res[k])}</pre></div>`).join('')
+        + ((res.stakeholders || []).length ? `<div style="padding:8px 0;border-top:1px solid var(--line)"><label class="row"><input type="checkbox" data-ctxpick="stakeholders" checked><b>Stakeholders</b></label>${res.stakeholders.map(s => `<div class="hint">${esc(s.name)}, ${esc(s.title || '')} (${esc(s.role || 'unknown')})</div>`).join('')}</div>` : '')
+        + `<p class="label" style="margin-top:10px">Sources</p>${sources.map(s => `<div class="hint">${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>` : esc(s.title)}</div>`).join('') || '<p class="hint">None found.</p>'}`,
+      foot: '<button class="btn" data-act="close-modal">Discard</button><button class="btn primary" data-act="pull-context-apply">Fill in selected</button>',
+    };
+    renderOverlay();
+  } catch (e) { toast(e.message, { err: true }); }
+}
+function applyPulledContext() {
+  const pc = S.ui.pendingContext; if (!pc) return;
+  const c = S.project.context;
+  for (const el of $$('[data-ctxpick]')) if (el.checked) c[el.dataset.ctxpick] = pc.res[el.dataset.ctxpick];
+  c.sources = pc.sources;
+  logChange('engine', `Filled bid context from ${plural(pc.sources.length, 'source')}.`);
+  S.ui.pendingContext = null; S.ui.modal = null;
+  save(); render();
 }
 
 /* ---- canvas.js ---- */
@@ -2771,7 +3373,6 @@ function exampleProject() {
     winThemes: 'Fewer high-bill calls in the first year. Live in 9 months, not 18. Proven at two other municipal utilities.',
     notes: 'Pre-bid call: they care most about high-bill calls in summer, and their IT team is small. Incumbent portal contract ends June 2027.',
   };
-  p.style = JSON.parse(JSON.stringify(DEFAULT_STYLE));
   const f1 = { id: 'f-ex1', name: 'HCU-RFP-2026-014 Instructions.pdf', ext: 'pdf', role: 'rfp', processed: true, docType: 'instructions', reqCount: 5, pages: [
     { n: 3, text: 'Section 4. Proposal Format\n\n4.1 Proposals shall not exceed 30 pages, excluding appendices and required forms.\n\n4.2 Proposals shall use a font no smaller than 11 point.\n\n4.3 Proposals shall be organized in the following order: (1) Executive Summary, (2) Understanding of Requirements, (3) Technical Approach, (4) Implementation Plan, (5) Experience and References, (6) Pricing, submitted as a separate file.' },
     { n: 4, text: 'Section 5. Evaluation\n\nTechnical Approach 35 points. Implementation Plan 20 points. Experience and References 20 points. Pricing 25 points.\n\nSection 6. Submission\n\n6.1 Proposals are due October 30, 2026 at 2:00 PM Pacific through the HCU supplier portal.' },
@@ -2807,7 +3408,7 @@ function exampleProject() {
   p.formatBasis = 'rfp-mandated';
   p.basisNote = 'Section 4.3 of the instructions sets the order, so the response follows it exactly.';
 
-  const B = (id, title, text, f, loc, tags, summary) => ({ id, title, text, fileId: f.id, fileName: f.name, loc, tags, summary });
+  const B = (id, title, text, f, loc, tags, summary) => ({ id, title, text, fileId: f.id, fileName: f.name, loc, tags, summary, tier: 'approved', origin: 'upload' });
   p.library = [
     B('B-001', 'Company overview', 'Northbeam Energy Software builds customer engagement tools for electric and gas utilities. We have worked only with utilities since 2014 and today support 31 utilities and 6.2 million meters across North America. Our team of 140 includes former utility customer service and IT leaders.', lib1, 'About Northbeam', ['company', 'overview'], 'Who Northbeam is, size and focus.'),
     B('B-002', 'Bill projection', 'Every customer with an AMI meter gets a projected bill for the current cycle, refreshed each night from the previous day\'s interval data and the customer\'s rate. Projections at our live utilities land within 6% of the final bill by day 10 of the cycle. Customers see the projection in the portal widget and in alerts.', lib1, 'Products › Bill projection', ['bill alerts', 'customer portal', 'analytics'], 'Daily projected bill from AMI data, accuracy figures.'),
@@ -2892,7 +3493,7 @@ function renderMain() {
   const main = $('#main');
   if (!main || !S.project) return;
   const step = S.ui.step;
-  const views = { inputs: viewInputs, requirements: viewRequirements, format: viewFormat, outline: viewOutline, draft: viewDraft, canvas: viewCanvas, export: viewExport, library: viewLibrary };
+  const views = { inputs: viewInputs, requirements: viewRequirements, format: viewFormat, outline: viewOutline, draft: viewDraft, canvas: viewCanvas, export: viewExport, library: viewLibrary, styleguide: viewStyleGuide, sources: viewSources, templates: viewTemplates };
   // Keep the canvas scroll position across re-renders.
   const mid = $('#cv-mid'), scroll = mid ? mid.scrollTop : 0, mainScroll = main.scrollTop;
   const active = document.activeElement && document.activeElement.id;
@@ -2946,7 +3547,19 @@ const ACTIONS = {
     if (v !== undefined) S.project.figma = Object.assign(S.project.figma || {}, { url: v.trim() });
     await syncFigmaLibrary();
   }),
-  'style-reset': () => { S.project.style = JSON.parse(JSON.stringify(DEFAULT_STYLE)); save(); renderMain(); },
+  'style-reset': () => modalConfirm('Reset the style guide?', 'Every field goes back to the defaults for everyone using these team settings.', 'confirm-style-reset'),
+  'confirm-style-reset': () => { WS.data.styleGuide = JSON.parse(JSON.stringify(DEFAULT_STYLE_GUIDE)); saveWorkspace(); S.ui.modal = null; render(); },
+  'sg-import-file': () => pickFiles('styleguide', '.pdf,.docx,.txt,.md'),
+  'sg-import-url': () => { S.ui.modal = { title: 'Import the style guide from a link', body: '<div class="field"><label for="sg-url">Link to the style guide (Drive, Confluence or any page Glean can read)</label><input class="input" id="sg-url" placeholder="https://"></div>', foot: '<button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" data-act="sg-import-url-go">Import</button>' }; renderOverlay(); },
+  'sg-import-url-go': () => { const u = ($('#sg-url') || {}).value || ''; S.ui.modal = null; renderOverlay(); run(async () => { const docs = await gleanRead([u.trim()]); if (!docs.length || !docs[0].text) throw new Error('Nothing could be read from that link.'); await importStyleGuide(docs[0].text); toast('Style guide imported. Review the fields.'); }); },
+  'find-sources': () => run(findSourcesFromPlan),
+  'research-one': el => run(() => researchSection(secById(el.dataset.id))),
+  'pull-context': () => startPullContext(),
+  'pull-context-go': () => { const r = $$('input[name="opp"]').find(x => x.checked); runPullContext(r ? r.value : ''); },
+  'pull-context-apply': () => applyPulledContext(),
+  'sync-pinned': () => run(async () => { const n = await syncPinned(); toast(`Cached ${plural(n, 'passage')} from pinned sources.`); }),
+  'pin-add': () => { WS.data.sources.pinned.push({ url: '', tier: 'approved', title: '' }); saveWorkspace(); renderMain(); },
+  'pin-rm': el => { WS.data.sources.pinned.splice(+el.dataset.i, 1); saveWorkspace(); renderMain(); },
   'recommend': () => run(async () => {
     if (S.project.sections.some(s => s.blocks.length)) {
       modalConfirm('Re-recommend the format?', 'Generated sections and their drafts are replaced. Sections you added or edited are kept.', 'confirm-recommend');
@@ -3047,7 +3660,15 @@ document.addEventListener('keydown', e => {
   const drop = e.target.closest && e.target.closest('[data-drop]');
   if (drop && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pickFiles(drop.dataset.drop); }
 });
-$('#file-pick').addEventListener('change', e => { const files = Array.from(e.target.files || []); if (files.length) addFiles(files, pickRole); });
+$('#file-pick').addEventListener('change', e => {
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+  if (pickRole === 'styleguide') {
+    run(async () => { const parsed = await readAny(files[0]); if (!parsed.text) throw new Error('No text found in that file.'); await importStyleGuide(parsed.text); toast('Style guide imported. Review the fields.'); });
+    return;
+  }
+  addFiles(files, pickRole);
+});
 $('#project-pick').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) openProjectFile(f); });
 
 /* Form fields that write straight to the model. */
@@ -3055,7 +3676,12 @@ document.addEventListener('input', e => {
   const t = e.target, p = S.project, d = t.dataset || {};
   if (t.id === 'proj-name') { p.name = t.value; save(); return; }
   if (d.ctx) { p.context[d.ctx] = t.value; save(); return; }
-  if (d.style) { styleOf()[d.style] = t.value; save(); return; }
+  if (d.sg) { if (wsEditable()) { sg()[d.sg] = t.value; saveWorkspace(); } return; }
+  if (d.tpl) { WS.data.templates[d.tpl] = t.value; saveWorkspace(); return; }
+  if (d.pinUrl !== undefined) { WS.data.sources.pinned[+d.pinUrl].url = t.value.trim(); saveWorkspace(); return; }
+  if (t.id === 'ws-hints') { WS.data.sources.glean.hints = t.value; saveWorkspace(); return; }
+  if (t.id === 'ws-recency') { WS.data.sources.glean.recencyMonths = parseInt(t.value, 10) || 18; saveWorkspace(); return; }
+  if (t.id === 'plan-hints') { p.sourcePlan.hints = t.value; save(); return; }
   if (d.obj !== undefined) { p.objectives[+d.obj] = t.value; save(); return; }
   if (d.reqText) { const r = reqById(d.reqText); if (r) { r.text = t.textContent; save(); } return; }
   if (d.mxComment) { const m = p.matrix.find(x => x.reqId === d.mxComment); if (m) { m.comment = t.textContent; m.locked = true; save(); } return; }
@@ -3076,7 +3702,12 @@ document.addEventListener('change', e => {
   if (d.mxStatus) { const m = p.matrix.find(x => x.reqId === d.mxStatus); m.status = t.value; m.locked = true; save(); return; }
   if (d.mode) { const [sid, i] = d.mode.split(':'); secById(sid).blockRefs[+i].mode = t.value; save(); return; }
   if (d.op) { const o = p.pending.ops.find(x => x.key === d.op); o.accept = t.checked; save(); renderMain(); return; }
-  if (t.id === 'req-filter') { S.ui.reqFilter = t.value; renderMain(); }
+  if (t.id === 'req-filter') { S.ui.reqFilter = t.value; renderMain(); return; }
+  if (t.id === 'resp-type') { p.type = t.value; logChange('user', `Set the response type to ${t.options[t.selectedIndex].text}.`); save(); render(); return; }
+  if (d.plan) { p.sourcePlan[d.plan] = t.checked; save(); renderMain(); return; }
+  if (d.fileTier) { const f = fileById(d.fileTier); f.tier = t.value; for (const b of p.library) if (b.fileId === f.id) b.tier = t.value; save(); return; }
+  if (d.pinTier !== undefined) { WS.data.sources.pinned[+d.pinTier].tier = t.value; for (const b of WS.pinnedBlocks) if (b.url === WS.data.sources.pinned[+d.pinTier].url) b.tier = t.value; saveWorkspace(); return; }
+  if (t.id === 'ws-glean') { WS.data.sources.glean.enabled = t.checked; saveWorkspace(); return; }
 });
 
 /* Startup: reopen the project saved in this browser, or show the example. */
@@ -3084,8 +3715,10 @@ document.addEventListener('change', e => {
   let saved = null;
   try { const raw = await idbGet('project'); if (raw) saved = JSON.parse(raw); } catch { saved = null; }
   S.project = saved && saved.sections ? saved : exampleProject();
-  styleOf();
+  if (!S.project.sourcePlan) S.project.sourcePlan = { hints: '', glean: true, salesforce: true, figma: true };
+  if (!S.project.type) S.project.type = 'rfp';
   numberSections();
+  loadWorkspace();
   if (S.project.example) S.ui.step = 'canvas';
   render();
   window.addEventListener('resize', () => { if (S.ui.step === 'canvas') measurePages(); });

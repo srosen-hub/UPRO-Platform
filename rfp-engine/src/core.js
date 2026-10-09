@@ -33,7 +33,8 @@ const S = {
 function newProject(name) {
   return {
     v: 1, id: uid('p'), name: name || 'Untitled RFP', example: false,
-    context: { client: '', bidding: '', notes: '', winThemes: '' },
+    type: 'rfp', context: { client: '', bidding: '', notes: '', winThemes: '', sources: [], stakeholders: [] },
+    sourcePlan: { hints: '', glean: true, salesforce: true, figma: true },
     files: [], assets: [], library: [], requirements: [], objectives: [], topics: [],
     formatRules: {}, formatBasis: '', basisNote: '',
     sections: [], pending: null, changeLog: [], risks: [], matrix: [],
@@ -51,7 +52,7 @@ function numberSections(p = S.project) {
 }
 const secById = id => S.project.sections.find(s => s.id === id);
 const reqById = id => S.project.requirements.find(r => r.id === id);
-const blockById = id => S.project.library.find(b => b.id === id);
+const blockById = id => S.project.library.find(b => b.id === id) || WS.pinnedBlocks.find(b => b.id === id);
 const assetById = id => S.project.assets.find(a => a.id === id);
 const fileById = id => S.project.files.find(f => f.id === id);
 
@@ -130,7 +131,7 @@ function sanitize(html) {
   return markGaps(root.innerHTML);
 }
 function markGaps(html) {
-  return html.replace(/(?<!gapmark">)\[(NEEDS (?:INPUT|VISUAL)[^\]]*)\]/g, '<span class="gapmark">[$1]</span>');
+  return html.replace(/(?<!gapmark">)\[((?:NEEDS (?:INPUT|VISUAL)|CONFIRM)[^\]]*)\]/g, '<span class="gapmark">[$1]</span>');
 }
 function textToHtml(t) {
   return String(t || '').split(/\n{2,}/).map(p => p.trim()).filter(Boolean)

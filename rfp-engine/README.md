@@ -1,6 +1,7 @@
 # RFP Engine
 
-A single-page tool that turns a client's RFP package and a content library into a formatted, drafted response.
+A single-page tool that turns a client's documents (RFP, RFI, security questionnaire, SOW request) and the team's
+knowledge into a formatted, drafted response.
 It runs as a claude.ai artifact: AI steps use the viewer's Claude account (`sample` capability), product images
 come from a linked Figma file through the viewer's Figma connector (`mcp` capability), and files are saved with
 the `downloads` capability. Outside claude.ai the page still opens, with AI, Figma and downloads turned off.
@@ -24,10 +25,26 @@ the `downloads` capability. Outside claude.ai the page still opens, with AI, Fig
 7. **Export**: pre-export checks, then a clean customer .docx, an internal source map (.csv), matrix answers (.xlsx)
    and a project file (.json).
 
+## Knowledge sources
+
+- **Uploads**: library files, each with a trust tier (approved, product thinking, past response, reference, discussion).
+- **Company search** through the Glean connector (Drive, Confluence, Slack, email, meeting notes). Each section is
+  researched when it is outlined; with tool use, Claude runs its own searches, otherwise one search per requirement.
+- **Pinned team sources** (RFP library, boilerplate, roadmaps) are read in full, cached, and searched first.
+- **Salesforce** (read-only connector) and meeting notes fill the bid context, with a review step before anything
+  is written.
+- Retrieval filters by topic, matches on requirement text, then weighs trust tier and freshness. Conflicting sources
+  are listed on the outline. Roadmap items and facts from discussions are marked `[CONFIRM: ...]` and block export.
+
+## Team workspace
+
+Style guide, knowledge sources and templates are shared through the artifact database: editors change them, everyone
+else reads them, and every project uses them. Outside claude.ai they are kept in the browser.
+
 ## Voice and style
 
-The house rules (tone, writing rules, banned phrases, optional sample of past writing) are sent with every drafting
-request. A checker flags banned phrases, dashes, rhetorical questions, uniform sentence rhythm, mentions of AI and
+The team style guide (tone, writing rules, formatting conventions, terminology, approved facts, banned phrases, a
+sample of past writing) is sent with every drafting request. It can be imported from a file or a link. A checker flags banned phrases, dashes, rhetorical questions, uniform sentence rhythm, mentions of AI and
 internal ids. "Fix style" rewrites flagged passages, and the export check blocks until they are resolved. The .docx
 carries the company name as author and no tool metadata.
 
@@ -43,6 +60,8 @@ maps, org charts) can be uploaded.
 src/styles.css    tokens (light and dark) and layout
 src/body.html     page shell
 src/core.js       model, numbering, coverage, sanitizer, persistence (IndexedDB)
+src/workspace.js  team style guide, sources, templates (shared through db)
+src/knowledge.js  Glean search and reading, research, pinned sources, Salesforce bid context
 src/style.js      voice and style rules, checker, restyle pass
 src/ai.js         Claude access and every prompt
 src/figma.js      Figma library sync through the connector

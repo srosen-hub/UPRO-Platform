@@ -22,8 +22,12 @@ function outlineCard(s) {
       <div><p class="label">Requirements</p>${reqs.map(r => `<div class="blockref"><span class="rid" data-act="src" data-t="req" data-id="${r.id}">${r.id}</span>${r.mandatory ? '<span class="pill m">M</span>' : ''}<span>${esc(r.text.slice(0, 140))}${r.text.length > 140 ? '…' : ''}</span></div>`).join('') || '<p class="hint">None mapped.</p>'}</div>
       <div><p class="label">Key points</p>
         <textarea class="textarea" data-kp="${s.id}" rows="${Math.max(3, s.keyPoints.length + 1)}" placeholder="One point per line">${esc(s.keyPoints.join('\n'))}</textarea></div>
+      <div><p class="label">Internal sources found</p>
+        ${s.research ? (s.research.sources.map(x => `<div class="blockref"><span class="pill ${x.tier === 'internal' ? 'warn' : x.tier === 'product' ? 'acc' : ''}">${(TIERS[x.tier] || TIERS.reference).short}</span><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>${x.updated ? `<span class="hint">${esc(String(x.updated).slice(0, 10))}</span>` : ''}${x.why ? `<div class="hint" style="flex-basis:100%">${esc(x.why)}</div>` : ''}</div>`).join('') || '<p class="hint">Nothing relevant found.</p>') : `<p class="hint">${KN.state === 'on' ? 'Found automatically when you outline.' : 'Company search is off.'}</p>`}
+        <button class="btn sm ghost" data-act="research-one" data-id="${s.id}" style="margin-top:4px" ${KN.state !== 'on' || AI.state !== 'on' ? 'disabled' : ''}>${s.research ? 'Search again' : 'Search now'}</button>
+        ${(s.conflicts || []).length ? `<p class="label" style="margin-top:10px">Conflicts between sources</p>${s.conflicts.map(c => `<div class="blockref"><span class="pill warn">Conflict</span><span>${esc(c.text)}${c.resolution ? `<br><span class="hint">Use: ${esc(c.resolution)}</span>` : ''}</span></div>`).join('')}` : ''}</div>
       <div><p class="label">Library blocks</p>
-        ${s.blockRefs.map((r, i) => { const b = blockById(r.id); return b ? `<div class="blockref"><span class="rid" data-act="src" data-t="lib" data-id="${b.id}">${b.id}</span><b>${esc(b.title)}</b>
+        ${s.blockRefs.map((r, i) => { const b = blockById(r.id); return b ? `<div class="blockref"><span class="rid" data-act="src" data-t="lib" data-id="${b.id}">${b.id}</span><span class="pill ${b.tier === 'internal' ? 'warn' : b.tier === 'product' ? 'acc' : ''}">${(TIERS[b.tier || 'approved'] || TIERS.reference).short}</span><b>${esc(b.title)}</b>
           <select class="select" data-mode="${s.id}:${i}" style="width:auto;padding:0 4px;font-size:11px">${MODES.map(m => `<option ${r.mode === m ? 'selected' : ''}>${m}</option>`).join('')}</select>
           <button class="icon-btn" data-act="rm-ref" data-id="${s.id}" data-i="${i}" aria-label="Remove block">${ICON.x}</button>
           ${r.reason ? `<div class="hint" style="flex-basis:100%">${esc(r.reason)}</div>` : ''}</div>` : ''; }).join('') || '<p class="hint">None chosen yet.</p>'}
@@ -95,12 +99,14 @@ function exportChecks() {
   const p = S.project;
   const checks = [];
   const c = coverage();
-  let markers = 0, missingVis = 0, ids = 0;
+  let markers = 0, missingVis = 0, ids = 0, confirms = 0, fromDiscussion = 0;
   for (const s of p.sections) for (const b of s.blocks) {
     const t = blockText(b);
     markers += (t.match(/\[NEEDS (INPUT|VISUAL)/g) || []).length;
+    confirms += (t.match(/\[CONFIRM/g) || []).length;
+    if ((b.sources || []).some(x => x.t === 'lib' && (blockById(x.id) || {}).tier === 'internal')) fromDiscussion++;
     if (b.type === 'image' && !b.assetId) missingVis++;
-    if (/\b(B|R|A)-\d{3}\b/.test(t)) ids++;
+    if (/\b(B|R|A|P)-\d{3}\b/.test(t)) ids++;
   }
   const empty = p.sections.filter(s => !s.blocks.length);
   const style = projectStyleIssues();
@@ -108,9 +114,11 @@ function exportChecks() {
   const stale = p.assets.filter(a => a.stale && p.sections.some(s => s.blocks.some(b => b.assetId === a.id)));
   const fileNames = p.files.map(f => f.name).filter(n => n.length > 6);
   let nameLeaks = 0;
-  for (const s of p.sections) for (const b of s.blocks) { const t = blockText(b); for (const n of fileNames) if (t.includes(n)) nameLeaks++; }
+  for (const s of p.sections) for (const b of s.blocks) { const t = blockText(b); for (const n of fileNames.concat(allBlocks().filter(b => b.url).map(b => b.fileName).filter(n => n && n.length > 8))) if (t.includes(n)) nameLeaks++; }
   const overPages = p.sections.filter(s => s.pageLimit && s._pages && s._pages > s.pageLimit + 0.05);
   checks.push({ ok: !markers, sev: 'crit', text: markers ? `${plural(markers, 'gap marker')} still in the text ([NEEDS INPUT] or [NEEDS VISUAL])` : 'No gap markers left' });
+  checks.push({ ok: !confirms, sev: 'crit', text: confirms ? `${plural(confirms, 'claim')} waiting for confirmation ([CONFIRM: ...], usually roadmap items or facts from internal discussion)` : 'No unconfirmed claims' });
+  checks.push({ ok: !fromDiscussion, sev: 'warn', text: fromDiscussion ? `${plural(fromDiscussion, 'passage')} drawing on Slack, email or meeting notes. Check nothing internal shows through.` : 'Nothing drawn from internal discussion' });
   checks.push({ ok: !missingVis, sev: 'crit', text: missingVis ? `${plural(missingVis, 'visual placeholder')} without an image` : 'Every visual has an image' });
   checks.push({ ok: !c.unmapped.length, sev: 'crit', text: c.unmapped.length ? `${plural(c.unmapped.length, 'mandatory requirement')} not mapped to a section` : 'All mandatory requirements mapped' });
   checks.push({ ok: c.addressed >= c.total, sev: 'warn', text: `${c.addressed}/${c.total} mandatory requirements cited in the drafted text` });
@@ -176,7 +184,7 @@ function renderDrawer() {
     const b = blockById(d.id);
     if (!b) return '';
     title = `${b.id} · ${b.title}`;
-    body = `<dl class="kv" style="margin-bottom:12px"><dt>File</dt><dd>${esc(b.fileName)}</dd><dt>Location</dt><dd>${esc(b.loc)}</dd><dt>Tags</dt><dd>${b.tags.map(t => `<span class="tag">${esc(t)}</span>`).join(' ') || 'None'}</dd></dl>
+    body = `<dl class="kv" style="margin-bottom:12px"><dt>Trust</dt><dd>${esc((TIERS[b.tier || 'approved'] || TIERS.reference).label)}</dd><dt>${b.url ? 'Document' : 'File'}</dt><dd>${b.url ? `<a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.fileName)}</a>` : esc(b.fileName)}</dd><dt>Location</dt><dd>${esc(b.loc)}</dd>${b.updated ? `<dt>Updated</dt><dd>${esc(String(b.updated).slice(0, 10))}</dd>` : ''}${b.owner ? `<dt>Owner</dt><dd>${esc(b.owner)}</dd>` : ''}<dt>Tags</dt><dd>${b.tags.map(t => `<span class="tag">${esc(t)}</span>`).join(' ') || 'None'}</dd></dl>
       ${fileById(b.fileId) && fileById(b.fileId).ext === 'pdf' && /^p\. \d+/.test(b.loc) ? `<canvas class="pdfpage" id="pdf-canvas" data-file="${b.fileId}" data-page="${b.loc.replace('p. ', '')}"></canvas><p class="hint" style="margin:6px 0 12px">${esc(b.loc)} of ${esc(b.fileName)}</p>` : ''}
       <p class="label">Matched passage</p><pre><mark>${esc(b.text)}</mark></pre>
       <p class="label" style="margin-top:12px">Used in</p><p>${S.project.sections.filter(s => s.blocks.some(k => (k.sources || []).some(x => x.id === b.id))).map(s => esc(s.num + ' ' + s.title)).join(', ') || 'Not used yet'}</p>`;
@@ -230,8 +238,8 @@ function modalSecReqs(secId) {
 function modalAddRef(secId) {
   const s = secById(secId);
   const ranked = retrieve(sectionQuery(s), { k: 30 });
-  const rest = S.project.library.filter(b => !ranked.includes(b));
-  const list = ranked.concat(rest).filter(b => !s.blockRefs.some(r => r.id === b.id)).slice(0, 80);
+  const rest = allBlocks();
+  const list = ranked.concat(rest.filter(b => !ranked.includes(b))).filter(b => !s.blockRefs.some(r => r.id === b.id)).slice(0, 80);
   S.ui.modal = {
     title: `Add library blocks to ${s.num}`,
     body: list.map(b => `<label class="row" style="flex-wrap:nowrap;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)"><input type="checkbox" data-addref="${b.id}"><span class="rid">${b.id}</span><span><b>${esc(b.title)}</b><br><span class="hint">${esc((b.summary || b.text).slice(0, 160))}</span></span></label>`).join('') || '<p class="hint">The library is empty.</p>',
@@ -250,4 +258,53 @@ function modalExportBlockers(checks) {
 function modalConfirm(title, text, act, data = '') {
   S.ui.modal = { title, body: `<p>${esc(text)}</p>`, foot: `<button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" data-act="${act}" ${data}>Confirm</button>` };
   renderOverlay();
+}
+
+/* Bid context: pick the Salesforce opportunity, then review what the engine proposes before it fills the fields. */
+async function startPullContext() {
+  const p = S.project;
+  const plan = p.sourcePlan;
+  if (plan.salesforce && p.context.client) {
+    let opps = [];
+    try { toast('Looking up opportunities in Salesforce…', { sticky: true }); opps = await findOpportunities(p.context.client); }
+    catch (e) { toast(e.message, { err: true }); await sleep(1500); }
+    toast('');
+    if (opps.length) {
+      S.ui.modal = {
+        title: 'Which opportunity is this?',
+        body: opps.map((o, i) => `<label class="row" style="flex-wrap:nowrap;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)"><input type="radio" name="opp" value="${esc(o.id)}" ${i ? '' : 'checked'}><span><b>${esc(o.name)}</b><br><span class="hint">${esc(o.account || '')} · ${esc(o.stage || '')}${o.close ? ' · close ' + esc(o.close) : ''}${o.type ? ' · ' + esc(o.type) : ''}</span></span></label>`).join('')
+          + `<label class="row" style="padding:6px 0;border-top:1px solid var(--line)"><input type="radio" name="opp" value=""><span>None of these, use notes only</span></label>`,
+        foot: '<button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" data-act="pull-context-go">Continue</button>',
+      };
+      renderOverlay();
+      return;
+    }
+  }
+  await runPullContext('');
+}
+async function runPullContext(oppId) {
+  S.ui.modal = null; renderOverlay();
+  try {
+    const { res, sources } = await pullBidContext(oppId);
+    S.ui.pendingContext = { res, sources };
+    const p = S.project, rows = [['client', 'Client'], ['bidding', 'What we are bidding on'], ['winThemes', 'Win themes'], ['notes', 'Notes on the client']];
+    S.ui.modal = {
+      title: 'Review bid context',
+      body: `<p class="hint" style="margin-bottom:8px">From ${plural(sources.length, 'source')}. Tick the fields to fill in. Unticked fields keep what you have.</p>`
+        + rows.filter(([k]) => res[k]).map(([k, l]) => `<div style="padding:8px 0;border-top:1px solid var(--line)"><label class="row"><input type="checkbox" data-ctxpick="${k}" ${!p.context[k] ? 'checked' : ''}><b>${l}</b>${p.context[k] ? '<span class="pill warn">Replaces what you have</span>' : ''}</label><pre style="white-space:pre-wrap;font:inherit;margin:6px 0 0">${esc(res[k])}</pre></div>`).join('')
+        + ((res.stakeholders || []).length ? `<div style="padding:8px 0;border-top:1px solid var(--line)"><label class="row"><input type="checkbox" data-ctxpick="stakeholders" checked><b>Stakeholders</b></label>${res.stakeholders.map(s => `<div class="hint">${esc(s.name)}, ${esc(s.title || '')} (${esc(s.role || 'unknown')})</div>`).join('')}</div>` : '')
+        + `<p class="label" style="margin-top:10px">Sources</p>${sources.map(s => `<div class="hint">${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>` : esc(s.title)}</div>`).join('') || '<p class="hint">None found.</p>'}`,
+      foot: '<button class="btn" data-act="close-modal">Discard</button><button class="btn primary" data-act="pull-context-apply">Fill in selected</button>',
+    };
+    renderOverlay();
+  } catch (e) { toast(e.message, { err: true }); }
+}
+function applyPulledContext() {
+  const pc = S.ui.pendingContext; if (!pc) return;
+  const c = S.project.context;
+  for (const el of $$('[data-ctxpick]')) if (el.checked) c[el.dataset.ctxpick] = pc.res[el.dataset.ctxpick];
+  c.sources = pc.sources;
+  logChange('engine', `Filled bid context from ${plural(pc.sources.length, 'source')}.`);
+  S.ui.pendingContext = null; S.ui.modal = null;
+  save(); render();
 }

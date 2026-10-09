@@ -40,6 +40,10 @@ function renderRail() {
     if (st.group !== group) { group = st.group; html += `<div class="rail-group">${group}</div>`; }
     html += `<button class="step ${S.ui.step === st.id ? 'on' : ''} ${done[st.id] ? 'done' : ''}" data-act="go" data-step="${st.id}"><span class="step-n">${done[st.id] ? '✓' : st.n}</span><span>${st.label}</span><span class="step-meta">${meta[st.id] || ''}</span></button>`;
   }
+  html += '<div class="rail-group">Team</div>';
+  for (const [id, label, n] of [['styleguide', 'Style guide', 'S'], ['sources', 'Sources', 'K'], ['templates', 'Templates', 'T']]) {
+    html += `<button class="step ${S.ui.step === id ? 'on' : ''}" data-act="go" data-step="${id}"><span class="step-n">${n}</span><span>${label}</span><span class="step-meta">${id === 'sources' ? WS.data.sources.pinned.length || '' : ''}</span></button>`;
+  }
   $('#rail').innerHTML = html;
 }
 
@@ -58,10 +62,14 @@ function fileRow(f) {
   const ext = (f.ext || '').slice(0, 4);
   const meta = f.role === 'rfp'
     ? [f.docType && `<span class="pill acc">${esc(f.docType)}</span>`, f.processed ? `${f.reqCount} requirements` : '<span class="pill warn">Not read yet</span>', f.isChange && '<span class="pill crit">New client input</span>']
-    : [`${f.blockCount || 0} blocks`];
+    : [`${f.blockCount || 0} passages`, tierSelect('data-file-tier', f.id, f.tier || 'approved')];
   return `<div class="file"><span class="file-ic ${esc(ext)}">${esc(ext.toUpperCase())}</span>
     <div style="min-width:0"><div class="file-name">${esc(f.name)}</div><div class="file-meta">${meta.filter(Boolean).join('<span class="faint">·</span>')}${f.pages && f.pages.length > 1 ? `<span class="faint">·</span>${f.pages.length} pages` : ''}</div></div>
     <button class="icon-btn" data-act="rm-file" data-id="${f.id}" aria-label="Remove ${esc(f.name)}">${ICON.x}</button></div>`;
+}
+
+function tierSelect(attr, id, val) {
+  return `<select class="select" ${attr}="${id}" style="width:auto;padding:1px 4px;font-size:11px" aria-label="Source tier">${Object.entries(TIERS).map(([k, t]) => `<option value="${k}" ${val === k ? 'selected' : ''}>${t.short}</option>`).join('')}</select>`;
 }
 
 function viewInputs() {
@@ -72,65 +80,131 @@ function viewInputs() {
   const fig = p.figma || {};
   const figAssets = p.assets.filter(a => a.source === 'figma');
   const upAssets = p.assets.filter(a => a.source !== 'figma');
-  const st = styleOf();
+  const plan = p.sourcePlan || (p.sourcePlan = { hints: '', glean: true, salesforce: true, figma: true });
+  const internal = p.library.filter(b => b.origin === 'glean');
+  const pinnedN = (WS.pinnedBlocks || []).length;
+  const kn = KN.state === 'on';
+  const ctx = p.context;
   return `${exampleBanner()}${aiBanner()}
-  <div class="head"><div><h1>Inputs</h1><p>Load the client's RFP package and your content library, then tell the engine what you are bidding on. Uploading an addendum later runs it through the change review.</p></div>
+  <div class="head"><div><h1>Inputs</h1><p>Load the client's documents, tell the engine where your own knowledge lives, and pull in what the team already knows about this client. Uploading an addendum later runs it through the change review.</p></div>
     <div class="actions"><button class="btn primary" data-act="extract" ${!unread || AI.state !== 'on' ? 'disabled' : ''}>${ICON.spark} Extract requirements${unread ? ` (${unread})` : ''}</button></div></div>
   <div class="grid2">
-    <section class="panel"><div class="panel-h"><h2>Client RFP files</h2><span class="hint">Instructions, scope, requirements, forms, addenda</span></div>
+    <section class="panel"><div class="panel-h"><h2>Client documents</h2>
+      <select class="select" id="resp-type" style="width:auto" aria-label="Response type">${RESPONSE_TYPES.map(t => `<option value="${t.id}" ${p.type === t.id ? 'selected' : ''}>${t.label}</option>`).join('')}</select></div>
       <div class="panel-b stack-s">
-        <div class="drop" data-drop="rfp" tabindex="0" role="button"><strong>Drop RFP files here or click to choose</strong>PDF, Word, Excel, CSV or text</div>
-        <div class="files">${rfp.map(fileRow).join('') || '<p class="hint">No RFP files yet.</p>'}</div>
+        <div class="drop" data-drop="rfp" tabindex="0" role="button"><strong>Drop the client's files here or click to choose</strong>Instructions, scope, requirements, questionnaires, forms, addenda. PDF, Word, Excel, CSV or text.</div>
+        <div class="files">${rfp.map(fileRow).join('') || '<p class="hint">No client files yet.</p>'}</div>
       </div></section>
-    <section class="panel"><div class="panel-h"><h2>Content library</h2><span class="hint">${p.library.length} blocks · ${p.library.filter(b => b.tags.length).length} tagged</span></div>
+    <section class="panel"><div class="panel-h"><h2>Content library</h2><span class="hint">${p.library.length} passages · ${internal.length} from internal tools${pinnedN ? ` · ${pinnedN} pinned team passages` : ''}</span></div>
       <div class="panel-b stack-s">
-        <div class="drop" data-drop="library" tabindex="0" role="button"><strong>Drop library files here or click to choose</strong>Capability write-ups, case studies, past answers, bios. Images are allowed for non-product visuals.</div>
-        <div class="files">${lib.map(fileRow).join('') || '<p class="hint">No library files yet.</p>'}</div>
-        <div class="row"><button class="btn sm" data-act="tag-lib" ${AI.state !== 'on' || !p.library.some(b => !b.tags.length) ? 'disabled' : ''}>Tag untagged blocks</button><button class="btn sm ghost" data-act="go" data-step="library">Browse library</button></div>
+        <div class="drop" data-drop="library" tabindex="0" role="button"><strong>Upload library files</strong>Capability write-ups, case studies, past answers, bios. Set each file's trust level after upload.</div>
+        <div class="files">${lib.map(fileRow).join('')}</div>
+        <p class="label" style="margin-top:6px">Also look through</p>
+        <label class="row" style="flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" data-plan="glean" ${plan.glean ? 'checked' : ''}><span><b>Company search</b> <span class="hint">Drive, Confluence, Slack, email and meeting notes, through Glean</span></span></label>
+        <label class="row" style="flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" data-plan="salesforce" ${plan.salesforce ? 'checked' : ''}><span><b>Salesforce</b> <span class="hint">Opportunity, contacts and activity, for bid context</span></span></label>
+        <label class="row" style="flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" data-plan="figma" ${plan.figma ? 'checked' : ''}><span><b>Figma</b> <span class="hint">Product images from the team library</span></span></label>
+        <div class="field"><label for="plan-hints">Where to look</label><textarea class="textarea" id="plan-hints" rows="3" placeholder="e.g. Past RFPs are in the 'RFP Response Examples' Drive folder. Product roadmap is in the Product Confluence space. Ignore anything before 2025.">${esc(plan.hints)}</textarea>
+          <span class="hint">Plain language. Used for every search on this project, on top of the team's sources.</span></div>
+        <div class="row"><button class="btn sm primary" data-act="find-sources" ${!kn || AI.state !== 'on' || !plan.glean ? 'disabled' : ''}>${ICON.spark} Find sources now</button>
+          <button class="btn sm" data-act="tag-lib" ${AI.state !== 'on' || !p.library.some(b => !b.tags.length) ? 'disabled' : ''}>Tag untagged passages</button>
+          <button class="btn sm ghost" data-act="go" data-step="library">Browse library</button></div>
+        ${!kn ? `<p class="hint">${KN.state === 'connecting' ? 'Connecting to your tools…' : 'Internal tools work when this page is open on claude.ai with the connectors set up.'}</p>` : '<p class="hint">Sources are also found section by section when you build the outline.</p>'}
       </div></section>
     <section class="panel"><div class="panel-h"><h2>Product images from Figma</h2><span class="hint">${figAssets.length} frames${fig.syncedAt ? ' · synced ' + new Date(fig.syncedAt).toLocaleString() : ''}</span></div>
       <div class="panel-b stack-s">
-        <p class="hint">Product visuals come only from the latest Figma library, through your Figma connector. Put each image in its own top-level frame on a library page, then link that page.</p>
+        <p class="hint">Product visuals come only from the latest Figma library. Put each image in its own top-level frame on a library page, then link that page.</p>
         <div class="field"><label for="fig-url">Figma library link</label><input class="input" id="fig-url" placeholder="https://www.figma.com/design/…?node-id=…" value="${esc(fig.url || '')}"></div>
-        <div class="row"><button class="btn sm primary" data-act="fig-sync" ${FIG.state !== 'on' ? 'disabled' : ''}>Sync from Figma</button>
+        <div class="row"><button class="btn sm primary" data-act="fig-sync" ${FIG.state !== 'on' || !plan.figma ? 'disabled' : ''}>Sync from Figma</button>
           ${FIG.state !== 'on' ? `<span class="hint">${FIG.state === 'connecting' ? 'Connecting…' : 'Available when this page is open on claude.ai with Figma connected.'}</span>` : ''}</div>
         ${figAssets.length ? `<div class="thumbs">${figAssets.slice(0, 12).map(a => `<div class="thumb">${a.thumb ? `<img src="${a.thumb}" alt="">` : '<img alt="">'}<div title="${esc(a.name)}">${a.stale ? '⚠ ' : ''}${esc(a.name)}</div></div>`).join('')}</div>` : ''}
         ${upAssets.length ? `<p class="hint">${plural(upAssets.length, 'other image')} from uploads or the example (non-product use only).</p>` : ''}
       </div></section>
-    <section class="panel"><div class="panel-h"><h2>Bid context</h2></div>
+    <section class="panel"><div class="panel-h"><h2>Bid context</h2>
+      <button class="btn sm primary" data-act="pull-context" ${!kn || AI.state !== 'on' || (!plan.glean && !plan.salesforce) ? 'disabled' : ''}>${ICON.spark} Pull from Salesforce and notes</button></div>
       <div class="panel-b stack-s">
-        <div class="field"><label for="ctx-client">Client</label><input class="input" id="ctx-client" data-ctx="client" value="${esc(p.context.client)}"></div>
-        <div class="field"><label for="ctx-bidding">What we are bidding on</label><textarea class="textarea" id="ctx-bidding" data-ctx="bidding">${esc(p.context.bidding)}</textarea></div>
-        <div class="field"><label for="ctx-win">Win themes</label><textarea class="textarea" id="ctx-win" data-ctx="winThemes">${esc(p.context.winThemes)}</textarea></div>
-        <div class="field"><label for="ctx-notes">Notes from client conversations</label><textarea class="textarea" id="ctx-notes" data-ctx="notes">${esc(p.context.notes)}</textarea></div>
+        <div class="field"><label for="ctx-client">Client</label><input class="input" id="ctx-client" data-ctx="client" value="${esc(ctx.client)}"></div>
+        <div class="field"><label for="ctx-bidding">What we are bidding on</label><textarea class="textarea" id="ctx-bidding" data-ctx="bidding">${esc(ctx.bidding)}</textarea></div>
+        <div class="field"><label for="ctx-win">Win themes</label><textarea class="textarea" id="ctx-win" data-ctx="winThemes">${esc(ctx.winThemes)}</textarea></div>
+        <div class="field"><label for="ctx-notes">Notes on the client</label><textarea class="textarea" id="ctx-notes" data-ctx="notes" rows="5">${esc(ctx.notes)}</textarea><span class="hint">Internal only. Drafts use these for context and never quote them.</span></div>
+        ${(ctx.stakeholders || []).length ? `<div><p class="label">Stakeholders</p>${ctx.stakeholders.map(s => `<div class="blockref"><b>${esc(s.name)}</b><span class="hint">${esc(s.title || '')}</span><span class="tag">${esc(s.role || '')}</span></div>`).join('')}</div>` : ''}
+        ${(ctx.sources || []).length ? `<div><p class="label">Pulled from</p>${ctx.sources.map(s => `<div class="blockref"><span class="pill ${s.kind === 'salesforce' ? 'acc' : ''}">${s.kind === 'salesforce' ? 'Salesforce' : esc(s.datasource || 'Internal')}</span>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>` : esc(s.title)}${s.updated ? `<span class="hint">${esc(String(s.updated).slice(0, 10))}</span>` : ''}</div>`).join('')}</div>` : ''}
       </div></section>
-    <section class="panel" style="grid-column:1/-1"><div class="panel-h"><h2>Voice and style</h2><span class="hint">Sent with every drafting request and enforced by the style check before export</span></div>
-      <div class="panel-b grid2">
-        <div class="stack-s">
-          <div class="field"><label for="st-tone">Tone</label><textarea class="textarea" id="st-tone" data-style="tone">${esc(st.tone)}</textarea></div>
-          <div class="field"><label for="st-rules">Writing rules</label><textarea class="textarea" id="st-rules" data-style="rules" rows="9">${esc(st.rules)}</textarea></div>
-        </div>
-        <div class="stack-s">
-          <div class="field"><label for="st-banned">Banned words and phrases</label><textarea class="textarea" id="st-banned" data-style="banned" rows="6">${esc(st.banned)}</textarea><span class="hint">Comma separated. These read as machine-written and are flagged anywhere they appear.</span></div>
-          <div class="field"><label for="st-voice">Sample of our own writing (optional)</label><textarea class="textarea" id="st-voice" data-style="voiceSample" rows="5" placeholder="Paste a few paragraphs from a past winning proposal. Drafts will match its rhythm and word choice.">${esc(st.voiceSample)}</textarea></div>
-          <button class="btn sm ghost" data-act="style-reset" style="align-self:flex-start">Reset to defaults</button>
-        </div>
-      </div></section>
+    <section class="panel" style="grid-column:1/-1"><div class="panel-h"><h2>House style</h2><button class="btn sm" data-act="go" data-step="styleguide">Open style guide</button></div>
+      <div class="panel-b"><p class="hint">Every draft follows the team style guide: tone, writing rules, terminology, approved facts and banned phrases. The style check flags anything that reads as machine-written before export.</p></div></section>
   </div>`;
+}
+
+/* Team workspace pages */
+function wsBanner() {
+  const shared = WS.mode === 'shared';
+  return `<div class="banner ${shared ? '' : 'warn'}"><span class="grow">${shared
+    ? (WS.canEdit ? '<b>Team settings.</b> Changes here apply to every project and everyone this page is shared with.' : '<b>Team settings, read only.</b> Editors of this page maintain them.')
+    : '<b>Saved in this browser only.</b> Open this page on claude.ai to share these settings with your team.'}</span></div>`;
+}
+function viewStyleGuide() {
+  const g = sg(), ro = wsEditable() ? '' : 'readonly';
+  const field = (k, label, rows, hint) => `<div class="field"><label for="sg-${k}">${label}</label><textarea class="textarea" id="sg-${k}" data-sg="${k}" rows="${rows}" ${ro}>${esc(g[k])}</textarea>${hint ? `<span class="hint">${hint}</span>` : ''}</div>`;
+  return `${wsBanner()}
+  <div class="head"><div><h1>Style guide</h1><p>Sent with every drafting request and checked before export. Import an existing guide or edit the fields directly.</p></div>
+    <div class="actions"><button class="btn" data-act="sg-import-file" ${!wsEditable() || AI.state !== 'on' ? 'disabled' : ''}>Import from a file</button><button class="btn" data-act="sg-import-url" ${!wsEditable() || AI.state !== 'on' || KN.state !== 'on' ? 'disabled' : ''}>Import from a link</button><button class="btn ghost" data-act="style-reset" ${!wsEditable() ? 'disabled' : ''}>Reset to defaults</button></div></div>
+  <div class="grid2">
+    <section class="panel"><div class="panel-h"><h2>Voice</h2></div><div class="panel-b stack-s">
+      ${field('tone', 'Tone', 3)}
+      ${field('rules', 'Writing rules', 10, 'One rule per line.')}
+      ${field('voiceSample', 'Sample of our own writing', 6, 'A few paragraphs from a winning response. Drafts match its rhythm and word choice.')}
+    </div></section>
+    <section class="panel"><div class="panel-h"><h2>Words and facts</h2></div><div class="panel-b stack-s">
+      ${field('terminology', 'Terminology', 5, 'One per line: preferred term | terms to avoid, comma separated. The checker flags the avoided terms.')}
+      ${field('facts', 'Approved facts and figures', 5, 'Customer counts, certifications, years in business. Drafts use these exact values.')}
+      ${field('formatting', 'Formatting conventions', 4, 'Headings, numbers, dates, punctuation.')}
+      ${field('banned', 'Banned words and phrases', 6, 'Comma separated. These read as machine-written and block export.')}
+    </div></section>
+  </div>`;
+}
+function viewSources() {
+  const src = WS.data.sources, ro = !wsEditable();
+  return `${wsBanner()}
+  <div class="head"><div><h1>Knowledge sources</h1><p>Where the engine looks for content, and how far to trust each source. Pinned documents are read in full and searched first. Company search fills in the rest.</p></div>
+    <div class="actions"><button class="btn primary" data-act="sync-pinned" ${KN.state !== 'on' || !src.pinned.length || ro ? 'disabled' : ''}>Sync pinned sources</button></div></div>
+  <div class="grid-main">
+    <section class="panel"><div class="panel-h"><h2>Pinned documents</h2><button class="btn sm" data-act="pin-add" ${ro ? 'disabled' : ''}>${ICON.plus} Add</button></div>
+      <div class="panel-b">${src.pinned.map((x, i) => `<div class="blockref" style="flex-wrap:wrap">
+        <input class="input" data-pin-url="${i}" value="${esc(x.url)}" placeholder="Link to a Drive doc, Confluence page or folder" style="flex:1;min-width:220px" ${ro ? 'readonly' : ''}>
+        ${tierSelect('data-pin-tier', i, x.tier)}
+        <button class="icon-btn" data-act="pin-rm" data-i="${i}" aria-label="Remove" ${ro ? 'disabled' : ''}>${ICON.x}</button>
+        <div class="hint" style="flex-basis:100%">${x.title ? esc(x.title) + ' · ' : ''}${x.syncedAt ? 'synced ' + new Date(x.syncedAt).toLocaleDateString() : 'not synced yet'}${x.updated ? ' · source updated ' + esc(String(x.updated).slice(0, 10)) : ''}</div></div>`).join('') || '<p class="hint">Pin your RFP library, approved boilerplate, product roadmap and positioning docs here.</p>'}
+        <p class="hint" style="margin-top:8px">${plural((WS.pinnedBlocks || []).length, "passage")} cached from pinned documents.</p></div></section>
+    <div class="stack">
+      <section class="panel"><div class="panel-h"><h2>Company search</h2></div><div class="panel-b stack-s">
+        <label class="row"><input type="checkbox" id="ws-glean" ${src.glean.enabled ? 'checked' : ''} ${ro ? 'disabled' : ''}> Search internal tools through Glean</label>
+        <div class="field"><label for="ws-recency">Prefer sources updated in the last</label><div class="row"><input class="input" id="ws-recency" value="${src.glean.recencyMonths}" style="width:70px" inputmode="numeric" ${ro ? 'readonly' : ''}> months</div></div>
+        <div class="field"><label for="ws-hints">Where things live</label><textarea class="textarea" id="ws-hints" rows="4" ${ro ? 'readonly' : ''} placeholder="e.g. Approved answers are in the Proposal Library Drive folder. Roadmaps live in the Product Confluence space.">${esc(src.glean.hints)}</textarea></div>
+      </div></section>
+      <section class="panel"><div class="panel-h"><h2>Trust tiers</h2></div><div class="panel-b stack-s">
+        ${Object.values(TIERS).map(t => `<div><b>${t.label}</b><div class="hint">${esc(t.use)}</div></div>`).join('')}
+      </div></section>
+    </div>
+  </div>`;
+}
+function viewTemplates() {
+  const ro = wsEditable() ? '' : 'readonly';
+  return `${wsBanner()}
+  <div class="head"><div><h1>Templates</h1><p>The structure used when a client does not mandate one. One section per line; indent with two spaces for a sub-section.</p></div></div>
+  <div class="grid2">${RESPONSE_TYPES.map(t => `<section class="panel"><div class="panel-h"><h2>${t.label}</h2></div><div class="panel-b"><textarea class="textarea mono" data-tpl="${t.id}" rows="10" ${ro}>${esc(WS.data.templates[t.id] || '')}</textarea></div></section>`).join('')}</div>`;
 }
 
 /* Library browser (reached from Inputs) */
 function viewLibrary() {
   const p = S.project;
   const q = (S.ui.libQuery || '').toLowerCase();
-  const items = p.library.filter(b => !q || (b.title + ' ' + b.text + ' ' + b.tags.join(' ')).toLowerCase().includes(q));
+  const items = allBlocks().filter(b => !q || (b.title + ' ' + b.text + ' ' + b.tags.join(' ')).toLowerCase().includes(q));
   return `<div class="head"><div><h1>Content library</h1><p>${p.library.length} text blocks and ${p.assets.length} images. Tags drive retrieval: the engine filters by topic first, then matches on the requirement text.</p></div>
     <div class="actions"><input class="input" id="lib-q" placeholder="Search blocks" value="${esc(S.ui.libQuery || '')}" style="width:220px"><button class="btn" data-act="go" data-step="inputs">Back to inputs</button></div></div>
   <div class="grid2">
     <section class="panel"><div class="panel-h"><h2>Text blocks</h2><span class="hint">${items.length} shown</span></div><div class="panel-b">
       ${items.slice(0, 200).map(b => `<div class="lib-item"><div class="row"><span class="rid" data-act="src" data-t="lib" data-id="${b.id}">${b.id}</span><h4>${esc(b.title)}</h4></div>
         <p>${esc(b.summary || b.text.slice(0, 240))}</p>
-        <div class="row" style="margin-top:4px">${b.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}<span class="hint">${esc(b.fileName)} · ${esc(b.loc)}</span></div></div>`).join('') || '<p class="hint">No blocks match.</p>'}
+        <div class="row" style="margin-top:4px"><span class="pill ${b.tier === 'internal' ? 'warn' : b.tier === 'product' ? 'acc' : ''}">${(TIERS[b.tier || 'approved'] || TIERS.reference).short}</span>${b.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}<span class="hint">${esc(b.fileName)} · ${esc(b.loc)}${b.updated ? ' · ' + esc(String(b.updated).slice(0, 10)) : ''}</span></div></div>`).join('') || '<p class="hint">No blocks match.</p>'}
     </div></section>
     <section class="panel"><div class="panel-h"><h2>Images</h2></div><div class="panel-b">
       <div class="thumbs">${p.assets.map(a => `<div class="thumb"><img src="${a.thumb || a.dataUrl || ''}" alt=""><div title="${esc(a.caption || a.name)}"><span class="pill ${a.source === 'figma' ? 'acc' : ''}">${a.source === 'figma' ? 'Figma' : a.source === 'example' ? 'Example' : 'Upload'}</span> ${esc(a.caption || a.name)}</div></div>`).join('') || '<p class="hint">No images yet.</p>'}</div>

@@ -214,6 +214,9 @@ function applyPending() {
 /* Outline */
 async function outlineSection(sec) {
   const p = S.project;
+  if (KN.state === 'on' && p.sourcePlan && p.sourcePlan.glean && !sec.research) {
+    try { await researchSection(sec); } catch (e) { toast(e.message, { err: true }); await sleep(1200); }
+  }
   const q = sectionQuery(sec) + ' ' + p.topics.join(' ');
   const cands = retrieve(q, { k: 10, tags: p.topics });
   const imgs = retrieveImages(q, 8);
@@ -225,6 +228,7 @@ async function outlineSection(sec) {
   sec.gaps = (res.gaps || []).map(g => ({ text: g.text || String(g), owner: g.owner || '' }));
   sec.visuals = (res.visuals || []).map(v => ({ assetId: v.assetId && assetById(v.assetId) ? v.assetId : null, need: v.need || '', reason: v.reason || '' }));
   sec.tables = (res.tables || []).map(t => ({ kind: t.kind || 'custom', title: t.title || 'Table', reason: t.reason || '' }));
+  sec.conflicts = (res.conflicts || []).filter(c => c && c.text).map(c => ({ text: c.text, sources: (c.sources || []).filter(blockById), resolution: c.resolution || '' }));
   if (sec.status === 'empty') sec.status = 'outlined';
   save();
 }
@@ -248,14 +252,14 @@ async function draftSection(sec) {
   const chosen = [], verbatim = [];
   for (const r of sec.blockRefs) {
     const b = blockById(r.id); if (!b) continue;
-    if (r.mode === 'verbatim') verbatim.push(b); else chosen.push(Object.assign({}, b, { _mode: r.mode }));
+    if (r.mode === 'verbatim' && (b.tier || 'approved') === 'approved') verbatim.push(b); else chosen.push(Object.assign({}, b, { _mode: r.mode }));
   }
   let others = '';
   if (sec.summarizes) {
     others = p.sections.filter(s => s !== sec && s.blocks.length)
       .map(s => `${s.num} ${s.title}: ${s.blocks.filter(b => b.type === 'text').map(b => htmlToText(b.html)).join(' ').slice(0, 450)}`).join('\n');
   }
-  const prompt = promptDraft(p, sec, chosen, verbatim, others) + '\n\n' + styleRulesText(p);
+  const prompt = promptDraft(p, sec, chosen, verbatim, others) + '\n\n' + styleRulesText();
   const res = await askJSON(prompt, { label: `Drafting ${sec.num} ${sec.title}`, tier: 'complex' });
   const items = (res && res.items) || [];
   const fresh = [];
@@ -323,7 +327,7 @@ async function answerMatrix() {
   if (!rows.length) throw new Error('No matrix-style requirements found. Set a requirement\'s response type to compliance-matrix to include it.');
   for (let i = 0; i < rows.length; i += 12) {
     const batch = rows.slice(i, i + 12).map(req => ({ req, cands: retrieve(req.text, { k: 5, tags: p.topics }) }));
-    const res = await askJSON(promptMatrix(p, batch) + '\n\n' + styleRulesText(p), { label: `Answering matrix rows ${i + 1}–${Math.min(i + 12, rows.length)} of ${rows.length}` });
+    const res = await askJSON(promptMatrix(p, batch) + '\n\n' + styleRulesText(), { label: `Answering matrix rows ${i + 1}–${Math.min(i + 12, rows.length)} of ${rows.length}` });
     for (const r of (res && res.rows) || []) {
       const existing = p.matrix.find(m => m.reqId === r.reqId);
       const row = { reqId: r.reqId, status: r.status || 'Needs input', comment: autoFixText(r.comment || ''), sources: (r.sources || []).filter(blockById), confidence: r.confidence || 'low' };

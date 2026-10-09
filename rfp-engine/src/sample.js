@@ -39,7 +39,6 @@ function exampleProject() {
     winThemes: 'Fewer high-bill calls in the first year. Live in 9 months, not 18. Proven at two other municipal utilities.',
     notes: 'Pre-bid call: they care most about high-bill calls in summer, and their IT team is small. Incumbent portal contract ends June 2027.',
   };
-  p.style = JSON.parse(JSON.stringify(DEFAULT_STYLE));
   const f1 = { id: 'f-ex1', name: 'HCU-RFP-2026-014 Instructions.pdf', ext: 'pdf', role: 'rfp', processed: true, docType: 'instructions', reqCount: 5, pages: [
     { n: 3, text: 'Section 4. Proposal Format\n\n4.1 Proposals shall not exceed 30 pages, excluding appendices and required forms.\n\n4.2 Proposals shall use a font no smaller than 11 point.\n\n4.3 Proposals shall be organized in the following order: (1) Executive Summary, (2) Understanding of Requirements, (3) Technical Approach, (4) Implementation Plan, (5) Experience and References, (6) Pricing, submitted as a separate file.' },
     { n: 4, text: 'Section 5. Evaluation\n\nTechnical Approach 35 points. Implementation Plan 20 points. Experience and References 20 points. Pricing 25 points.\n\nSection 6. Submission\n\n6.1 Proposals are due October 30, 2026 at 2:00 PM Pacific through the HCU supplier portal.' },
@@ -75,7 +74,7 @@ function exampleProject() {
   p.formatBasis = 'rfp-mandated';
   p.basisNote = 'Section 4.3 of the instructions sets the order, so the response follows it exactly.';
 
-  const B = (id, title, text, f, loc, tags, summary) => ({ id, title, text, fileId: f.id, fileName: f.name, loc, tags, summary });
+  const B = (id, title, text, f, loc, tags, summary) => ({ id, title, text, fileId: f.id, fileName: f.name, loc, tags, summary, tier: 'approved', origin: 'upload' });
   p.library = [
     B('B-001', 'Company overview', 'Northbeam Energy Software builds customer engagement tools for electric and gas utilities. We have worked only with utilities since 2014 and today support 31 utilities and 6.2 million meters across North America. Our team of 140 includes former utility customer service and IT leaders.', lib1, 'About Northbeam', ['company', 'overview'], 'Who Northbeam is, size and focus.'),
     B('B-002', 'Bill projection', 'Every customer with an AMI meter gets a projected bill for the current cycle, refreshed each night from the previous day\'s interval data and the customer\'s rate. Projections at our live utilities land within 6% of the final bill by day 10 of the cycle. Customers see the projection in the portal widget and in alerts.', lib1, 'Products › Bill projection', ['bill alerts', 'customer portal', 'analytics'], 'Daily projected bill from AMI data, accuracy figures.'),

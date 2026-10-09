@@ -6,7 +6,7 @@ function renderMain() {
   const main = $('#main');
   if (!main || !S.project) return;
   const step = S.ui.step;
-  const views = { inputs: viewInputs, requirements: viewRequirements, format: viewFormat, outline: viewOutline, draft: viewDraft, canvas: viewCanvas, export: viewExport, library: viewLibrary };
+  const views = { inputs: viewInputs, requirements: viewRequirements, format: viewFormat, outline: viewOutline, draft: viewDraft, canvas: viewCanvas, export: viewExport, library: viewLibrary, styleguide: viewStyleGuide, sources: viewSources, templates: viewTemplates };
   // Keep the canvas scroll position across re-renders.
   const mid = $('#cv-mid'), scroll = mid ? mid.scrollTop : 0, mainScroll = main.scrollTop;
   const active = document.activeElement && document.activeElement.id;
@@ -60,7 +60,19 @@ const ACTIONS = {
     if (v !== undefined) S.project.figma = Object.assign(S.project.figma || {}, { url: v.trim() });
     await syncFigmaLibrary();
   }),
-  'style-reset': () => { S.project.style = JSON.parse(JSON.stringify(DEFAULT_STYLE)); save(); renderMain(); },
+  'style-reset': () => modalConfirm('Reset the style guide?', 'Every field goes back to the defaults for everyone using these team settings.', 'confirm-style-reset'),
+  'confirm-style-reset': () => { WS.data.styleGuide = JSON.parse(JSON.stringify(DEFAULT_STYLE_GUIDE)); saveWorkspace(); S.ui.modal = null; render(); },
+  'sg-import-file': () => pickFiles('styleguide', '.pdf,.docx,.txt,.md'),
+  'sg-import-url': () => { S.ui.modal = { title: 'Import the style guide from a link', body: '<div class="field"><label for="sg-url">Link to the style guide (Drive, Confluence or any page Glean can read)</label><input class="input" id="sg-url" placeholder="https://"></div>', foot: '<button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" data-act="sg-import-url-go">Import</button>' }; renderOverlay(); },
+  'sg-import-url-go': () => { const u = ($('#sg-url') || {}).value || ''; S.ui.modal = null; renderOverlay(); run(async () => { const docs = await gleanRead([u.trim()]); if (!docs.length || !docs[0].text) throw new Error('Nothing could be read from that link.'); await importStyleGuide(docs[0].text); toast('Style guide imported. Review the fields.'); }); },
+  'find-sources': () => run(findSourcesFromPlan),
+  'research-one': el => run(() => researchSection(secById(el.dataset.id))),
+  'pull-context': () => startPullContext(),
+  'pull-context-go': () => { const r = $$('input[name="opp"]').find(x => x.checked); runPullContext(r ? r.value : ''); },
+  'pull-context-apply': () => applyPulledContext(),
+  'sync-pinned': () => run(async () => { const n = await syncPinned(); toast(`Cached ${plural(n, 'passage')} from pinned sources.`); }),
+  'pin-add': () => { WS.data.sources.pinned.push({ url: '', tier: 'approved', title: '' }); saveWorkspace(); renderMain(); },
+  'pin-rm': el => { WS.data.sources.pinned.splice(+el.dataset.i, 1); saveWorkspace(); renderMain(); },
   'recommend': () => run(async () => {
     if (S.project.sections.some(s => s.blocks.length)) {
       modalConfirm('Re-recommend the format?', 'Generated sections and their drafts are replaced. Sections you added or edited are kept.', 'confirm-recommend');
@@ -161,7 +173,15 @@ document.addEventListener('keydown', e => {
   const drop = e.target.closest && e.target.closest('[data-drop]');
   if (drop && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pickFiles(drop.dataset.drop); }
 });
-$('#file-pick').addEventListener('change', e => { const files = Array.from(e.target.files || []); if (files.length) addFiles(files, pickRole); });
+$('#file-pick').addEventListener('change', e => {
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+  if (pickRole === 'styleguide') {
+    run(async () => { const parsed = await readAny(files[0]); if (!parsed.text) throw new Error('No text found in that file.'); await importStyleGuide(parsed.text); toast('Style guide imported. Review the fields.'); });
+    return;
+  }
+  addFiles(files, pickRole);
+});
 $('#project-pick').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) openProjectFile(f); });
 
 /* Form fields that write straight to the model. */
@@ -169,7 +189,12 @@ document.addEventListener('input', e => {
   const t = e.target, p = S.project, d = t.dataset || {};
   if (t.id === 'proj-name') { p.name = t.value; save(); return; }
   if (d.ctx) { p.context[d.ctx] = t.value; save(); return; }
-  if (d.style) { styleOf()[d.style] = t.value; save(); return; }
+  if (d.sg) { if (wsEditable()) { sg()[d.sg] = t.value; saveWorkspace(); } return; }
+  if (d.tpl) { WS.data.templates[d.tpl] = t.value; saveWorkspace(); return; }
+  if (d.pinUrl !== undefined) { WS.data.sources.pinned[+d.pinUrl].url = t.value.trim(); saveWorkspace(); return; }
+  if (t.id === 'ws-hints') { WS.data.sources.glean.hints = t.value; saveWorkspace(); return; }
+  if (t.id === 'ws-recency') { WS.data.sources.glean.recencyMonths = parseInt(t.value, 10) || 18; saveWorkspace(); return; }
+  if (t.id === 'plan-hints') { p.sourcePlan.hints = t.value; save(); return; }
   if (d.obj !== undefined) { p.objectives[+d.obj] = t.value; save(); return; }
   if (d.reqText) { const r = reqById(d.reqText); if (r) { r.text = t.textContent; save(); } return; }
   if (d.mxComment) { const m = p.matrix.find(x => x.reqId === d.mxComment); if (m) { m.comment = t.textContent; m.locked = true; save(); } return; }
@@ -190,7 +215,12 @@ document.addEventListener('change', e => {
   if (d.mxStatus) { const m = p.matrix.find(x => x.reqId === d.mxStatus); m.status = t.value; m.locked = true; save(); return; }
   if (d.mode) { const [sid, i] = d.mode.split(':'); secById(sid).blockRefs[+i].mode = t.value; save(); return; }
   if (d.op) { const o = p.pending.ops.find(x => x.key === d.op); o.accept = t.checked; save(); renderMain(); return; }
-  if (t.id === 'req-filter') { S.ui.reqFilter = t.value; renderMain(); }
+  if (t.id === 'req-filter') { S.ui.reqFilter = t.value; renderMain(); return; }
+  if (t.id === 'resp-type') { p.type = t.value; logChange('user', `Set the response type to ${t.options[t.selectedIndex].text}.`); save(); render(); return; }
+  if (d.plan) { p.sourcePlan[d.plan] = t.checked; save(); renderMain(); return; }
+  if (d.fileTier) { const f = fileById(d.fileTier); f.tier = t.value; for (const b of p.library) if (b.fileId === f.id) b.tier = t.value; save(); return; }
+  if (d.pinTier !== undefined) { WS.data.sources.pinned[+d.pinTier].tier = t.value; for (const b of WS.pinnedBlocks) if (b.url === WS.data.sources.pinned[+d.pinTier].url) b.tier = t.value; saveWorkspace(); return; }
+  if (t.id === 'ws-glean') { WS.data.sources.glean.enabled = t.checked; saveWorkspace(); return; }
 });
 
 /* Startup: reopen the project saved in this browser, or show the example. */
@@ -198,8 +228,10 @@ document.addEventListener('change', e => {
   let saved = null;
   try { const raw = await idbGet('project'); if (raw) saved = JSON.parse(raw); } catch { saved = null; }
   S.project = saved && saved.sections ? saved : exampleProject();
-  styleOf();
+  if (!S.project.sourcePlan) S.project.sourcePlan = { hints: '', glean: true, salesforce: true, figma: true };
+  if (!S.project.type) S.project.type = 'rfp';
   numberSections();
+  loadWorkspace();
   if (S.project.example) S.ui.step = 'canvas';
   render();
   window.addEventListener('resize', () => { if (S.ui.step === 'canvas') measurePages(); });

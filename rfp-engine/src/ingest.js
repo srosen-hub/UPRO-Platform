@@ -114,7 +114,7 @@ function splitLibrary(f, parsed) {
   const add = (title, text, loc) => {
     text = text.trim();
     if (text.length < 40) return;
-    blocks.push({ id: nextBlockId(), title: title.slice(0, 120) || f.name, text, fileId: f.id, fileName: f.name, loc, tags: [], summary: '' });
+    blocks.push({ id: nextBlockId(), title: title.slice(0, 120) || f.name, text, fileId: f.id, fileName: f.name, loc, tags: [], summary: '', tier: f.tier || 'approved', origin: 'upload' });
   };
   if (parsed.kind === 'sheet') {
     for (const sh of parsed.sheets) {
@@ -164,8 +164,10 @@ function splitLibrary(f, parsed) {
 const STOP = new Set('the a an and or of to in for on with by be is are as at from that this it its will shall must should may can vendor proposer proposal respondent provide describe include including any all each their your our'.split(' '));
 function tokens(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !STOP.has(w)); }
 let idxCache = null;
+function allBlocks() { return S.project.library.concat(WS.pinnedBlocks || []); }
+function idxKey() { const lib = allBlocks(); return lib.length + ':' + lib.map(b => b.tags.length + (b.tier || '')[0]).join(''); }
 function buildIndex() {
-  const lib = S.project.library;
+  const lib = allBlocks();
   const df = new Map(), docs = [];
   for (const b of lib) {
     const tf = new Map();
@@ -175,13 +177,14 @@ function buildIndex() {
     tf.forEach((_, w) => df.set(w, (df.get(w) || 0) + 1));
   }
   const avg = docs.reduce((a, d) => a + d.len, 0) / (docs.length || 1);
-  idxCache = { df, docs, avg, n: docs.length, key: lib.length + ':' + lib.map(b => b.tags.length).join('') };
+  idxCache = { df, docs, avg, n: docs.length, key: idxKey() };
   return idxCache;
 }
 function retrieve(query, { k = 8, tags = [] } = {}) {
-  const lib = S.project.library;
+  const lib = allBlocks();
   if (!lib.length) return [];
-  const key = lib.length + ':' + lib.map(b => b.tags.length).join('');
+  const key = idxKey();
+  const fresh = Date.now() - (WS.data.sources.glean.recencyMonths || 18) * 30 * 864e5;
   const ix = idxCache && idxCache.key === key ? idxCache : buildIndex();
   const q = [...new Set(tokens(query))];
   const tagSet = new Set(tags.map(t => t.toLowerCase()));
@@ -193,7 +196,11 @@ function retrieve(query, { k = 8, tags = [] } = {}) {
       s += idf * (f * 2.2) / (f + 1.2 * (.25 + .75 * d.len / ix.avg));
     }
     const tagHits = (d.b.tags || []).filter(t => tagSet.has(t.toLowerCase()) || q.includes(t.toLowerCase())).length;
-    return { b: d.b, s: s + tagHits * 1.5, tagHits };
+    if (s <= 0 && !tagHits) return { b: d.b, s: 0, tagHits };
+    // Trust and freshness: approved and product sources rank higher, stale ones lower, discussions lowest.
+    const tier = TIERS[d.b.tier || 'approved'] || TIERS.reference;
+    const age = d.b.updated ? (Date.parse(d.b.updated) >= fresh ? 0.6 : -0.6) : 0;
+    return { b: d.b, s: s + tagHits * 1.5 + tier.rank * 0.35 + age, tagHits };
   });
   // Tag filter first: when enough blocks share a tag with the query, rank only those.
   const tagged = scored.filter(x => x.tagHits > 0);

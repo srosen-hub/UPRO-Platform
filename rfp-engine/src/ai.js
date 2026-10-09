@@ -15,16 +15,19 @@ const AI_ERRORS = {
   prompt_too_large: 'That input is too large for one request. Try a smaller file or fewer sections.',
   invalid_json: 'Claude returned a response the engine could not read. Try again.',
   cancelled: 'Stopped.',
+  tools_unavailable: 'Guided search is not available here. Try again; the engine will search requirement by requirement.',
 };
 
-async function askJSON(prompt, { label = 'Working', tier = 'default' } = {}) {
+async function askJSON(prompt, { label = 'Working', tier = 'default', tools } = {}) {
   if (!AI.sample) throw new Error('AI steps need the claude.ai viewer. Open this page on claude.ai to use them.');
   AI.ctrl = new AbortController();
   AI.busy = label;
   renderBar();
   toast(label + '…', { sticky: true, cancel: true });
   try {
-    return await AI.sample.json(prompt, { modelTier: tier, cache: false, signal: AI.ctrl.signal });
+    const opts = { modelTier: tier, cache: false, signal: AI.ctrl.signal };
+    if (tools) opts.tools = tools;
+    return await AI.sample.json(prompt, opts);
   } catch (e) {
     throw new Error(AI_ERRORS[e && e.code] || (e && e.message) || 'Claude request failed.');
   } finally {
@@ -35,7 +38,14 @@ async function askJSON(prompt, { label = 'Working', tier = 'default' } = {}) {
 }
 function cancelAI() { if (AI.ctrl) AI.ctrl.abort(); }
 
-const RULES_NO_FAB = `Never invent facts, numbers, client names, certifications, dates or results. Every factual claim must come from the provided library blocks or the RFP text. When something needed is not in the provided material, write a marker like [NEEDS INPUT: what is missing] instead of guessing.`;
+const RULES_NO_FAB = `Never invent facts, numbers, client names, certifications, dates or results. Every factual claim must come from the provided library blocks or the RFP text. When something needed is not in the provided material, write a marker like [NEEDS INPUT: what is missing] instead of guessing.
+Source tiers decide how material may be used:
+${Object.entries(TIERS).map(([k, t]) => `- ${t.label} (${k}): ${t.use}`).join('\n')}
+When sources disagree, prefer the approved library and approved facts, then the most recently updated source, and list the disagreement under "conflicts" when the output format has that field.`;
+
+function typeLabel(p) { return (RESPONSE_TYPES.find(t => t.id === p.type) || RESPONSE_TYPES[0]).label; }
+function aType(p) { const l = typeLabel(p); return (/^[aeiou]|^RF|^SOW/i.test(l) && !/^U(?!n)/.test(l) ? 'an ' : 'a ') + l; }
+function tierTag(b) { const t = TIERS[b.tier || 'approved']; return `${t ? t.short : 'Approved'}${b.updated ? ', updated ' + String(b.updated).slice(0, 10) : ''}${b.origin === 'glean' || b.origin === 'pinned' ? ', internal source' : ''}`; }
 
 function ctxText(p) {
   const c = p.context;
@@ -43,14 +53,15 @@ function ctxText(p) {
     c.client && 'Client: ' + c.client,
     c.bidding && 'What we are bidding on: ' + c.bidding,
     c.winThemes && 'Win themes: ' + c.winThemes,
-    c.notes && 'Notes from client conversations: ' + c.notes,
+    'Response type: ' + typeLabel(p),
+    c.notes && 'Internal notes on the client (context only, never quote them or name people from them unless the RFP does): ' + c.notes,
     p.objectives.length && 'Client objectives: ' + p.objectives.map((o, i) => (i + 1) + '. ' + o).join(' '),
   ].filter(Boolean).join('\n');
 }
 
 /* 1. Requirement extraction, one chunk of one RFP file at a time. */
 function promptExtract(file, chunk, ci, cn) {
-  return `You are a proposal analyst reading a client's RFP package. Extract every requirement from this excerpt.
+  return `You are a proposal analyst reading a client's document package for ${aType(S.project)}. Extract every requirement from this excerpt.
 
 File: "${file.name}" (part ${ci + 1} of ${cn})
 Excerpt (page markers look like [[PAGE n]], sheet rows look like [[ROW sheet:n]]):
@@ -101,7 +112,8 @@ ${reqs}
 Decide the structure in this order of precedence:
 1. If the RFP mandates a structure, mirror it exactly, including its numbering (put the RFP number in "fixedNum").
 2. Else if it gives evaluation criteria, order the sections to match the criteria.
-3. Else use a sensible default: Executive Summary, Understanding of Needs, Proposed Solution, Approach and Implementation Plan, Project Team, Relevant Experience, Pricing, Appendices.
+3. Else use the team's template for ${aType(p)} (level 2 lines are indented):
+${templateSections(p.type || 'rfp').map(t => (t.level === 2 ? '   ' : '') + t.title).join('\n')}
 
 Map every requirement that needs a response to at least one section (instruction and submission items can stay unmapped). Use level 2 sections for sub-parts. Mark sections that summarize the rest (executive summary, conclusion, cover letter) with "summarizes": true.
 
@@ -179,8 +191,8 @@ What it must do: ${sec.guidance || 'n/a'}
 Requirements it must answer:
 ${reqs.map(r => `${r.id} (${r.mandatory ? 'mandatory' : 'optional'}): ${r.text}`).join('\n') || 'none mapped'}
 
-Candidate library blocks (already filtered by topic and matched on requirement text):
-${cands.map(b => `### ${b.id} | ${b.title} | tags: ${b.tags.join(', ')}\n${b.text.slice(0, 650)}`).join('\n\n') || 'none'}
+Candidate source blocks (already filtered by topic and matched on requirement text; tier and freshness in brackets):
+${cands.map(b => `### ${b.id} | ${b.title} | [${tierTag(b)}] | tags: ${b.tags.join(', ')}\n${b.text.slice(0, 650)}`).join('\n\n') || 'none'}
 
 Candidate images:
 ${imgs.map(a => `${a.id} | ${a.source === 'figma' ? 'PRODUCT (Figma library)' : a.source === 'example' ? 'example' : 'uploaded, non-product'} | ${a.caption || a.name} | tags: ${(a.tags || []).join(', ')}`).join('\n') || 'none'}
@@ -194,16 +206,17 @@ Return JSON:
  "blocks": [{"id":"B-...","reason":"one line on why it fits","mode":"verbatim" | "tailored" | "synthesized"}],
  "gaps": [{"text":"what is missing and why it matters","owner":"who likely has it, e.g. pricing lead, SME"}],
  "visuals": [{"assetId":"A-... or null","need":"what the visual shows","reason":"why it helps here"}],
- "tables": [{"kind":"compliance" | "timeline" | "team" | "custom","title":"...","reason":"..."}]
+ "tables": [{"kind":"compliance" | "timeline" | "team" | "custom","title":"...","reason":"..."}],
+ "conflicts": [{"text":"what disagrees, e.g. customer count 31 in B-001 vs 34 in B-014","sources":["B-..."],"resolution":"which value to use and why"}]
 }
-Rules: only choose blocks from the candidates. Use "verbatim" for approved boilerplate that fits as is, "tailored" when names or objectives need swapping in, "synthesized" when several blocks combine. List a gap only when no candidate covers the point. Suggest a visual only when it adds something; use assetId null when no image fits (that becomes a NEEDS VISUAL marker).`;
+Rules: only choose blocks from the candidates. Use "verbatim" only for approved-tier boilerplate that fits as is, never for other tiers, "tailored" when names or objectives need swapping in, "synthesized" when several blocks combine. List a gap only when no candidate covers the point. Suggest a visual only when it adds something; use assetId null when no image fits (that becomes a NEEDS VISUAL marker).`;
 }
 
 /* 6. Drafting, one section at a time. */
 function promptDraft(p, sec, chosen, verbatim, others) {
   const reqs = sec.reqIds.map(reqById).filter(Boolean);
   const prior = sec.blocks.filter(b => b.type === 'text' || b.type === 'callout').map(b => htmlToText(b.html)).join('\n\n').slice(0, 5000);
-  return `Write section ${sec.num} "${sec.title}" of an RFP response.
+  return `Write section ${sec.num} "${sec.title}" of ${aType(p)}.
 
 ${ctxText(p)}
 
@@ -213,8 +226,9 @@ Key points agreed in the outline:
 ${sec.keyPoints.map(k => '- ' + k).join('\n') || '- none'}
 Known gaps (do not fill these, mark them): ${sec.gaps.map(g => g.text).join('; ') || 'none'}
 
-Library blocks to tailor or synthesize from (cite their ids):
-${chosen.map(b => `### ${b.id} | ${b.title} | mode: ${b._mode}\n${b.text.slice(0, 2500)}`).join('\n\n') || 'none'}
+Source blocks to tailor or synthesize from (cite their ids; tier in brackets decides how each may be used):
+${chosen.map(b => `### ${b.id} | ${b.title} | mode: ${b._mode} | [${tierTag(b)}]\n${b.text.slice(0, 2500)}`).join('\n\n') || 'none'}
+${(sec.conflicts || []).length ? 'Resolved conflicts to respect: ' + sec.conflicts.map(c => c.text + ' -> ' + c.resolution).join('; ') : ''}
 
 Library blocks that will be inserted word for word (do not repeat their content; you may place them with {"type":"verbatim"}):
 ${verbatim.map(b => `${b.id} | ${b.title} | ${b.text.slice(0, 200)}`).join('\n') || 'none'}

@@ -1,61 +1,41 @@
 // Voice and style: house rules sent with every drafting prompt, and a checker that flags
 // wording that reads as machine-written before anything reaches a customer.
 
-const DEFAULT_STYLE = {
-  tone: 'Confident, plain and specific. Write like an experienced proposal manager who knows the client. Warm but not salesy.',
-  rules: [
-    'Use the client\'s name and their own terms from the RFP.',
-    'Lead with the answer, then the evidence. Short paragraphs of 2 to 4 sentences.',
-    'Vary sentence length. Mix short sentences with longer ones.',
-    'Prefer concrete facts, numbers and named examples from the library over adjectives.',
-    'Use active voice and "we" for our company, "you" or the client name for the client.',
-    'No em dashes or en dashes. Use commas, periods, colons or parentheses.',
-    'No rhetorical questions, no exclamation marks, no emoji.',
-    'Do not open with scene-setting such as "In today\'s rapidly evolving landscape".',
-    'Avoid stacked groups of three adjectives and "not only X but also Y" framing.',
-    'Do not end paragraphs with a summarizing moral or a restatement of the point.',
-    'Bullets only for lists of parallel items, never for the whole section.',
-  ].join('\n'),
-  banned: [
-    'delve', 'delving', 'tapestry', 'seamless', 'seamlessly', 'leverage', 'leveraging', 'robust', 'cutting-edge',
-    'state-of-the-art', 'game-changer', 'game-changing', 'revolutionize', 'unlock', 'unleash', 'empower', 'elevate',
-    'holistic', 'synergy', 'synergies', 'paradigm', 'landscape', 'ever-evolving', 'rapidly evolving', 'in today\'s',
-    'navigate the complexities', 'it is worth noting', 'it\'s worth noting', 'it is important to note', 'furthermore',
-    'moreover', 'in conclusion', 'in summary', 'at the end of the day', 'testament to', 'plays a crucial role',
-    'pivotal', 'myriad', 'plethora', 'embark', 'journey', 'realm', 'foster', 'meticulous', 'meticulously',
-    'best-in-class', 'world-class', 'unparalleled', 'look no further', 'rest assured', 'we are thrilled',
-    'as an ai', 'language model', 'i hope this helps', 'certainly!', 'absolutely!',
-  ].join(', '),
-  voiceSample: '',
-};
-
-function styleOf(p = S.project) {
-  if (!p.style) p.style = JSON.parse(JSON.stringify(DEFAULT_STYLE));
-  return p.style;
-}
-function bannedList(p = S.project) {
-  return styleOf(p).banned.split(/[,\n]/).map(s => s.trim().toLowerCase()).filter(Boolean);
+// The style guide itself lives in the team workspace (workspace.js).
+const DEFAULT_STYLE = DEFAULT_STYLE_GUIDE;
+function styleOf() { return sg(); }
+function bannedList() {
+  return sg().banned.split(/[,\n]/).map(s => s.trim().toLowerCase()).filter(Boolean);
 }
 
-function styleRulesText(p = S.project) {
-  const st = styleOf(p);
-  return `VOICE AND STYLE (mandatory, the text goes to a customer and must read as written by our proposal team):
+function styleRulesText() {
+  const st = sg();
+  const terms = terminologyPairs();
+  return `HOUSE STYLE GUIDE (mandatory, the text goes to a client and must read as written by our proposal team):
 Tone: ${st.tone}
-Rules:
+Writing rules:
 ${st.rules}
-Never use these words or phrases: ${bannedList(p).join(', ')}.
-Do not mention AI, Claude, models, drafts, prompts, the content library, block ids or this process anywhere in the prose.
+${st.formatting ? 'Formatting conventions:\n' + st.formatting : ''}
+${terms.length ? 'Terminology (use the first term, never the others):\n' + terms.map(t => `${t.use} (not: ${t.avoid.join(', ')})`).join('\n') : ''}
+${st.facts ? 'Approved company facts and figures (use these exact values; never contradict them):\n' + st.facts : ''}
+Never use these words or phrases: ${bannedList().join(', ')}.
+Do not mention AI, Claude, models, drafts, prompts, the content library, block ids, source systems or this process anywhere in the prose.
 ${st.voiceSample ? `Match the rhythm and word choice of this sample of our own past writing:\n"""\n${st.voiceSample.slice(0, 2500)}\n"""` : ''}`;
 }
 
 /* Checker: returns issues with a short label and the matched text. Runs on plain text. */
-function styleIssues(text, p = S.project) {
+function styleIssues(text) {
   const out = [];
   const lower = text.toLowerCase();
-  for (const w of bannedList(p)) {
+  for (const w of bannedList()) {
     const re = new RegExp('(^|[^a-z])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[^a-z])', 'gi');
     const n = (lower.match(re) || []).length;
     if (n) out.push({ kind: 'banned', label: `"${w}"`, n });
+  }
+  for (const t of terminologyPairs()) for (const a of t.avoid) {
+    const re = new RegExp('(^|[^a-z])' + a.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[^a-z])', 'gi');
+    const n = (lower.match(re) || []).length;
+    if (n) out.push({ kind: 'term', label: `"${a}" (use "${t.use}")`, n });
   }
   const dashes = (text.match(/[—–]|\s--\s/g) || []).length;
   if (dashes) out.push({ kind: 'dash', label: 'Em or en dash', n: dashes });
@@ -74,7 +54,7 @@ function styleIssues(text, p = S.project) {
     if (sd / mean < 0.28) out.push({ kind: 'rhythm', label: 'Sentence lengths too uniform', n: 1 });
   }
   if (/\b(as an ai|language model|claude|chatgpt|generated by|this draft)\b/i.test(text)) out.push({ kind: 'leak', label: 'Mentions AI or drafting', n: 1 });
-  if (/\b(B-\d{3}|R-\d{3}|A-\d{3})\b/.test(text)) out.push({ kind: 'leak', label: 'Internal id in text', n: 1 });
+  if (/\b(B-\d{3}|R-\d{3}|A-\d{3})\b/.test(text) || /\b(glean|salesforce|slack|confluence)\b/i.test(text)) out.push({ kind: 'leak', label: 'Internal id in text', n: 1 });
   return out;
 }
 function blockText(b) {
@@ -107,7 +87,7 @@ function autoFixText(html) {
 }
 
 function promptRestyle(p, sec, items) {
-  return `Rewrite these passages from section "${sec.title}" of an RFP response so they read as written by an experienced human proposal writer. Keep every fact, number, name and [NEEDS INPUT: ...] marker exactly. Do not add new claims. Keep the same HTML tags (<p>, <ul>, <li>, <b>, <i>).
+  return `Rewrite these passages from section "${sec.title}" of an RFP response so they read as written by an experienced human proposal writer. Keep every fact, number, name and every [NEEDS INPUT: ...] and [CONFIRM: ...] marker exactly. Apply the terminology list. Do not add new claims. Keep the same HTML tags (<p>, <ul>, <li>, <b>, <i>).
 
 ${styleRulesText(p)}
 
