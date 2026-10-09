@@ -25,6 +25,21 @@ the `downloads` capability. Outside claude.ai the page still opens, with AI, Fig
 7. **Export**: pre-export checks, then a clean customer .docx, an internal source map (.csv), matrix answers (.xlsx)
    and a project file (.json).
 
+## Google Drive first
+
+Every input and output prefers Google Drive (through the viewer's Google Drive connector); uploads and downloads
+are the fallback.
+
+- **In**: client documents (pick files or the whole RFP folder), library files and folders, non-product images, the
+  style guide, pinned team sources and project files, through a Drive picker with recent files, search, folder
+  browsing and pasted links.
+- **Current**: "Check Drive for updates" re-reads changed files. Library passages keep their ids when their heading
+  is unchanged; a changed client document is read again and goes through the format change review.
+- **Out**: the response is saved as a Google Doc, the source map and matrix answers as Google Sheets, and the
+  project file as JSON, optionally into a chosen folder.
+- **Auto start**: adding client documents reads them, fills the client and scope from them, and pulls the bid
+  context from Salesforce and meeting notes for review.
+
 ## Knowledge sources
 
 - **Uploads**: library files, each with a trust tier (approved, product thinking, past response, reference, discussion).
@@ -62,6 +77,7 @@ src/body.html     page shell
 src/core.js       model, numbering, coverage, sanitizer, persistence (IndexedDB)
 src/workspace.js  team style guide, sources, templates (shared through db)
 src/knowledge.js  Glean search and reading, research, pinned sources, Salesforce bid context
+src/drive.js      Google Drive picker, reading, refresh and saving
 src/style.js      voice and style rules, checker, restyle pass
 src/ai.js         Claude access and every prompt
 src/figma.js      Figma library sync through the connector

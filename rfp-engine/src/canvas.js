@@ -73,7 +73,7 @@ function assetColumn() {
     const ups = p.assets.filter(a => a.source !== 'figma' && (!q || (a.name + a.caption).toLowerCase().includes(q)));
     list = `<div class="cv-col-h" style="position:static"><h3>Product (Figma)</h3>${FIG.state === 'on' && p.figma && p.figma.url ? '<button class="btn sm ghost" data-act="fig-sync">Sync</button>' : ''}</div>
       ${figs.map(assetRow).join('') || '<p class="hint" style="padding:8px 12px">Link a Figma library on the Inputs step.</p>'}
-      <div class="cv-col-h" style="position:static"><h3>Other images</h3><button class="btn sm ghost" data-act="upload-img">Upload</button></div>
+      <div class="cv-col-h" style="position:static"><h3>Other images</h3><div class="row"><button class="btn sm ghost" data-act="drive-pick" data-role="image" ${KN.state !== 'on' ? 'disabled' : ''}>Drive</button><button class="btn sm ghost" data-act="upload-img">Upload</button></div></div>
       ${ups.map(assetRow).join('') || '<p class="hint" style="padding:8px 12px">Photos, maps, org charts. Not for product visuals.</p>'}`;
   } else if (tab === 'text') {
     const items = (q ? p.library.filter(b => (b.title + b.text + b.tags.join(' ')).toLowerCase().includes(q)) : p.library).slice(0, 120);

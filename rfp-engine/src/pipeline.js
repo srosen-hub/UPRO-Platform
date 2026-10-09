@@ -37,6 +37,7 @@ async function addFiles(fileList, role) {
   save();
   render();
   if (role === 'library' && added.length && AI.sample) tagLibrary().catch(e => toast(e.message, { err: true }));
+  if (role === 'rfp' && added.some(n => !IMG_EXT.includes(extOf(n)))) autoStart();
 }
 
 async function tagLibrary() {
@@ -61,7 +62,33 @@ async function tagLibrary() {
   }
 }
 
-async function extractRequirements() {
+/* Uploading client documents starts the work: read them, then pull the bid context from Salesforce and notes. */
+let autoRunning = false;
+async function autoStart() {
+  const p = S.project;
+  if (p.autoStart === false || !AI.sample || autoRunning) return;
+  autoRunning = true;
+  const isChange = p.sections.length > 0;
+  try {
+    await extractRequirements();
+  } catch (e) { toast(e.message, { err: true }); autoRunning = false; return; }
+  finally { save(); render(); }
+  try {
+    // Addenda go through the format change review instead; context is pulled once per project.
+    const plan = p.sourcePlan || {};
+    if (!isChange && KN.state === 'on' && (plan.salesforce || plan.glean) && !(p.context.sources || []).length && p.context.client) {
+      await startPullContext({ auto: true });
+    }
+  } finally { autoRunning = false; }
+}
+
+// One extraction at a time: an upload that starts it and a click on the button share the same run.
+let extracting = null;
+function extractRequirements() {
+  if (!extracting) extracting = runExtraction().finally(() => { extracting = null; });
+  return extracting;
+}
+async function runExtraction() {
   const p = S.project;
   const files = p.files.filter(f => f.role === 'rfp' && !f.processed);
   if (!files.length) { toast('All RFP files are already processed.'); return; }
@@ -73,6 +100,11 @@ async function extractRequirements() {
       const res = await askJSON(promptExtract(f, chunks[ci], ci, chunks.length), { label: `Reading ${f.name}${chunks.length > 1 ? ` (part ${ci + 1} of ${chunks.length})` : ''}` });
       if (!res) continue;
       if (res.docType && !f.docType) f.docType = res.docType;
+      // The documents themselves name the client and the scope; fill the bid context from them when it is empty.
+      const auto = p.context.autoFilled || (p.context.autoFilled = {});
+      if (res.issuer && !p.context.client) { p.context.client = String(res.issuer).trim(); auto.client = true; }
+      if (res.scopeSummary && !p.context.bidding) { p.context.bidding = String(res.scopeSummary).trim(); auto.bidding = true; }
+      if (res.documentTitle && /^Untitled/.test(p.name)) p.name = String(res.documentTitle).trim().slice(0, 120);
       for (const r of res.requirements || []) {
         if (!r.text) continue;
         const req = {

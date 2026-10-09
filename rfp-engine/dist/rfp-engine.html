@@ -417,7 +417,7 @@ function newProject(name) {
   return {
     v: 1, id: uid('p'), name: name || 'Untitled RFP', example: false,
     type: 'rfp', context: { client: '', bidding: '', notes: '', winThemes: '', sources: [], stakeholders: [] },
-    sourcePlan: { hints: '', glean: true, salesforce: true, figma: true },
+    sourcePlan: { hints: '', glean: true, salesforce: true, figma: true }, autoStart: true,
     files: [], assets: [], library: [], requirements: [], objectives: [], topics: [],
     formatRules: {}, formatBasis: '', basisNote: '',
     sections: [], pending: null, changeLog: [], risks: [], matrix: [],
@@ -598,6 +598,7 @@ const ICON = {
   table: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M2 7h12M2 10h12M6 3v10"/></svg>',
   callout: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h10v7H7l-3 3v-3H3z"/></svg>',
   spark: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2v3M8 11v3M2 8h3M11 8h3M4 4l2 2M10 10l2 2M12 4l-2 2M6 10l-2 2"/></svg>',
+  drive: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5.5 2h5l4 7-2.5 4.5h-8L1.5 9z"/><path d="M5.5 2l4 7h5M1.5 9h8l-2.5 4.5"/></svg>',
   logo: '<svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.7"><path d="M4 2h6l3 3v9H4z"/><path d="M6.5 8.5l1.5 1.5 3-3"/></svg>',
 };
 
@@ -973,7 +974,10 @@ Return JSON with this shape:
  "formatRules": { only keys you actually find: "pageLimit", "fontFamily", "fontSize", "margins", "numbering", "volumes", "fileFormat", "otherRules" (array of strings) },
  "mandatedStructure": [ if the excerpt prescribes the proposal's section order, list it as {"num": "...", "title": "...", "pageLimit": number or null} ; else [] ],
  "evaluationCriteria": [{ "criterion": "...", "weight": "..." }],
- "keyDates": [{ "label": "...", "date": "..." }]
+ "keyDates": [{ "label": "...", "date": "..." }],
+ "issuer": the organization that issued this document (the client), or "",
+ "documentTitle": the solicitation title and number as written, e.g. "RFP 2026-014 Customer Engagement Platform", or "",
+ "scopeSummary": one sentence on what the client is buying, in plain words, or ""
 }
 Rules:
 - "format" is for layout rules (page limits, fonts, section order). "submission" is for how and when to submit. "instruction" is general guidance that needs no answer. "evaluation" is scoring criteria.
@@ -1281,9 +1285,20 @@ async function syncPinned() {
   KN.pinSeq = 0;
   for (let i = 0; i < pins.length; i += 4) {
     toast(`Reading pinned sources ${i + 1}–${Math.min(i + 4, pins.length)} of ${pins.length}…`, { sticky: true });
-    const docs = await gleanRead(pins.slice(i, i + 4).map(p => p.url));
+    const batch = pins.slice(i, i + 4);
+    // Drive pins are read straight from Drive (folders expand to their files); other links go through Glean.
+    const viaDrive = batch.filter(x => x.driveId || parseDriveLink(x.url));
+    const docs = [];
+    for (const pin of viaDrive) {
+      pin.driveId = pin.driveId || parseDriveLink(pin.url);
+      const got = await readPinnedFromDrive(pin).catch(e => { toast(e.message, { err: true }); return []; });
+      for (const d of got) d._pin = pin;
+      docs.push(...got);
+    }
+    const others = batch.filter(x => !viaDrive.includes(x));
+    if (others.length) docs.push(...await gleanRead(others.map(p => p.url)));
     for (const d of docs) {
-      const pin = pins.find(p => p.url === d.url) || pins[i];
+      const pin = d._pin || pins.find(p => p.url === d.url) || pins[i];
       if (pin && !pin.title) pin.title = d.title;
       if (pin) pin.syncedAt = Date.now(), pin.updated = d.updated;
       all.push(...docToBlocks(d, (pin && pin.tier) || guessTier(d), 'pinned'));
@@ -1450,6 +1465,266 @@ async function findSourcesFromPlan() {
   for (const d of docs) { const h = top.find(x => x.url === d.url) || {}; p.library.push(...docToBlocks(Object.assign({}, h, d), h.tier || guessTier(d), 'glean')); }
   logChange('engine', `Added ${plural(docs.length, 'internal document')} to the library from company search.`);
   save();
+}
+
+/* ---- drive.js ---- */
+// Google Drive is the preferred way in and out: pick client documents, library files, the style guide, pinned
+// sources and images from Drive, re-read them when they change, and save exports back to Drive.
+
+const GDRIVE = 'Google Drive';
+const FOLDER_MIME = 'application/vnd.google-apps.folder';
+const DRIVE_EXT = {
+  'application/vnd.google-apps.document': 'gdoc', 'application/vnd.google-apps.spreadsheet': 'gsheet', 'application/vnd.google-apps.presentation': 'gslides',
+  'application/pdf': 'pdf', 'application/msword': 'doc', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+  'text/plain': 'txt', 'text/markdown': 'md', 'text/csv': 'csv',
+};
+const isImageMime = m => /^image\//.test(m || '');
+const isFolder = f => f.mimeType === FOLDER_MIME;
+
+async function dcall(tool, input) {
+  if (!KN.mcp) throw new Error('Google Drive works when this page is open on claude.ai with the Google Drive connector.');
+  try { return await KN.mcp.callTool(GDRIVE, tool, input, { cache: false }); }
+  catch (e) { throw new Error(`Google Drive ${KN_ERRORS[e && e.code] || (e && e.message) || 'request failed.'}`); }
+}
+function driveFiles(res) { const j = kJson(res) || {}; return (j.files || []).map(normFile); }
+function normFile(f) {
+  f = f.file || f;
+  return { id: f.id, title: f.title || f.name || 'Untitled', mimeType: f.mimeType || '', modified: f.modifiedTime || '', owner: f.owner || '', url: f.viewUrl || f.webViewLink || '' };
+}
+
+/* Accepts Docs, Sheets, Slides, Drive file and folder links, or a bare id. */
+function parseDriveLink(s) {
+  s = String(s || '').trim();
+  const m = s.match(/\/(?:d|folders)\/([A-Za-z0-9_-]{15,})/) || s.match(/[?&]id=([A-Za-z0-9_-]{15,})/) || s.match(/^([A-Za-z0-9_-]{20,})$/);
+  return m ? m[1] : null;
+}
+const q1 = s => String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+async function driveRecent() { return driveFiles(await dcall('list_recent_files', { pageSize: 25, excludeContentSnippets: true })); }
+async function driveSearch(text) {
+  const t = q1(text);
+  return driveFiles(await dcall('search_files', { query: `title contains '${t}' or fullText contains '${t}'`, pageSize: 25, excludeContentSnippets: true }));
+}
+async function driveChildren(folderId) {
+  return driveFiles(await dcall('search_files', { query: `parentId = '${q1(folderId)}'`, pageSize: 50, excludeContentSnippets: true }));
+}
+async function driveMeta(id) { const j = kJson(await dcall('get_file_metadata', { fileId: id, excludeContentSnippets: true })); return j ? normFile(j) : null; }
+
+/* Drive returns Google Docs as Markdown with escaped punctuation; undo the escapes so the text reads normally. */
+function unescapeMd(t) { return String(t || '').replace(/\\([\\`*_{}\[\]()#+\-.!&|>~=])/g, '$1').replace(/ /g, ' '); }
+async function driveRead(id) {
+  const j = kJson(await dcall('read_file_content', { fileId: id })) || {};
+  return { text: unescapeMd(j.fileContent || j.content || ''), title: j.title || '', url: j.viewUrl || '' };
+}
+/* Raw bytes, for images. The connector answers with base64; the field name is not pinned down, so look for it. */
+async function driveBytes(id) {
+  const res = await dcall('download_file_content', { fileId: id });
+  const blockImg = (res.content || []).find(c => c.data && (c.type === 'image' || c.type === 'resource'));
+  if (blockImg) return { b64: blockImg.data, mime: blockImg.mimeType };
+  const j = kJson(res) || {};
+  const b64 = j.content || j.base64Content || j.data || j.fileContent || (j.file && j.file.content);
+  if (!b64) throw new Error('Google Drive returned no file content.');
+  return { b64, mime: j.mimeType || j.contentMimeType || '' };
+}
+
+/* Bring Drive files into the project. Folders bring their direct children. */
+async function addDriveFiles(items, role) {
+  const p = S.project;
+  const queue = [];
+  for (const it of items) {
+    if (isFolder(it)) { for (const c of await driveChildren(it.id)) if (!isFolder(c)) queue.push(c); }
+    else queue.push(it);
+  }
+  const added = [];
+  for (const d of queue.slice(0, 60)) {
+    try {
+      if (p.files.some(f => f.driveId === d.id) || p.assets.some(a => a.driveId === d.id)) continue;
+      toast(`Reading ${d.title} from Drive…`, { sticky: true });
+      if (isImageMime(d.mimeType)) {
+        const { b64, mime } = await driveBytes(d.id);
+        const url = `data:${mime || d.mimeType};base64,${b64}`;
+        p.assets.push({ id: 'A-' + String(p.assets.length + 1).padStart(3, '0'), source: 'upload', driveId: d.id, url: d.url, name: d.title, caption: d.title.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '), tags: [], dataUrl: url, thumb: url });
+        added.push(d.title);
+        continue;
+      }
+      const r = await driveRead(d.id);
+      if (!r.text.trim()) throw new Error(`${d.title}: no readable text.`);
+      const ext = DRIVE_EXT[d.mimeType] || (d.title.split('.').pop() || 'txt').toLowerCase();
+      const f = { id: uid('f'), name: d.title, ext, role, source: 'drive', driveId: d.id, url: r.url || d.url, modified: d.modified, size: r.text.length, text: r.text, pages: [{ n: 1, text: r.text }], addedAt: Date.now(), processed: false, docType: '', reqCount: 0 };
+      p.files.push(f);
+      if (role === 'library') {
+        const blocks = splitLibrary(f, { kind: 'text', text: r.text });
+        for (const b of blocks) b.url = f.url, b.updated = f.modified;
+        p.library.push(...blocks);
+        f.blockCount = blocks.length;
+      } else if (p.sections.length) f.isChange = true;
+      added.push(d.title);
+    } catch (e) { toast(e.message, { err: true }); await sleep(1200); }
+  }
+  toast(added.length ? `Added ${plural(added.length, 'file')} from Google Drive.` : 'Nothing new was added.');
+  if (added.length) logChange('user', `Added ${plural(added.length, 'file')} from Google Drive.`);
+  save(); render();
+  if (role === 'library' && added.length && AI.sample) tagLibrary().catch(e => toast(e.message, { err: true }));
+  if (role === 'rfp' && added.length) autoStart();
+  return added.length;
+}
+
+/* Keep Drive content current: re-read files that changed since they were added. */
+async function refreshDrive() {
+  const p = S.project;
+  const files = p.files.filter(f => f.source === 'drive');
+  if (!files.length) throw new Error('No Google Drive files in this project yet.');
+  let changed = 0, clientChanged = 0;
+  for (const f of files) {
+    toast(`Checking ${f.name}…`, { sticky: true });
+    const m = await driveMeta(f.driveId).catch(() => null);
+    if (!m) { f.missing = true; continue; }
+    f.missing = false;
+    if (!m.modified || m.modified <= (f.modified || '')) continue;
+    const r = await driveRead(f.driveId);
+    f.text = r.text; f.pages = [{ n: 1, text: r.text }]; f.modified = m.modified;
+    if (f.role === 'library') {
+      // Passages keep their ids when their heading is unchanged, so outlines and drafts still point at them.
+      const old = p.library.filter(b => b.fileId === f.id);
+      const fresh = splitLibrary(f, { kind: 'text', text: r.text });
+      for (const b of fresh) { const o = old.find(x => x.title === b.title && !x._reused); if (o) { b.id = o.id; b.tags = o.tags; o._reused = true; } b.url = f.url; b.updated = f.modified; }
+      p.library = p.library.filter(b => b.fileId !== f.id).concat(fresh);
+      f.blockCount = fresh.length;
+    } else {
+      // A changed client document is new client input: read it again and review the format changes.
+      p.requirements = p.requirements.filter(r2 => r2.fileId !== f.id || reqSections(r2.id).length);
+      f.processed = false; f.isChange = p.sections.length > 0; clientChanged++;
+    }
+    changed++;
+  }
+  toast('');
+  logChange('engine', changed ? `Re-read ${plural(changed, 'changed Drive file')}.` : 'Checked Google Drive: no changes.');
+  save(); render();
+  if (clientChanged && AI.sample) await extractRequirements();
+  return changed;
+}
+
+/* Saving to Drive: Word files become Google Docs, CSV and Excel become Google Sheets. */
+function blobToB64(blob) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = () => rej(r.error); r.readAsDataURL(blob); });
+}
+async function saveToDrive(title, data, mime, { convert = true } = {}) {
+  const p = S.project;
+  const input = { title, contentMimeType: mime };
+  if (typeof data === 'string') input.textContent = data;
+  else input.base64Content = await blobToB64(data instanceof Blob ? data : new Blob([data]));
+  if (!convert) input.disableConversionToGoogleType = true;
+  const folder = parseDriveLink(p.exportFolder || '');
+  if (folder) input.parentId = folder;
+  const j = kJson(await dcall('create_file', input)) || {};
+  const f = normFile(j);
+  const url = f.url || (f.id ? `https://drive.google.com/open?id=${f.id}` : '');
+  p.driveExports = [{ title, url, at: Date.now() }].concat(p.driveExports || []).slice(0, 20);
+  logChange('user', `Saved "${title}" to Google Drive.`);
+  save();
+  return url;
+}
+
+/* Drive picker: recent files, search, folders and pasted links, with multi-select. */
+const DRIVE_ROLES = {
+  rfp: { title: 'Add client documents from Google Drive', multi: true, folders: true },
+  library: { title: 'Add library files from Google Drive', multi: true, folders: true },
+  image: { title: 'Add images from Google Drive', multi: true, folders: true, images: true },
+  styleguide: { title: 'Choose the style guide in Google Drive', multi: false, folders: false },
+  project: { title: 'Open a project file from Google Drive', multi: false, folders: false },
+  pin: { title: 'Pin team sources from Google Drive', multi: true, folders: true },
+};
+async function openDrivePicker(role) {
+  S.ui.drive = { role, q: '', folder: null, stack: [], files: [], picked: new Map(), loading: true, error: '' };
+  renderDrivePicker();
+  await loadDrive(() => driveRecent());
+}
+async function loadDrive(fn) {
+  const d = S.ui.drive; if (!d) return;
+  d.loading = true; d.error = ''; renderDrivePicker();
+  try { d.files = await fn(); } catch (e) { d.files = []; d.error = e.message; }
+  d.loading = false; renderDrivePicker();
+}
+function renderDrivePicker() {
+  const d = S.ui.drive; if (!d) return;
+  const cfg = DRIVE_ROLES[d.role];
+  const rows = d.files.filter(f => cfg.images ? (isImageMime(f.mimeType) || isFolder(f)) : !isImageMime(f.mimeType) || d.role === 'library');
+  const crumbs = [{ id: '', title: d.q ? `Search: ${d.q}` : 'Recent' }].concat(d.stack);
+  S.ui.modal = {
+    title: cfg.title,
+    body: `<div class="row" style="margin-bottom:8px;flex-wrap:nowrap"><input class="input" id="drive-q" placeholder="Search Drive, or paste a Drive link" value="${esc(d.qDraft ?? d.q)}" style="flex:1"><button class="btn" data-act="drive-search">Search</button></div>
+      <div class="row hint" style="margin-bottom:6px">${crumbs.map((c, i) => i === crumbs.length - 1 ? `<b>${esc(c.title)}</b>` : `<button class="btn sm ghost" data-act="drive-crumb" data-i="${i}">${esc(c.title)}</button> ›`).join(' ')}</div>
+      ${d.loading ? '<p class="hint">Loading…</p>' : d.error ? `<p class="hint" style="color:var(--crit)">${esc(d.error)}</p>` : ''}
+      ${!d.loading && !rows.length && !d.error ? '<p class="hint">No files here.</p>' : ''}
+      ${rows.map(f => `<div class="row" style="flex-wrap:nowrap;align-items:center;padding:6px 0;border-top:1px solid var(--line)">
+        <input type="${cfg.multi ? 'checkbox' : 'radio'}" name="drive-pick" data-drivepick="${esc(f.id)}" ${d.picked.has(f.id) ? 'checked' : ''} ${isFolder(f) && !cfg.folders ? 'disabled' : ''} aria-label="Select ${esc(f.title)}">
+        <span class="file-ic ${esc(DRIVE_EXT[f.mimeType] || '')}" style="width:26px;height:30px;flex:none">${isFolder(f) ? '▤' : esc((DRIVE_EXT[f.mimeType] || (isImageMime(f.mimeType) ? 'img' : 'file')).toUpperCase().slice(0, 4))}</span>
+        <span style="flex:1;min-width:0">${isFolder(f) ? `<button class="btn sm ghost" style="padding:0;font-weight:700" data-act="drive-open" data-id="${esc(f.id)}">${esc(f.title)} ›</button>` : `<b style="overflow-wrap:anywhere">${esc(f.title)}</b>`}
+          <br><span class="hint">${isFolder(f) ? 'Folder' + (cfg.folders ? ', select to add every file in it' : '') : ''}${f.modified ? (isFolder(f) ? ' · ' : '') + 'updated ' + esc(f.modified.slice(0, 10)) : ''}${f.owner ? ' · ' + esc(f.owner) : ''}</span></span></div>`).join('')}`,
+    foot: `<span class="hint" style="margin-right:auto">${d.picked.size ? plural(d.picked.size, 'item') + ' selected' : ''}</span><button class="btn" data-act="drive-cancel">Cancel</button><button class="btn primary" data-act="drive-add" ${d.picked.size ? '' : 'disabled'}>Add</button>`,
+  };
+  renderOverlay();
+  const q = $('#drive-q'); if (q && document.activeElement !== q && !d.loading && d.focusQ) { q.focus(); d.focusQ = false; }
+}
+async function driveSearchOrLink() {
+  const d = S.ui.drive; if (!d) return;
+  const v = ($('#drive-q') || {}).value || '';
+  const id = parseDriveLink(v);
+  if (id && /drive|docs\.google|^[A-Za-z0-9_-]{20,}$/.test(v)) {
+    d.q = ''; d.stack = [];
+    await loadDrive(async () => {
+      const m = await driveMeta(id);
+      if (!m) throw new Error('That link could not be opened. Check that you have access.');
+      if (isFolder(m)) { d.stack = [{ id: m.id, title: m.title }]; return driveChildren(m.id); }
+      d.picked.set(m.id, m);
+      return [m];
+    });
+    return;
+  }
+  d.q = v.trim(); d.qDraft = undefined; d.stack = [];
+  await loadDrive(() => d.q ? driveSearch(d.q) : driveRecent());
+}
+async function driveAdd() {
+  const d = S.ui.drive; if (!d) return;
+  const items = [...d.picked.values()];
+  S.ui.drive = null; S.ui.modal = null; renderOverlay();
+  if (d.role === 'styleguide') {
+    const r = await driveRead(items[0].id);
+    if (!r.text.trim()) throw new Error('No text found in that file.');
+    await importStyleGuide(r.text);
+    sg().sourceUrl = r.url || items[0].url; saveWorkspace();
+    toast('Style guide imported from Google Drive. Review the fields.');
+    return;
+  }
+  if (d.role === 'project') {
+    const { b64 } = await driveBytes(items[0].id);
+    const bin = atob(b64), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    await openProjectFile(new Blob([bytes]));
+    return;
+  }
+  if (d.role === 'pin') {
+    for (const it of items) if (!WS.data.sources.pinned.some(x => x.driveId === it.id)) WS.data.sources.pinned.push({ url: it.url, driveId: it.id, folder: isFolder(it), title: it.title, tier: 'approved' });
+    saveWorkspace();
+    toast(`Pinned ${plural(items.length, 'source')}. Sync to read them.`);
+    return;
+  }
+  await addDriveFiles(items, d.role === 'image' ? 'library' : d.role);
+}
+
+/* Pinned Drive sources are read straight from Drive (folders expand to their files); other links go through Glean. */
+async function readPinnedFromDrive(pin) {
+  const ids = [];
+  if (pin.folder) { for (const c of await driveChildren(pin.driveId)) if (!isFolder(c) && !isImageMime(c.mimeType)) ids.push(c); }
+  else ids.push({ id: pin.driveId, title: pin.title, url: pin.url });
+  const docs = [];
+  for (const it of ids.slice(0, 25)) {
+    toast(`Reading ${it.title}…`, { sticky: true });
+    const r = await driveRead(it.id).catch(() => null);
+    if (r && r.text) docs.push({ title: r.title || it.title, url: r.url || it.url, datasource: 'gdrive', updated: it.modified || '', text: r.text });
+  }
+  return docs;
 }
 
 /* ---- figma.js ---- */
@@ -1860,6 +2135,7 @@ async function addFiles(fileList, role) {
   save();
   render();
   if (role === 'library' && added.length && AI.sample) tagLibrary().catch(e => toast(e.message, { err: true }));
+  if (role === 'rfp' && added.some(n => !IMG_EXT.includes(extOf(n)))) autoStart();
 }
 
 async function tagLibrary() {
@@ -1884,7 +2160,33 @@ async function tagLibrary() {
   }
 }
 
-async function extractRequirements() {
+/* Uploading client documents starts the work: read them, then pull the bid context from Salesforce and notes. */
+let autoRunning = false;
+async function autoStart() {
+  const p = S.project;
+  if (p.autoStart === false || !AI.sample || autoRunning) return;
+  autoRunning = true;
+  const isChange = p.sections.length > 0;
+  try {
+    await extractRequirements();
+  } catch (e) { toast(e.message, { err: true }); autoRunning = false; return; }
+  finally { save(); render(); }
+  try {
+    // Addenda go through the format change review instead; context is pulled once per project.
+    const plan = p.sourcePlan || {};
+    if (!isChange && KN.state === 'on' && (plan.salesforce || plan.glean) && !(p.context.sources || []).length && p.context.client) {
+      await startPullContext({ auto: true });
+    }
+  } finally { autoRunning = false; }
+}
+
+// One extraction at a time: an upload that starts it and a click on the button share the same run.
+let extracting = null;
+function extractRequirements() {
+  if (!extracting) extracting = runExtraction().finally(() => { extracting = null; });
+  return extracting;
+}
+async function runExtraction() {
   const p = S.project;
   const files = p.files.filter(f => f.role === 'rfp' && !f.processed);
   if (!files.length) { toast('All RFP files are already processed.'); return; }
@@ -1896,6 +2198,11 @@ async function extractRequirements() {
       const res = await askJSON(promptExtract(f, chunks[ci], ci, chunks.length), { label: `Reading ${f.name}${chunks.length > 1 ? ` (part ${ci + 1} of ${chunks.length})` : ''}` });
       if (!res) continue;
       if (res.docType && !f.docType) f.docType = res.docType;
+      // The documents themselves name the client and the scope; fill the bid context from them when it is empty.
+      const auto = p.context.autoFilled || (p.context.autoFilled = {});
+      if (res.issuer && !p.context.client) { p.context.client = String(res.issuer).trim(); auto.client = true; }
+      if (res.scopeSummary && !p.context.bidding) { p.context.bidding = String(res.scopeSummary).trim(); auto.bidding = true; }
+      if (res.documentTitle && /^Untitled/.test(p.name)) p.name = String(res.documentTitle).trim().slice(0, 120);
       for (const r of res.requirements || []) {
         if (!r.text) continue;
         const req = {
@@ -2227,7 +2534,7 @@ function fileRow(f) {
     ? [f.docType && `<span class="pill acc">${esc(f.docType)}</span>`, f.processed ? `${f.reqCount} requirements` : '<span class="pill warn">Not read yet</span>', f.isChange && '<span class="pill crit">New client input</span>']
     : [`${f.blockCount || 0} passages`, tierSelect('data-file-tier', f.id, f.tier || 'approved')];
   return `<div class="file"><span class="file-ic ${esc(ext)}">${esc(ext.toUpperCase())}</span>
-    <div style="min-width:0"><div class="file-name">${esc(f.name)}</div><div class="file-meta">${meta.filter(Boolean).join('<span class="faint">·</span>')}${f.pages && f.pages.length > 1 ? `<span class="faint">·</span>${f.pages.length} pages` : ''}</div></div>
+    <div style="min-width:0"><div class="file-name">${f.url ? `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name)}</a>` : esc(f.name)}${f.source === 'drive' ? ' <span class="pill acc">Drive</span>' : ''}${f.missing ? ' <span class="pill crit">Not found in Drive</span>' : ''}</div><div class="file-meta">${meta.filter(Boolean).join('<span class="faint">·</span>')}${f.pages && f.pages.length > 1 ? `<span class="faint">·</span>${f.pages.length} pages` : ''}</div></div>
     <button class="icon-btn" data-act="rm-file" data-id="${f.id}" aria-label="Remove ${esc(f.name)}">${ICON.x}</button></div>`;
 }
 
@@ -2255,12 +2562,16 @@ function viewInputs() {
     <section class="panel"><div class="panel-h"><h2>Client documents</h2>
       <select class="select" id="resp-type" style="width:auto" aria-label="Response type">${RESPONSE_TYPES.map(t => `<option value="${t.id}" ${p.type === t.id ? 'selected' : ''}>${t.label}</option>`).join('')}</select></div>
       <div class="panel-b stack-s">
-        <div class="drop" data-drop="rfp" tabindex="0" role="button"><strong>Drop the client's files here or click to choose</strong>Instructions, scope, requirements, questionnaires, forms, addenda. PDF, Word, Excel, CSV or text.</div>
+        <div class="row"><button class="btn primary" data-act="drive-pick" data-role="rfp" ${KN.state !== 'on' ? 'disabled' : ''}>${ICON.drive} Add from Google Drive</button><span class="hint">Pick files or the whole RFP folder.</span></div>
+        <div class="drop" data-drop="rfp" tabindex="0" role="button" style="padding:12px"><span>Or upload files from this computer</span></div>
         <div class="files">${rfp.map(fileRow).join('') || '<p class="hint">No client files yet.</p>'}</div>
       </div></section>
     <section class="panel"><div class="panel-h"><h2>Content library</h2><span class="hint">${p.library.length} passages · ${internal.length} from internal tools${pinnedN ? ` · ${pinnedN} pinned team passages` : ''}</span></div>
       <div class="panel-b stack-s">
-        <div class="drop" data-drop="library" tabindex="0" role="button"><strong>Upload library files</strong>Capability write-ups, case studies, past answers, bios. Set each file's trust level after upload.</div>
+        <div class="row"><button class="btn primary" data-act="drive-pick" data-role="library" ${KN.state !== 'on' ? 'disabled' : ''}>${ICON.drive} Add from Google Drive</button>
+          <button class="btn" data-act="drive-refresh" ${KN.state !== 'on' || !p.files.some(f => f.source === 'drive') ? 'disabled' : ''}>Check Drive for updates</button></div>
+        <p class="hint">Capability write-ups, case studies, past answers, bios. Pick a folder to add everything in it, then set each file's trust level.</p>
+        <div class="drop" data-drop="library" tabindex="0" role="button" style="padding:12px"><span>Or upload files from this computer</span></div>
         <div class="files">${lib.map(fileRow).join('')}</div>
         <p class="label" style="margin-top:6px">Also look through</p>
         <label class="row" style="flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" data-plan="glean" ${plan.glean ? 'checked' : ''}><span><b>Company search</b> <span class="hint">Drive, Confluence, Slack, email and meeting notes, through Glean</span></span></label>
@@ -2280,12 +2591,14 @@ function viewInputs() {
         <div class="row"><button class="btn sm primary" data-act="fig-sync" ${FIG.state !== 'on' || !plan.figma ? 'disabled' : ''}>Sync from Figma</button>
           ${FIG.state !== 'on' ? `<span class="hint">${FIG.state === 'connecting' ? 'Connecting…' : 'Available when this page is open on claude.ai with Figma connected.'}</span>` : ''}</div>
         ${figAssets.length ? `<div class="thumbs">${figAssets.slice(0, 12).map(a => `<div class="thumb">${a.thumb ? `<img src="${a.thumb}" alt="">` : '<img alt="">'}<div title="${esc(a.name)}">${a.stale ? '⚠ ' : ''}${esc(a.name)}</div></div>`).join('')}</div>` : ''}
-        ${upAssets.length ? `<p class="hint">${plural(upAssets.length, 'other image')} from uploads or the example (non-product use only).</p>` : ''}
+        <p class="label" style="margin-top:6px">Other images</p><p class="hint">Team photos, maps, org charts. Not for product visuals.${upAssets.length ? ' ' + plural(upAssets.length, 'image') + ' added.' : ''}</p>
+        <div class="row"><button class="btn sm" data-act="drive-pick" data-role="image" ${KN.state !== 'on' ? 'disabled' : ''}>${ICON.drive} Add from Google Drive</button><button class="btn sm ghost" data-act="upload-img">Upload</button></div>
       </div></section>
     <section class="panel"><div class="panel-h"><h2>Bid context</h2>
       <button class="btn sm primary" data-act="pull-context" ${!kn || AI.state !== 'on' || (!plan.glean && !plan.salesforce) ? 'disabled' : ''}>${ICON.spark} Pull from Salesforce and notes</button></div>
       <div class="panel-b stack-s">
-        <div class="field"><label for="ctx-client">Client</label><input class="input" id="ctx-client" data-ctx="client" value="${esc(ctx.client)}"></div>
+        <label class="row" style="flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" id="auto-start" ${p.autoStart !== false ? 'checked' : ''}><span><b>Start when client documents are uploaded</b> <span class="hint">Reads the documents, fills in the client and scope, then pulls Salesforce and meeting notes for you to review.</span></span></label>
+        <div class="field"><label for="ctx-client">Client</label><input class="input" id="ctx-client" data-ctx="client" value="${esc(ctx.client)}">${(ctx.autoFilled || {}).client ? '<span class="hint">From the client\'s documents</span>' : ''}</div>
         <div class="field"><label for="ctx-bidding">What we are bidding on</label><textarea class="textarea" id="ctx-bidding" data-ctx="bidding">${esc(ctx.bidding)}</textarea></div>
         <div class="field"><label for="ctx-win">Win themes</label><textarea class="textarea" id="ctx-win" data-ctx="winThemes">${esc(ctx.winThemes)}</textarea></div>
         <div class="field"><label for="ctx-notes">Notes on the client</label><textarea class="textarea" id="ctx-notes" data-ctx="notes" rows="5">${esc(ctx.notes)}</textarea><span class="hint">Internal only. Drafts use these for context and never quote them.</span></div>
@@ -2308,8 +2621,8 @@ function viewStyleGuide() {
   const g = sg(), ro = wsEditable() ? '' : 'readonly';
   const field = (k, label, rows, hint) => `<div class="field"><label for="sg-${k}">${label}</label><textarea class="textarea" id="sg-${k}" data-sg="${k}" rows="${rows}" ${ro}>${esc(g[k])}</textarea>${hint ? `<span class="hint">${hint}</span>` : ''}</div>`;
   return `${wsBanner()}
-  <div class="head"><div><h1>Style guide</h1><p>Sent with every drafting request and checked before export. Import an existing guide or edit the fields directly.</p></div>
-    <div class="actions"><button class="btn" data-act="sg-import-file" ${!wsEditable() || AI.state !== 'on' ? 'disabled' : ''}>Import from a file</button><button class="btn" data-act="sg-import-url" ${!wsEditable() || AI.state !== 'on' || KN.state !== 'on' ? 'disabled' : ''}>Import from a link</button><button class="btn ghost" data-act="style-reset" ${!wsEditable() ? 'disabled' : ''}>Reset to defaults</button></div></div>
+  <div class="head"><div><h1>Style guide</h1><p>Sent with every drafting request and checked before export. Import your existing guide from Google Drive or edit the fields directly.${sg().sourceUrl ? ` Imported from <a href="${esc(sg().sourceUrl)}" target="_blank" rel="noopener">this document</a>.` : ''}</p></div>
+    <div class="actions"><button class="btn primary" data-act="drive-pick" data-role="styleguide" ${!wsEditable() || AI.state !== 'on' || KN.state !== 'on' ? 'disabled' : ''}>${ICON.drive} Import from Google Drive</button><button class="btn" data-act="sg-import-file" ${!wsEditable() || AI.state !== 'on' ? 'disabled' : ''}>Upload a file</button><button class="btn" data-act="sg-import-url" ${!wsEditable() || AI.state !== 'on' || KN.state !== 'on' ? 'disabled' : ''}>Import from a link</button><button class="btn ghost" data-act="style-reset" ${!wsEditable() ? 'disabled' : ''}>Reset to defaults</button></div></div>
   <div class="grid2">
     <section class="panel"><div class="panel-h"><h2>Voice</h2></div><div class="panel-b stack-s">
       ${field('tone', 'Tone', 3)}
@@ -2330,12 +2643,12 @@ function viewSources() {
   <div class="head"><div><h1>Knowledge sources</h1><p>Where the engine looks for content, and how far to trust each source. Pinned documents are read in full and searched first. Company search fills in the rest.</p></div>
     <div class="actions"><button class="btn primary" data-act="sync-pinned" ${KN.state !== 'on' || !src.pinned.length || ro ? 'disabled' : ''}>Sync pinned sources</button></div></div>
   <div class="grid-main">
-    <section class="panel"><div class="panel-h"><h2>Pinned documents</h2><button class="btn sm" data-act="pin-add" ${ro ? 'disabled' : ''}>${ICON.plus} Add</button></div>
+    <section class="panel"><div class="panel-h"><h2>Pinned documents</h2><div class="row"><button class="btn sm primary" data-act="drive-pick" data-role="pin" ${ro || KN.state !== 'on' ? 'disabled' : ''}>${ICON.drive} Add from Google Drive</button><button class="btn sm" data-act="pin-add" ${ro ? 'disabled' : ''}>${ICON.plus} Add a link</button></div></div>
       <div class="panel-b">${src.pinned.map((x, i) => `<div class="blockref" style="flex-wrap:wrap">
         <input class="input" data-pin-url="${i}" value="${esc(x.url)}" placeholder="Link to a Drive doc, Confluence page or folder" style="flex:1;min-width:220px" ${ro ? 'readonly' : ''}>
         ${tierSelect('data-pin-tier', i, x.tier)}
         <button class="icon-btn" data-act="pin-rm" data-i="${i}" aria-label="Remove" ${ro ? 'disabled' : ''}>${ICON.x}</button>
-        <div class="hint" style="flex-basis:100%">${x.title ? esc(x.title) + ' · ' : ''}${x.syncedAt ? 'synced ' + new Date(x.syncedAt).toLocaleDateString() : 'not synced yet'}${x.updated ? ' · source updated ' + esc(String(x.updated).slice(0, 10)) : ''}</div></div>`).join('') || '<p class="hint">Pin your RFP library, approved boilerplate, product roadmap and positioning docs here.</p>'}
+        <div class="hint" style="flex-basis:100%">${x.driveId ? (x.folder ? 'Drive folder · ' : 'Drive · ') : ''}${x.title ? esc(x.title) + ' · ' : ''}${x.syncedAt ? 'synced ' + new Date(x.syncedAt).toLocaleDateString() : 'not synced yet'}${x.updated ? ' · source updated ' + esc(String(x.updated).slice(0, 10)) : ''}</div></div>`).join('') || '<p class="hint">Pin your RFP library folder, approved boilerplate, product roadmap and positioning docs from Google Drive. Folders bring in every file inside.</p>'}
         <p class="hint" style="margin-top:8px">${plural((WS.pinnedBlocks || []).length, "passage")} cached from pinned documents.</p></div></section>
     <div class="stack">
       <section class="panel"><div class="panel-h"><h2>Company search</h2></div><div class="panel-b stack-s">
@@ -2642,22 +2955,27 @@ function viewExport() {
   const checks = exportChecks();
   const blockers = checks.filter(c => !c.ok && c.sev === 'crit').length;
   const dl = DL.state === 'on';
+  const drv = KN.state === 'on';
   return `${exampleBanner()}
   <div class="head"><div><h1>Export</h1><p>The customer document carries only the clean text, images and tables. Source links, modes, ids and comments stay in the working view and the separate source map. File metadata carries your company name, not the tool.</p></div></div>
-  ${!dl ? `<div class="banner warn"><span class="grow">${DL.state === 'connecting' ? 'Connecting…' : 'Downloads work when this page is open on claude.ai.'}</span></div>` : ''}
+  ${!drv ? `<div class="banner warn"><span class="grow">${KN.state === 'connecting' ? 'Connecting…' : 'Saving to Google Drive and downloads work when this page is open on claude.ai.'}</span></div>` : ''}
   <div class="grid2">
     <section class="panel"><div class="panel-h"><h2>Pre-export check</h2><span class="pill ${blockers ? 'crit' : 'ok'}">${blockers ? plural(blockers, 'blocker') : 'Ready'}</span></div><div class="panel-b stack-s">
       ${checks.map(c => `<div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="pill ${c.ok ? 'ok' : c.sev}" style="min-width:52px;justify-content:center">${c.ok ? 'OK' : c.sev === 'crit' ? 'Fix' : 'Check'}</span><span>${esc(c.text)}</span></div>`).join('')}
     </div></section>
     <section class="panel"><div class="panel-h"><h2>Files</h2></div><div class="panel-b stack-s">
       <div class="field"><label for="exp-author">Author shown in the file properties</label><input class="input" id="exp-author" value="${esc(S.project.exportAuthor || '')}" placeholder="Your company name"></div>
-      <button class="btn primary" data-act="export-docx" ${!dl ? 'disabled' : ''}>Customer response (.docx)</button>
+      <div class="field"><label for="exp-folder">Google Drive folder (optional)</label><input class="input" id="exp-folder" value="${esc(S.project.exportFolder || '')}" placeholder="Paste a folder link, or leave blank for My Drive"></div>
+      <button class="btn primary" data-act="export-docx" data-target="drive" ${!drv ? 'disabled' : ''}>${ICON.drive} Save response to Google Drive (Google Doc)</button>
       <p class="hint">Pulls the latest product images from Figma first. ${blockers ? 'Blockers above will be listed again before the file is made.' : ''}</p>
-      <button class="btn" data-act="export-map" ${!dl ? 'disabled' : ''}>Internal source map (.csv)</button>
-      <button class="btn" data-act="export-matrix" ${!dl || !S.project.matrix.length ? 'disabled' : ''}>Requirements matrix answers (.xlsx)</button>
+      <button class="btn" data-act="export-map" data-target="drive" ${!drv ? 'disabled' : ''}>${ICON.drive} Save internal source map (Google Sheet)</button>
+      <button class="btn" data-act="export-matrix" data-target="drive" ${!drv || !S.project.matrix.length ? 'disabled' : ''}>${ICON.drive} Save matrix answers (Google Sheet)</button>
+      ${(S.project.driveExports || []).length ? `<p class="label" style="margin-top:6px">Saved to Drive</p>${S.project.driveExports.slice(0, 5).map(x => `<div class="hint"><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a> · ${new Date(x.at).toLocaleString()}</div>`).join('')}` : ''}
+      <p class="label" style="margin-top:6px">Or download</p>
+      <div class="row"><button class="btn sm" data-act="export-docx" data-target="download" ${!dl ? 'disabled' : ''}>.docx</button><button class="btn sm" data-act="export-map" data-target="download" ${!dl ? 'disabled' : ''}>Source map .csv</button><button class="btn sm" data-act="export-matrix" data-target="download" ${!dl || !S.project.matrix.length ? 'disabled' : ''}>Matrix .xlsx</button></div>
       <hr style="border:0;border-top:1px solid var(--line);width:100%">
-      <button class="btn" data-act="save-project" ${!dl ? 'disabled' : ''}>Save project file (.json)</button>
-      <button class="btn" data-act="open-project">Open project file</button>
+      <div class="row"><button class="btn" data-act="save-project" data-target="drive" ${!drv ? 'disabled' : ''}>${ICON.drive} Save project to Google Drive</button><button class="btn" data-act="drive-pick" data-role="project" ${!drv ? 'disabled' : ''}>Open from Google Drive</button></div>
+      <div class="row"><button class="btn sm ghost" data-act="save-project" data-target="download" ${!dl ? 'disabled' : ''}>Download project file</button><button class="btn sm ghost" data-act="open-project">Open a downloaded project file</button></div>
       <p class="hint">The project also saves automatically in this browser.</p>
     </div></section>
   </div>`;
@@ -2684,7 +3002,7 @@ function renderDrawer() {
       ctx = highlight(txt, r.text);
     }
     body = `<p style="margin-bottom:10px"><b>${esc(r.text)}</b></p>
-      <dl class="kv" style="margin-bottom:12px"><dt>Source</dt><dd>${esc(r.fileName || 'Added manually')}</dd>${r.page ? `<dt>Page / row</dt><dd>${esc(r.page)}</dd>` : ''}${r.section ? `<dt>RFP section</dt><dd>${esc(r.section)}</dd>` : ''}<dt>Response</dt><dd>${esc(r.responseType)}</dd><dt>Mapped to</dt><dd>${reqSections(r.id).map(s => esc(s.num + ' ' + s.title)).join(', ') || 'None'}</dd></dl>
+      <dl class="kv" style="margin-bottom:12px"><dt>Source</dt><dd>${f && f.url ? `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(r.fileName)}</a>` : esc(r.fileName || 'Added manually')}</dd>${r.page ? `<dt>Page / row</dt><dd>${esc(r.page)}</dd>` : ''}${r.section ? `<dt>RFP section</dt><dd>${esc(r.section)}</dd>` : ''}<dt>Response</dt><dd>${esc(r.responseType)}</dd><dt>Mapped to</dt><dd>${reqSections(r.id).map(s => esc(s.num + ' ' + s.title)).join(', ') || 'None'}</dd></dl>
       ${f && f.ext === 'pdf' && r.page ? `<canvas class="pdfpage" id="pdf-canvas" data-file="${f.id}" data-page="${esc(r.page)}"></canvas><p class="hint" style="margin:6px 0 12px">Page ${esc(r.page)} of ${esc(f.name)}</p>` : ''}
       ${ctx ? `<p class="label">In context</p><pre>${ctx}</pre>` : ''}`;
   } else if (d.t === 'lib') {
@@ -2768,14 +3086,21 @@ function modalConfirm(title, text, act, data = '') {
 }
 
 /* Bid context: pick the Salesforce opportunity, then review what the engine proposes before it fills the fields. */
-async function startPullContext() {
+async function startPullContext({ auto = false } = {}) {
   const p = S.project;
   const plan = p.sourcePlan;
-  if (plan.salesforce && p.context.client) {
+  // No client name yet: read the uploaded documents first, they name the client.
+  if (!p.context.client && p.files.some(f => f.role === 'rfp' && !f.processed) && AI.sample) {
+    try { await extractRequirements(); } catch (e) { toast(e.message, { err: true }); return; } finally { save(); render(); }
+  }
+  if (!p.context.client) { toast('Enter the client name first, or upload the client\'s documents.', { err: true }); return; }
+  if (plan.salesforce) {
     let opps = [];
     try { toast('Looking up opportunities in Salesforce…', { sticky: true }); opps = await findOpportunities(p.context.client); }
     catch (e) { toast(e.message, { err: true }); await sleep(1500); }
     toast('');
+    // One clear match on an automatic run goes straight through; otherwise ask.
+    if (auto && opps.length === 1) { await runPullContext(opps[0].id); return; }
     if (opps.length) {
       S.ui.modal = {
         title: 'Which opportunity is this?',
@@ -2798,7 +3123,7 @@ async function runPullContext(oppId) {
     S.ui.modal = {
       title: 'Review bid context',
       body: `<p class="hint" style="margin-bottom:8px">From ${plural(sources.length, 'source')}. Tick the fields to fill in. Unticked fields keep what you have.</p>`
-        + rows.filter(([k]) => res[k]).map(([k, l]) => `<div style="padding:8px 0;border-top:1px solid var(--line)"><label class="row"><input type="checkbox" data-ctxpick="${k}" ${!p.context[k] ? 'checked' : ''}><b>${l}</b>${p.context[k] ? '<span class="pill warn">Replaces what you have</span>' : ''}</label><pre style="white-space:pre-wrap;font:inherit;margin:6px 0 0">${esc(res[k])}</pre></div>`).join('')
+        + rows.filter(([k]) => res[k]).map(([k, l]) => { const mine = p.context[k] && !(p.context.autoFilled || {})[k]; return `<div style="padding:8px 0;border-top:1px solid var(--line)"><label class="row"><input type="checkbox" data-ctxpick="${k}" ${!mine ? 'checked' : ''}><b>${l}</b>${mine ? '<span class="pill warn">Replaces what you entered</span>' : p.context[k] ? '<span class="pill">Replaces what the documents said</span>' : ''}</label><pre style="white-space:pre-wrap;font:inherit;margin:6px 0 0">${esc(res[k])}</pre></div>`; }).join('')
         + ((res.stakeholders || []).length ? `<div style="padding:8px 0;border-top:1px solid var(--line)"><label class="row"><input type="checkbox" data-ctxpick="stakeholders" checked><b>Stakeholders</b></label>${res.stakeholders.map(s => `<div class="hint">${esc(s.name)}, ${esc(s.title || '')} (${esc(s.role || 'unknown')})</div>`).join('')}</div>` : '')
         + `<p class="label" style="margin-top:10px">Sources</p>${sources.map(s => `<div class="hint">${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>` : esc(s.title)}</div>`).join('') || '<p class="hint">None found.</p>'}`,
       foot: '<button class="btn" data-act="close-modal">Discard</button><button class="btn primary" data-act="pull-context-apply">Fill in selected</button>',
@@ -2809,7 +3134,7 @@ async function runPullContext(oppId) {
 function applyPulledContext() {
   const pc = S.ui.pendingContext; if (!pc) return;
   const c = S.project.context;
-  for (const el of $$('[data-ctxpick]')) if (el.checked) c[el.dataset.ctxpick] = pc.res[el.dataset.ctxpick];
+  for (const el of $$('[data-ctxpick]')) if (el.checked) { c[el.dataset.ctxpick] = pc.res[el.dataset.ctxpick]; if (c.autoFilled) delete c.autoFilled[el.dataset.ctxpick]; }
   c.sources = pc.sources;
   logChange('engine', `Filled bid context from ${plural(pc.sources.length, 'source')}.`);
   S.ui.pendingContext = null; S.ui.modal = null;
@@ -2892,7 +3217,7 @@ function assetColumn() {
     const ups = p.assets.filter(a => a.source !== 'figma' && (!q || (a.name + a.caption).toLowerCase().includes(q)));
     list = `<div class="cv-col-h" style="position:static"><h3>Product (Figma)</h3>${FIG.state === 'on' && p.figma && p.figma.url ? '<button class="btn sm ghost" data-act="fig-sync">Sync</button>' : ''}</div>
       ${figs.map(assetRow).join('') || '<p class="hint" style="padding:8px 12px">Link a Figma library on the Inputs step.</p>'}
-      <div class="cv-col-h" style="position:static"><h3>Other images</h3><button class="btn sm ghost" data-act="upload-img">Upload</button></div>
+      <div class="cv-col-h" style="position:static"><h3>Other images</h3><div class="row"><button class="btn sm ghost" data-act="drive-pick" data-role="image" ${KN.state !== 'on' ? 'disabled' : ''}>Drive</button><button class="btn sm ghost" data-act="upload-img">Upload</button></div></div>
       ${ups.map(assetRow).join('') || '<p class="hint" style="padding:8px 12px">Photos, maps, org charts. Not for product visuals.</p>'}`;
   } else if (tab === 'text') {
     const items = (q ? p.library.filter(b => (b.title + b.text + b.tags.join(' ')).toLowerCase().includes(q)) : p.library).slice(0, 120);
@@ -3271,7 +3596,22 @@ async function buildDocx() {
   return D.Packer.toBlob(doc);
 }
 
-async function exportDocx(force) {
+/* Every export goes to Google Drive by default (converted to Docs or Sheets); download is the fallback. */
+async function deliver(filename, data, mime, target, title) {
+  if (target === 'drive') {
+    title = title || filename.replace(/\.[^.]+$/, '');
+    toast('Saving to Google Drive…', { sticky: true });
+    const url = await saveToDrive(title, data, mime);
+    toast('');
+    S.ui.modal = { title: 'Saved to Google Drive', body: `<p><b>${esc(title)}</b> is in your Drive${S.project.exportFolder ? ' folder' : ''}.</p>${url ? `<p style="margin-top:8px"><a href="${esc(url)}" target="_blank" rel="noopener">Open it in Google Drive</a></p>` : ''}` };
+    renderOverlay();
+    return;
+  }
+  await saveFile(filename, data);
+}
+
+async function exportDocx(force, target = S.ui.exportTarget || 'drive') {
+  S.ui.exportTarget = target;
   const blockers = exportChecks().filter(c => !c.ok && c.sev === 'crit');
   if (blockers.length && !force) { modalExportBlockers(blockers); return; }
   S.ui.modal = null; renderOverlay();
@@ -3280,30 +3620,30 @@ async function exportDocx(force) {
   try {
     const blob = await buildDocx();
     toast('');
-    await saveFile(safeName(S.project.name) + '.docx', blob);
-    logChange('user', 'Exported the customer response (.docx).');
+    await deliver(safeName(S.project.name) + '.docx', blob, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', target, S.project.name);
+    logChange('user', target === 'drive' ? 'Saved the customer response to Google Drive.' : 'Downloaded the customer response (.docx).');
     save();
   } catch (e) { toast(e.message, { err: true }); }
 }
 
 function csvCell(v) { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
-async function exportSourceMap() {
+async function exportSourceMap(target = 'drive') {
   const p = S.project;
   numberSections();
-  const rows = [['Section', 'Block', 'Type', 'Mode', 'Excerpt', 'Source id', 'Source kind', 'Source file', 'Location', 'Source text']];
+  const rows = [['Section', 'Block', 'Type', 'Mode', 'Excerpt', 'Source id', 'Source kind', 'Source file', 'Location', 'Source text', 'Link']];
   for (const s of p.sections) s.blocks.forEach((b, i) => {
     const ex = blockText(b).slice(0, 160);
     const srcs = (b.sources || []).length ? b.sources : [null];
     for (const src of srcs) {
       if (!src) { rows.push([s.num + ' ' + s.title, i + 1, b.type, b.mode, ex, '', b.type === 'image' && assetById(b.assetId) ? (assetById(b.assetId).source === 'figma' ? 'Figma frame' : 'Uploaded image') : 'No source', b.type === 'image' && assetById(b.assetId) ? assetById(b.assetId).name : '', b.type === 'image' && assetById(b.assetId) && assetById(b.assetId).source === 'figma' ? figmaFrameUrl(assetById(b.assetId)) : '', '']); continue; }
-      if (src.t === 'req') { const r = reqById(src.id); rows.push([s.num + ' ' + s.title, i + 1, b.type, b.mode, ex, src.id, 'RFP requirement', r && r.fileName, r && [r.page && 'p. ' + r.page, r.section && '§' + r.section].filter(Boolean).join(' '), r && r.text]); }
-      else { const lb = blockById(src.id); rows.push([s.num + ' ' + s.title, i + 1, b.type, b.mode, ex, src.id, 'Library block', lb && lb.fileName, lb && lb.loc, lb && lb.text.slice(0, 500)]); }
+      if (src.t === 'req') { const r = reqById(src.id); const rf = r && fileById(r.fileId); rows.push([s.num + ' ' + s.title, i + 1, b.type, b.mode, ex, src.id, 'RFP requirement', r && r.fileName, r && [r.page && 'p. ' + r.page, r.section && '§' + r.section].filter(Boolean).join(' '), r && r.text, (rf && rf.url) || '']); }
+      else { const lb = blockById(src.id); rows.push([s.num + ' ' + s.title, i + 1, b.type, b.mode, ex, src.id, 'Library: ' + ((lb && TIERS[lb.tier || 'approved'] || TIERS.reference).label), lb && lb.fileName, lb && lb.loc, lb && lb.text.slice(0, 500), (lb && lb.url) || '']); }
     }
   });
-  await saveFile(safeName(p.name) + '-source-map-INTERNAL.csv', rows.map(r => r.map(csvCell).join(',')).join('\n'));
+  await deliver(safeName(p.name) + '-source-map-INTERNAL.csv', rows.map(r => r.map(csvCell).join(',')).join('\n'), 'text/csv', target, p.name + ' source map (internal)');
 }
 
-async function exportMatrix() {
+async function exportMatrix(target = 'drive') {
   if (!window.XLSX) throw new Error('The spreadsheet writer did not load.');
   const p = S.project;
   const rows = [['Ref', 'RFP section', 'Requirement', 'Status', 'Response']];
@@ -3314,10 +3654,18 @@ async function exportMatrix() {
   XLSX.utils.book_append_sheet(wb, ws, 'Compliance');
   wb.Props = { Author: p.exportAuthor || '', Title: p.name };
   const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
-  await saveFile(safeName(p.name) + '-compliance-matrix.xlsx', new Uint8Array(buf));
+  await deliver(safeName(p.name) + '-compliance-matrix.xlsx', new Uint8Array(buf), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', target, p.name + ' compliance matrix');
 }
 
-async function saveProjectFile() {
+async function saveProjectFile(target = 'drive') {
+  if (target === 'drive') {
+    toast('Saving the project to Google Drive…', { sticky: true });
+    const url = await saveToDrive(S.project.name + '.rfp.json', JSON.stringify(S.project), 'application/json', { convert: false });
+    toast('');
+    S.ui.modal = { title: 'Project saved to Google Drive', body: `<p>Anyone you share it with can open it here with "Open from Google Drive".</p>${url ? `<p style="margin-top:8px"><a href="${esc(url)}" target="_blank" rel="noopener">Open the file in Google Drive</a></p>` : ''}` };
+    renderOverlay();
+    return;
+  }
   await saveFile(safeName(S.project.name) + '.rfp.json', JSON.stringify(S.project));
 }
 async function openProjectFile(file) {
@@ -3551,7 +3899,7 @@ const ACTIONS = {
   'confirm-style-reset': () => { WS.data.styleGuide = JSON.parse(JSON.stringify(DEFAULT_STYLE_GUIDE)); saveWorkspace(); S.ui.modal = null; render(); },
   'sg-import-file': () => pickFiles('styleguide', '.pdf,.docx,.txt,.md'),
   'sg-import-url': () => { S.ui.modal = { title: 'Import the style guide from a link', body: '<div class="field"><label for="sg-url">Link to the style guide (Drive, Confluence or any page Glean can read)</label><input class="input" id="sg-url" placeholder="https://"></div>', foot: '<button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" data-act="sg-import-url-go">Import</button>' }; renderOverlay(); },
-  'sg-import-url-go': () => { const u = ($('#sg-url') || {}).value || ''; S.ui.modal = null; renderOverlay(); run(async () => { const docs = await gleanRead([u.trim()]); if (!docs.length || !docs[0].text) throw new Error('Nothing could be read from that link.'); await importStyleGuide(docs[0].text); toast('Style guide imported. Review the fields.'); }); },
+  'sg-import-url-go': () => { const u = ($('#sg-url') || {}).value || ''; S.ui.modal = null; renderOverlay(); run(async () => { const did = parseDriveLink(u); if (did) { const r = await driveRead(did); if (!r.text) throw new Error('Nothing could be read from that file.'); await importStyleGuide(r.text); sg().sourceUrl = r.url || u; saveWorkspace(); toast('Style guide imported. Review the fields.'); return; } const docs = await gleanRead([u.trim()]); if (!docs.length || !docs[0].text) throw new Error('Nothing could be read from that link.'); await importStyleGuide(docs[0].text); toast('Style guide imported. Review the fields.'); }); },
   'find-sources': () => run(findSourcesFromPlan),
   'research-one': el => run(() => researchSection(secById(el.dataset.id))),
   'pull-context': () => startPullContext(),
@@ -3612,6 +3960,13 @@ const ACTIONS = {
   'toggle-assets': () => { S.ui.assetsOpen = !S.ui.assetsOpen; renderMain(); },
   'lib-tab': el => { S.ui.libTab = el.dataset.tab; renderMain(); },
   'upload-img': () => pickFiles('library', '.png,.jpg,.jpeg,.gif,.webp,.svg'),
+  'drive-pick': el => openDrivePicker(el.dataset.role),
+  'drive-search': () => run(driveSearchOrLink),
+  'drive-open': el => { const d = S.ui.drive; const f = d.files.find(x => x.id === el.dataset.id); d.stack.push({ id: f.id, title: f.title }); loadDrive(() => driveChildren(f.id)); },
+  'drive-crumb': el => { const d = S.ui.drive, i = +el.dataset.i; d.stack = d.stack.slice(0, i); const top = d.stack[d.stack.length - 1]; loadDrive(() => top ? driveChildren(top.id) : d.q ? driveSearch(d.q) : driveRecent()); },
+  'drive-cancel': () => { S.ui.drive = null; S.ui.modal = null; renderOverlay(); },
+  'drive-add': () => run(driveAdd),
+  'drive-refresh': () => run(async () => { const n = await refreshDrive(); toast(n ? `Updated ${plural(n, 'file')} from Google Drive.` : 'Everything matches Google Drive.'); }),
   'ins': el => {
     const s = secById(el.dataset.id), t = el.dataset.type;
     const b = t === 'table' ? makeTable('custom', s) : t === 'image' ? newBlock({ type: 'image', need: 'choose an image', caption: '' }) : t === 'callout' ? newBlock({ type: 'callout', html: '<p>[NEEDS INPUT: key stat or proof point]</p>' }) : newBlock({ type: 'text', html: '<p>New paragraph.</p>' });
@@ -3636,13 +3991,13 @@ const ACTIONS = {
   'set-img': el => { const { b } = findBlock(el.dataset.key); const a = assetById(el.dataset.id); b.assetId = a.id; b.caption = b.caption || a.caption || a.name; b.need = ''; S.ui.modal = null; save(); render(); ensureFullImage(b); },
   'src': el => openSource(el.dataset.t, el.dataset.id),
   'close-drawer': () => { S.ui.drawer = null; renderOverlay(); },
-  'close-modal': () => { S.ui.modal = null; renderOverlay(); },
+  'close-modal': () => { S.ui.modal = null; S.ui.drive = null; renderOverlay(); },
   'close-modal-scrim': (el, e) => { if (e.target === el) { S.ui.modal = null; renderOverlay(); } },
-  'export-docx': () => exportDocx(false),
+  'export-docx': el => exportDocx(false, el.dataset.target || 'drive'),
   'export-docx-force': () => exportDocx(true),
-  'export-map': () => run(exportSourceMap),
-  'export-matrix': () => run(exportMatrix),
-  'save-project': () => run(saveProjectFile),
+  'export-map': el => run(() => exportSourceMap(el.dataset.target || 'drive')),
+  'export-matrix': el => run(() => exportMatrix(el.dataset.target || 'drive')),
+  'save-project': el => run(() => saveProjectFile(el.dataset.target || 'drive')),
   'open-project': () => { const i = $('#project-pick'); i.value = ''; i.click(); },
 };
 
@@ -3653,10 +4008,12 @@ document.addEventListener('click', e => {
   if (!el) return;
   if (el.isContentEditable && el.dataset.act !== 'src') return;
   const fn = ACTIONS[el.dataset.act];
-  if (fn) { e.preventDefault(); fn(el, e); }
+  // The dialog backdrop carries an action too; let clicks on controls inside a dialog behave normally.
+  if (fn) { if (el.dataset.act !== 'close-modal-scrim') e.preventDefault(); fn(el, e); }
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { if (S.ui.modal) S.ui.modal = null; else S.ui.drawer = null; renderOverlay(); }
+  if (e.key === 'Escape') { if (S.ui.modal) { S.ui.modal = null; S.ui.drive = null; } else S.ui.drawer = null; renderOverlay(); }
+  if (e.key === 'Enter' && e.target.id === 'drive-q') { e.preventDefault(); run(driveSearchOrLink); }
   const drop = e.target.closest && e.target.closest('[data-drop]');
   if (drop && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pickFiles(drop.dataset.drop); }
 });
@@ -3675,7 +4032,7 @@ $('#project-pick').addEventListener('change', e => { const f = e.target.files &&
 document.addEventListener('input', e => {
   const t = e.target, p = S.project, d = t.dataset || {};
   if (t.id === 'proj-name') { p.name = t.value; save(); return; }
-  if (d.ctx) { p.context[d.ctx] = t.value; save(); return; }
+  if (d.ctx) { p.context[d.ctx] = t.value; if (p.context.autoFilled) delete p.context.autoFilled[d.ctx]; save(); return; }
   if (d.sg) { if (wsEditable()) { sg()[d.sg] = t.value; saveWorkspace(); } return; }
   if (d.tpl) { WS.data.templates[d.tpl] = t.value; saveWorkspace(); return; }
   if (d.pinUrl !== undefined) { WS.data.sources.pinned[+d.pinUrl].url = t.value.trim(); saveWorkspace(); return; }
@@ -3692,6 +4049,8 @@ document.addEventListener('input', e => {
   if (t.id === 'asset-q') { S.ui.assetQuery = t.value; renderMain(); return; }
   if (t.id === 'fig-url') { p.figma = Object.assign(p.figma || {}, { url: t.value.trim() }); save(); return; }
   if (t.id === 'exp-author') { p.exportAuthor = t.value; save(); return; }
+  if (t.id === 'exp-folder') { p.exportFolder = t.value.trim(); save(); return; }
+  if (t.id === 'drive-q' && S.ui.drive) { S.ui.drive.qDraft = t.value; return; }
 });
 document.addEventListener('change', e => {
   const t = e.target, p = S.project, d = t.dataset || {};
@@ -3705,6 +4064,13 @@ document.addEventListener('change', e => {
   if (t.id === 'req-filter') { S.ui.reqFilter = t.value; renderMain(); return; }
   if (t.id === 'resp-type') { p.type = t.value; logChange('user', `Set the response type to ${t.options[t.selectedIndex].text}.`); save(); render(); return; }
   if (d.plan) { p.sourcePlan[d.plan] = t.checked; save(); renderMain(); return; }
+  if (t.id === 'auto-start') { p.autoStart = t.checked; save(); return; }
+  if (d.drivepick && S.ui.drive) {
+    const dd = S.ui.drive, f = dd.files.find(x => x.id === d.drivepick);
+    if (t.type === 'radio') dd.picked.clear();
+    if (t.checked && f) dd.picked.set(f.id, f); else dd.picked.delete(d.drivepick);
+    renderDrivePicker(); return;
+  }
   if (d.fileTier) { const f = fileById(d.fileTier); f.tier = t.value; for (const b of p.library) if (b.fileId === f.id) b.tier = t.value; save(); return; }
   if (d.pinTier !== undefined) { WS.data.sources.pinned[+d.pinTier].tier = t.value; for (const b of WS.pinnedBlocks) if (b.url === WS.data.sources.pinned[+d.pinTier].url) b.tier = t.value; saveWorkspace(); return; }
   if (t.id === 'ws-glean') { WS.data.sources.glean.enabled = t.checked; saveWorkspace(); return; }

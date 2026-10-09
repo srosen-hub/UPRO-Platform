@@ -127,9 +127,20 @@ async function syncPinned() {
   KN.pinSeq = 0;
   for (let i = 0; i < pins.length; i += 4) {
     toast(`Reading pinned sources ${i + 1}–${Math.min(i + 4, pins.length)} of ${pins.length}…`, { sticky: true });
-    const docs = await gleanRead(pins.slice(i, i + 4).map(p => p.url));
+    const batch = pins.slice(i, i + 4);
+    // Drive pins are read straight from Drive (folders expand to their files); other links go through Glean.
+    const viaDrive = batch.filter(x => x.driveId || parseDriveLink(x.url));
+    const docs = [];
+    for (const pin of viaDrive) {
+      pin.driveId = pin.driveId || parseDriveLink(pin.url);
+      const got = await readPinnedFromDrive(pin).catch(e => { toast(e.message, { err: true }); return []; });
+      for (const d of got) d._pin = pin;
+      docs.push(...got);
+    }
+    const others = batch.filter(x => !viaDrive.includes(x));
+    if (others.length) docs.push(...await gleanRead(others.map(p => p.url)));
     for (const d of docs) {
-      const pin = pins.find(p => p.url === d.url) || pins[i];
+      const pin = d._pin || pins.find(p => p.url === d.url) || pins[i];
       if (pin && !pin.title) pin.title = d.title;
       if (pin) pin.syncedAt = Date.now(), pin.updated = d.updated;
       all.push(...docToBlocks(d, (pin && pin.tier) || guessTier(d), 'pinned'));

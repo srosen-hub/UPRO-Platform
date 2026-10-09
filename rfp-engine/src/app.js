@@ -64,7 +64,7 @@ const ACTIONS = {
   'confirm-style-reset': () => { WS.data.styleGuide = JSON.parse(JSON.stringify(DEFAULT_STYLE_GUIDE)); saveWorkspace(); S.ui.modal = null; render(); },
   'sg-import-file': () => pickFiles('styleguide', '.pdf,.docx,.txt,.md'),
   'sg-import-url': () => { S.ui.modal = { title: 'Import the style guide from a link', body: '<div class="field"><label for="sg-url">Link to the style guide (Drive, Confluence or any page Glean can read)</label><input class="input" id="sg-url" placeholder="https://"></div>', foot: '<button class="btn" data-act="close-modal">Cancel</button><button class="btn primary" data-act="sg-import-url-go">Import</button>' }; renderOverlay(); },
-  'sg-import-url-go': () => { const u = ($('#sg-url') || {}).value || ''; S.ui.modal = null; renderOverlay(); run(async () => { const docs = await gleanRead([u.trim()]); if (!docs.length || !docs[0].text) throw new Error('Nothing could be read from that link.'); await importStyleGuide(docs[0].text); toast('Style guide imported. Review the fields.'); }); },
+  'sg-import-url-go': () => { const u = ($('#sg-url') || {}).value || ''; S.ui.modal = null; renderOverlay(); run(async () => { const did = parseDriveLink(u); if (did) { const r = await driveRead(did); if (!r.text) throw new Error('Nothing could be read from that file.'); await importStyleGuide(r.text); sg().sourceUrl = r.url || u; saveWorkspace(); toast('Style guide imported. Review the fields.'); return; } const docs = await gleanRead([u.trim()]); if (!docs.length || !docs[0].text) throw new Error('Nothing could be read from that link.'); await importStyleGuide(docs[0].text); toast('Style guide imported. Review the fields.'); }); },
   'find-sources': () => run(findSourcesFromPlan),
   'research-one': el => run(() => researchSection(secById(el.dataset.id))),
   'pull-context': () => startPullContext(),
@@ -125,6 +125,13 @@ const ACTIONS = {
   'toggle-assets': () => { S.ui.assetsOpen = !S.ui.assetsOpen; renderMain(); },
   'lib-tab': el => { S.ui.libTab = el.dataset.tab; renderMain(); },
   'upload-img': () => pickFiles('library', '.png,.jpg,.jpeg,.gif,.webp,.svg'),
+  'drive-pick': el => openDrivePicker(el.dataset.role),
+  'drive-search': () => run(driveSearchOrLink),
+  'drive-open': el => { const d = S.ui.drive; const f = d.files.find(x => x.id === el.dataset.id); d.stack.push({ id: f.id, title: f.title }); loadDrive(() => driveChildren(f.id)); },
+  'drive-crumb': el => { const d = S.ui.drive, i = +el.dataset.i; d.stack = d.stack.slice(0, i); const top = d.stack[d.stack.length - 1]; loadDrive(() => top ? driveChildren(top.id) : d.q ? driveSearch(d.q) : driveRecent()); },
+  'drive-cancel': () => { S.ui.drive = null; S.ui.modal = null; renderOverlay(); },
+  'drive-add': () => run(driveAdd),
+  'drive-refresh': () => run(async () => { const n = await refreshDrive(); toast(n ? `Updated ${plural(n, 'file')} from Google Drive.` : 'Everything matches Google Drive.'); }),
   'ins': el => {
     const s = secById(el.dataset.id), t = el.dataset.type;
     const b = t === 'table' ? makeTable('custom', s) : t === 'image' ? newBlock({ type: 'image', need: 'choose an image', caption: '' }) : t === 'callout' ? newBlock({ type: 'callout', html: '<p>[NEEDS INPUT: key stat or proof point]</p>' }) : newBlock({ type: 'text', html: '<p>New paragraph.</p>' });
@@ -149,13 +156,13 @@ const ACTIONS = {
   'set-img': el => { const { b } = findBlock(el.dataset.key); const a = assetById(el.dataset.id); b.assetId = a.id; b.caption = b.caption || a.caption || a.name; b.need = ''; S.ui.modal = null; save(); render(); ensureFullImage(b); },
   'src': el => openSource(el.dataset.t, el.dataset.id),
   'close-drawer': () => { S.ui.drawer = null; renderOverlay(); },
-  'close-modal': () => { S.ui.modal = null; renderOverlay(); },
+  'close-modal': () => { S.ui.modal = null; S.ui.drive = null; renderOverlay(); },
   'close-modal-scrim': (el, e) => { if (e.target === el) { S.ui.modal = null; renderOverlay(); } },
-  'export-docx': () => exportDocx(false),
+  'export-docx': el => exportDocx(false, el.dataset.target || 'drive'),
   'export-docx-force': () => exportDocx(true),
-  'export-map': () => run(exportSourceMap),
-  'export-matrix': () => run(exportMatrix),
-  'save-project': () => run(saveProjectFile),
+  'export-map': el => run(() => exportSourceMap(el.dataset.target || 'drive')),
+  'export-matrix': el => run(() => exportMatrix(el.dataset.target || 'drive')),
+  'save-project': el => run(() => saveProjectFile(el.dataset.target || 'drive')),
   'open-project': () => { const i = $('#project-pick'); i.value = ''; i.click(); },
 };
 
@@ -166,10 +173,12 @@ document.addEventListener('click', e => {
   if (!el) return;
   if (el.isContentEditable && el.dataset.act !== 'src') return;
   const fn = ACTIONS[el.dataset.act];
-  if (fn) { e.preventDefault(); fn(el, e); }
+  // The dialog backdrop carries an action too; let clicks on controls inside a dialog behave normally.
+  if (fn) { if (el.dataset.act !== 'close-modal-scrim') e.preventDefault(); fn(el, e); }
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { if (S.ui.modal) S.ui.modal = null; else S.ui.drawer = null; renderOverlay(); }
+  if (e.key === 'Escape') { if (S.ui.modal) { S.ui.modal = null; S.ui.drive = null; } else S.ui.drawer = null; renderOverlay(); }
+  if (e.key === 'Enter' && e.target.id === 'drive-q') { e.preventDefault(); run(driveSearchOrLink); }
   const drop = e.target.closest && e.target.closest('[data-drop]');
   if (drop && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pickFiles(drop.dataset.drop); }
 });
@@ -188,7 +197,7 @@ $('#project-pick').addEventListener('change', e => { const f = e.target.files &&
 document.addEventListener('input', e => {
   const t = e.target, p = S.project, d = t.dataset || {};
   if (t.id === 'proj-name') { p.name = t.value; save(); return; }
-  if (d.ctx) { p.context[d.ctx] = t.value; save(); return; }
+  if (d.ctx) { p.context[d.ctx] = t.value; if (p.context.autoFilled) delete p.context.autoFilled[d.ctx]; save(); return; }
   if (d.sg) { if (wsEditable()) { sg()[d.sg] = t.value; saveWorkspace(); } return; }
   if (d.tpl) { WS.data.templates[d.tpl] = t.value; saveWorkspace(); return; }
   if (d.pinUrl !== undefined) { WS.data.sources.pinned[+d.pinUrl].url = t.value.trim(); saveWorkspace(); return; }
@@ -205,6 +214,8 @@ document.addEventListener('input', e => {
   if (t.id === 'asset-q') { S.ui.assetQuery = t.value; renderMain(); return; }
   if (t.id === 'fig-url') { p.figma = Object.assign(p.figma || {}, { url: t.value.trim() }); save(); return; }
   if (t.id === 'exp-author') { p.exportAuthor = t.value; save(); return; }
+  if (t.id === 'exp-folder') { p.exportFolder = t.value.trim(); save(); return; }
+  if (t.id === 'drive-q' && S.ui.drive) { S.ui.drive.qDraft = t.value; return; }
 });
 document.addEventListener('change', e => {
   const t = e.target, p = S.project, d = t.dataset || {};
@@ -218,6 +229,13 @@ document.addEventListener('change', e => {
   if (t.id === 'req-filter') { S.ui.reqFilter = t.value; renderMain(); return; }
   if (t.id === 'resp-type') { p.type = t.value; logChange('user', `Set the response type to ${t.options[t.selectedIndex].text}.`); save(); render(); return; }
   if (d.plan) { p.sourcePlan[d.plan] = t.checked; save(); renderMain(); return; }
+  if (t.id === 'auto-start') { p.autoStart = t.checked; save(); return; }
+  if (d.drivepick && S.ui.drive) {
+    const dd = S.ui.drive, f = dd.files.find(x => x.id === d.drivepick);
+    if (t.type === 'radio') dd.picked.clear();
+    if (t.checked && f) dd.picked.set(f.id, f); else dd.picked.delete(d.drivepick);
+    renderDrivePicker(); return;
+  }
   if (d.fileTier) { const f = fileById(d.fileTier); f.tier = t.value; for (const b of p.library) if (b.fileId === f.id) b.tier = t.value; save(); return; }
   if (d.pinTier !== undefined) { WS.data.sources.pinned[+d.pinTier].tier = t.value; for (const b of WS.pinnedBlocks) if (b.url === WS.data.sources.pinned[+d.pinTier].url) b.tier = t.value; saveWorkspace(); return; }
   if (t.id === 'ws-glean') { WS.data.sources.glean.enabled = t.checked; saveWorkspace(); return; }

@@ -160,7 +160,22 @@ async function buildDocx() {
   return D.Packer.toBlob(doc);
 }
 
-async function exportDocx(force) {
+/* Every export goes to Google Drive by default (converted to Docs or Sheets); download is the fallback. */
+async function deliver(filename, data, mime, target, title) {
+  if (target === 'drive') {
+    title = title || filename.replace(/\.[^.]+$/, '');
+    toast('Saving to Google Drive…', { sticky: true });
+    const url = await saveToDrive(title, data, mime);
+    toast('');
+    S.ui.modal = { title: 'Saved to Google Drive', body: `<p><b>${esc(title)}</b> is in your Drive${S.project.exportFolder ? ' folder' : ''}.</p>${url ? `<p style="margin-top:8px"><a href="${esc(url)}" target="_blank" rel="noopener">Open it in Google Drive</a></p>` : ''}` };
+    renderOverlay();
+    return;
+  }
+  await saveFile(filename, data);
+}
+
+async function exportDocx(force, target = S.ui.exportTarget || 'drive') {
+  S.ui.exportTarget = target;
   const blockers = exportChecks().filter(c => !c.ok && c.sev === 'crit');
   if (blockers.length && !force) { modalExportBlockers(blockers); return; }
   S.ui.modal = null; renderOverlay();
@@ -169,30 +184,30 @@ async function exportDocx(force) {
   try {
     const blob = await buildDocx();
     toast('');
-    await saveFile(safeName(S.project.name) + '.docx', blob);
-    logChange('user', 'Exported the customer response (.docx).');
+    await deliver(safeName(S.project.name) + '.docx', blob, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', target, S.project.name);
+    logChange('user', target === 'drive' ? 'Saved the customer response to Google Drive.' : 'Downloaded the customer response (.docx).');
     save();
   } catch (e) { toast(e.message, { err: true }); }
 }
 
 function csvCell(v) { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
-async function exportSourceMap() {
+async function exportSourceMap(target = 'drive') {
   const p = S.project;
   numberSections();
-  const rows = [['Section', 'Block', 'Type', 'Mode', 'Excerpt', 'Source id', 'Source kind', 'Source file', 'Location', 'Source text']];
+  const rows = [['Section', 'Block', 'Type', 'Mode', 'Excerpt', 'Source id', 'Source kind', 'Source file', 'Location', 'Source text', 'Link']];
   for (const s of p.sections) s.blocks.forEach((b, i) => {
     const ex = blockText(b).slice(0, 160);
     const srcs = (b.sources || []).length ? b.sources : [null];
     for (const src of srcs) {
       if (!src) { rows.push([s.num + ' ' + s.title, i + 1, b.type, b.mode, ex, '', b.type === 'image' && assetById(b.assetId) ? (assetById(b.assetId).source === 'figma' ? 'Figma frame' : 'Uploaded image') : 'No source', b.type === 'image' && assetById(b.assetId) ? assetById(b.assetId).name : '', b.type === 'image' && assetById(b.assetId) && assetById(b.assetId).source === 'figma' ? figmaFrameUrl(assetById(b.assetId)) : '', '']); continue; }
-      if (src.t === 'req') { const r = reqById(src.id); rows.push([s.num + ' ' + s.title, i + 1, b.type, b.mode, ex, src.id, 'RFP requirement', r && r.fileName, r && [r.page && 'p. ' + r.page, r.section && '§' + r.section].filter(Boolean).join(' '), r && r.text]); }
-      else { const lb = blockById(src.id); rows.push([s.num + ' ' + s.title, i + 1, b.type, b.mode, ex, src.id, 'Library block', lb && lb.fileName, lb && lb.loc, lb && lb.text.slice(0, 500)]); }
+      if (src.t === 'req') { const r = reqById(src.id); const rf = r && fileById(r.fileId); rows.push([s.num + ' ' + s.title, i + 1, b.type, b.mode, ex, src.id, 'RFP requirement', r && r.fileName, r && [r.page && 'p. ' + r.page, r.section && '§' + r.section].filter(Boolean).join(' '), r && r.text, (rf && rf.url) || '']); }
+      else { const lb = blockById(src.id); rows.push([s.num + ' ' + s.title, i + 1, b.type, b.mode, ex, src.id, 'Library: ' + ((lb && TIERS[lb.tier || 'approved'] || TIERS.reference).label), lb && lb.fileName, lb && lb.loc, lb && lb.text.slice(0, 500), (lb && lb.url) || '']); }
     }
   });
-  await saveFile(safeName(p.name) + '-source-map-INTERNAL.csv', rows.map(r => r.map(csvCell).join(',')).join('\n'));
+  await deliver(safeName(p.name) + '-source-map-INTERNAL.csv', rows.map(r => r.map(csvCell).join(',')).join('\n'), 'text/csv', target, p.name + ' source map (internal)');
 }
 
-async function exportMatrix() {
+async function exportMatrix(target = 'drive') {
   if (!window.XLSX) throw new Error('The spreadsheet writer did not load.');
   const p = S.project;
   const rows = [['Ref', 'RFP section', 'Requirement', 'Status', 'Response']];
@@ -203,10 +218,18 @@ async function exportMatrix() {
   XLSX.utils.book_append_sheet(wb, ws, 'Compliance');
   wb.Props = { Author: p.exportAuthor || '', Title: p.name };
   const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
-  await saveFile(safeName(p.name) + '-compliance-matrix.xlsx', new Uint8Array(buf));
+  await deliver(safeName(p.name) + '-compliance-matrix.xlsx', new Uint8Array(buf), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', target, p.name + ' compliance matrix');
 }
 
-async function saveProjectFile() {
+async function saveProjectFile(target = 'drive') {
+  if (target === 'drive') {
+    toast('Saving the project to Google Drive…', { sticky: true });
+    const url = await saveToDrive(S.project.name + '.rfp.json', JSON.stringify(S.project), 'application/json', { convert: false });
+    toast('');
+    S.ui.modal = { title: 'Project saved to Google Drive', body: `<p>Anyone you share it with can open it here with "Open from Google Drive".</p>${url ? `<p style="margin-top:8px"><a href="${esc(url)}" target="_blank" rel="noopener">Open the file in Google Drive</a></p>` : ''}` };
+    renderOverlay();
+    return;
+  }
   await saveFile(safeName(S.project.name) + '.rfp.json', JSON.stringify(S.project));
 }
 async function openProjectFile(file) {

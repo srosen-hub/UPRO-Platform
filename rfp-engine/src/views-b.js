@@ -135,22 +135,27 @@ function viewExport() {
   const checks = exportChecks();
   const blockers = checks.filter(c => !c.ok && c.sev === 'crit').length;
   const dl = DL.state === 'on';
+  const drv = KN.state === 'on';
   return `${exampleBanner()}
   <div class="head"><div><h1>Export</h1><p>The customer document carries only the clean text, images and tables. Source links, modes, ids and comments stay in the working view and the separate source map. File metadata carries your company name, not the tool.</p></div></div>
-  ${!dl ? `<div class="banner warn"><span class="grow">${DL.state === 'connecting' ? 'Connecting…' : 'Downloads work when this page is open on claude.ai.'}</span></div>` : ''}
+  ${!drv ? `<div class="banner warn"><span class="grow">${KN.state === 'connecting' ? 'Connecting…' : 'Saving to Google Drive and downloads work when this page is open on claude.ai.'}</span></div>` : ''}
   <div class="grid2">
     <section class="panel"><div class="panel-h"><h2>Pre-export check</h2><span class="pill ${blockers ? 'crit' : 'ok'}">${blockers ? plural(blockers, 'blocker') : 'Ready'}</span></div><div class="panel-b stack-s">
       ${checks.map(c => `<div class="row" style="flex-wrap:nowrap;align-items:flex-start"><span class="pill ${c.ok ? 'ok' : c.sev}" style="min-width:52px;justify-content:center">${c.ok ? 'OK' : c.sev === 'crit' ? 'Fix' : 'Check'}</span><span>${esc(c.text)}</span></div>`).join('')}
     </div></section>
     <section class="panel"><div class="panel-h"><h2>Files</h2></div><div class="panel-b stack-s">
       <div class="field"><label for="exp-author">Author shown in the file properties</label><input class="input" id="exp-author" value="${esc(S.project.exportAuthor || '')}" placeholder="Your company name"></div>
-      <button class="btn primary" data-act="export-docx" ${!dl ? 'disabled' : ''}>Customer response (.docx)</button>
+      <div class="field"><label for="exp-folder">Google Drive folder (optional)</label><input class="input" id="exp-folder" value="${esc(S.project.exportFolder || '')}" placeholder="Paste a folder link, or leave blank for My Drive"></div>
+      <button class="btn primary" data-act="export-docx" data-target="drive" ${!drv ? 'disabled' : ''}>${ICON.drive} Save response to Google Drive (Google Doc)</button>
       <p class="hint">Pulls the latest product images from Figma first. ${blockers ? 'Blockers above will be listed again before the file is made.' : ''}</p>
-      <button class="btn" data-act="export-map" ${!dl ? 'disabled' : ''}>Internal source map (.csv)</button>
-      <button class="btn" data-act="export-matrix" ${!dl || !S.project.matrix.length ? 'disabled' : ''}>Requirements matrix answers (.xlsx)</button>
+      <button class="btn" data-act="export-map" data-target="drive" ${!drv ? 'disabled' : ''}>${ICON.drive} Save internal source map (Google Sheet)</button>
+      <button class="btn" data-act="export-matrix" data-target="drive" ${!drv || !S.project.matrix.length ? 'disabled' : ''}>${ICON.drive} Save matrix answers (Google Sheet)</button>
+      ${(S.project.driveExports || []).length ? `<p class="label" style="margin-top:6px">Saved to Drive</p>${S.project.driveExports.slice(0, 5).map(x => `<div class="hint"><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a> · ${new Date(x.at).toLocaleString()}</div>`).join('')}` : ''}
+      <p class="label" style="margin-top:6px">Or download</p>
+      <div class="row"><button class="btn sm" data-act="export-docx" data-target="download" ${!dl ? 'disabled' : ''}>.docx</button><button class="btn sm" data-act="export-map" data-target="download" ${!dl ? 'disabled' : ''}>Source map .csv</button><button class="btn sm" data-act="export-matrix" data-target="download" ${!dl || !S.project.matrix.length ? 'disabled' : ''}>Matrix .xlsx</button></div>
       <hr style="border:0;border-top:1px solid var(--line);width:100%">
-      <button class="btn" data-act="save-project" ${!dl ? 'disabled' : ''}>Save project file (.json)</button>
-      <button class="btn" data-act="open-project">Open project file</button>
+      <div class="row"><button class="btn" data-act="save-project" data-target="drive" ${!drv ? 'disabled' : ''}>${ICON.drive} Save project to Google Drive</button><button class="btn" data-act="drive-pick" data-role="project" ${!drv ? 'disabled' : ''}>Open from Google Drive</button></div>
+      <div class="row"><button class="btn sm ghost" data-act="save-project" data-target="download" ${!dl ? 'disabled' : ''}>Download project file</button><button class="btn sm ghost" data-act="open-project">Open a downloaded project file</button></div>
       <p class="hint">The project also saves automatically in this browser.</p>
     </div></section>
   </div>`;
@@ -177,7 +182,7 @@ function renderDrawer() {
       ctx = highlight(txt, r.text);
     }
     body = `<p style="margin-bottom:10px"><b>${esc(r.text)}</b></p>
-      <dl class="kv" style="margin-bottom:12px"><dt>Source</dt><dd>${esc(r.fileName || 'Added manually')}</dd>${r.page ? `<dt>Page / row</dt><dd>${esc(r.page)}</dd>` : ''}${r.section ? `<dt>RFP section</dt><dd>${esc(r.section)}</dd>` : ''}<dt>Response</dt><dd>${esc(r.responseType)}</dd><dt>Mapped to</dt><dd>${reqSections(r.id).map(s => esc(s.num + ' ' + s.title)).join(', ') || 'None'}</dd></dl>
+      <dl class="kv" style="margin-bottom:12px"><dt>Source</dt><dd>${f && f.url ? `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(r.fileName)}</a>` : esc(r.fileName || 'Added manually')}</dd>${r.page ? `<dt>Page / row</dt><dd>${esc(r.page)}</dd>` : ''}${r.section ? `<dt>RFP section</dt><dd>${esc(r.section)}</dd>` : ''}<dt>Response</dt><dd>${esc(r.responseType)}</dd><dt>Mapped to</dt><dd>${reqSections(r.id).map(s => esc(s.num + ' ' + s.title)).join(', ') || 'None'}</dd></dl>
       ${f && f.ext === 'pdf' && r.page ? `<canvas class="pdfpage" id="pdf-canvas" data-file="${f.id}" data-page="${esc(r.page)}"></canvas><p class="hint" style="margin:6px 0 12px">Page ${esc(r.page)} of ${esc(f.name)}</p>` : ''}
       ${ctx ? `<p class="label">In context</p><pre>${ctx}</pre>` : ''}`;
   } else if (d.t === 'lib') {
@@ -261,14 +266,21 @@ function modalConfirm(title, text, act, data = '') {
 }
 
 /* Bid context: pick the Salesforce opportunity, then review what the engine proposes before it fills the fields. */
-async function startPullContext() {
+async function startPullContext({ auto = false } = {}) {
   const p = S.project;
   const plan = p.sourcePlan;
-  if (plan.salesforce && p.context.client) {
+  // No client name yet: read the uploaded documents first, they name the client.
+  if (!p.context.client && p.files.some(f => f.role === 'rfp' && !f.processed) && AI.sample) {
+    try { await extractRequirements(); } catch (e) { toast(e.message, { err: true }); return; } finally { save(); render(); }
+  }
+  if (!p.context.client) { toast('Enter the client name first, or upload the client\'s documents.', { err: true }); return; }
+  if (plan.salesforce) {
     let opps = [];
     try { toast('Looking up opportunities in Salesforce…', { sticky: true }); opps = await findOpportunities(p.context.client); }
     catch (e) { toast(e.message, { err: true }); await sleep(1500); }
     toast('');
+    // One clear match on an automatic run goes straight through; otherwise ask.
+    if (auto && opps.length === 1) { await runPullContext(opps[0].id); return; }
     if (opps.length) {
       S.ui.modal = {
         title: 'Which opportunity is this?',
@@ -291,7 +303,7 @@ async function runPullContext(oppId) {
     S.ui.modal = {
       title: 'Review bid context',
       body: `<p class="hint" style="margin-bottom:8px">From ${plural(sources.length, 'source')}. Tick the fields to fill in. Unticked fields keep what you have.</p>`
-        + rows.filter(([k]) => res[k]).map(([k, l]) => `<div style="padding:8px 0;border-top:1px solid var(--line)"><label class="row"><input type="checkbox" data-ctxpick="${k}" ${!p.context[k] ? 'checked' : ''}><b>${l}</b>${p.context[k] ? '<span class="pill warn">Replaces what you have</span>' : ''}</label><pre style="white-space:pre-wrap;font:inherit;margin:6px 0 0">${esc(res[k])}</pre></div>`).join('')
+        + rows.filter(([k]) => res[k]).map(([k, l]) => { const mine = p.context[k] && !(p.context.autoFilled || {})[k]; return `<div style="padding:8px 0;border-top:1px solid var(--line)"><label class="row"><input type="checkbox" data-ctxpick="${k}" ${!mine ? 'checked' : ''}><b>${l}</b>${mine ? '<span class="pill warn">Replaces what you entered</span>' : p.context[k] ? '<span class="pill">Replaces what the documents said</span>' : ''}</label><pre style="white-space:pre-wrap;font:inherit;margin:6px 0 0">${esc(res[k])}</pre></div>`; }).join('')
         + ((res.stakeholders || []).length ? `<div style="padding:8px 0;border-top:1px solid var(--line)"><label class="row"><input type="checkbox" data-ctxpick="stakeholders" checked><b>Stakeholders</b></label>${res.stakeholders.map(s => `<div class="hint">${esc(s.name)}, ${esc(s.title || '')} (${esc(s.role || 'unknown')})</div>`).join('')}</div>` : '')
         + `<p class="label" style="margin-top:10px">Sources</p>${sources.map(s => `<div class="hint">${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>` : esc(s.title)}</div>`).join('') || '<p class="hint">None found.</p>'}`,
       foot: '<button class="btn" data-act="close-modal">Discard</button><button class="btn primary" data-act="pull-context-apply">Fill in selected</button>',
@@ -302,7 +314,7 @@ async function runPullContext(oppId) {
 function applyPulledContext() {
   const pc = S.ui.pendingContext; if (!pc) return;
   const c = S.project.context;
-  for (const el of $$('[data-ctxpick]')) if (el.checked) c[el.dataset.ctxpick] = pc.res[el.dataset.ctxpick];
+  for (const el of $$('[data-ctxpick]')) if (el.checked) { c[el.dataset.ctxpick] = pc.res[el.dataset.ctxpick]; if (c.autoFilled) delete c.autoFilled[el.dataset.ctxpick]; }
   c.sources = pc.sources;
   logChange('engine', `Filled bid context from ${plural(pc.sources.length, 'source')}.`);
   S.ui.pendingContext = null; S.ui.modal = null;

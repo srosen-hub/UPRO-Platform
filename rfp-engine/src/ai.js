@@ -84,7 +84,10 @@ Return JSON with this shape:
  "formatRules": { only keys you actually find: "pageLimit", "fontFamily", "fontSize", "margins", "numbering", "volumes", "fileFormat", "otherRules" (array of strings) },
  "mandatedStructure": [ if the excerpt prescribes the proposal's section order, list it as {"num": "...", "title": "...", "pageLimit": number or null} ; else [] ],
  "evaluationCriteria": [{ "criterion": "...", "weight": "..." }],
- "keyDates": [{ "label": "...", "date": "..." }]
+ "keyDates": [{ "label": "...", "date": "..." }],
+ "issuer": the organization that issued this document (the client), or "",
+ "documentTitle": the solicitation title and number as written, e.g. "RFP 2026-014 Customer Engagement Platform", or "",
+ "scopeSummary": one sentence on what the client is buying, in plain words, or ""
 }
 Rules:
 - "format" is for layout rules (page limits, fonts, section order). "submission" is for how and when to submit. "instruction" is general guidance that needs no answer. "evaluation" is scoring criteria.

@@ -34,7 +34,7 @@ function newProject(name) {
   return {
     v: 1, id: uid('p'), name: name || 'Untitled RFP', example: false,
     type: 'rfp', context: { client: '', bidding: '', notes: '', winThemes: '', sources: [], stakeholders: [] },
-    sourcePlan: { hints: '', glean: true, salesforce: true, figma: true },
+    sourcePlan: { hints: '', glean: true, salesforce: true, figma: true }, autoStart: true,
     files: [], assets: [], library: [], requirements: [], objectives: [], topics: [],
     formatRules: {}, formatBasis: '', basisNote: '',
     sections: [], pending: null, changeLog: [], risks: [], matrix: [],
@@ -215,5 +215,6 @@ const ICON = {
   table: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M2 7h12M2 10h12M6 3v10"/></svg>',
   callout: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h10v7H7l-3 3v-3H3z"/></svg>',
   spark: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2v3M8 11v3M2 8h3M11 8h3M4 4l2 2M10 10l2 2M12 4l-2 2M6 10l-2 2"/></svg>',
+  drive: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5.5 2h5l4 7-2.5 4.5h-8L1.5 9z"/><path d="M5.5 2l4 7h5M1.5 9h8l-2.5 4.5"/></svg>',
   logo: '<svg viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.7"><path d="M4 2h6l3 3v9H4z"/><path d="M6.5 8.5l1.5 1.5 3-3"/></svg>',
 };

@@ -64,7 +64,7 @@ function fileRow(f) {
     ? [f.docType && `<span class="pill acc">${esc(f.docType)}</span>`, f.processed ? `${f.reqCount} requirements` : '<span class="pill warn">Not read yet</span>', f.isChange && '<span class="pill crit">New client input</span>']
     : [`${f.blockCount || 0} passages`, tierSelect('data-file-tier', f.id, f.tier || 'approved')];
   return `<div class="file"><span class="file-ic ${esc(ext)}">${esc(ext.toUpperCase())}</span>
-    <div style="min-width:0"><div class="file-name">${esc(f.name)}</div><div class="file-meta">${meta.filter(Boolean).join('<span class="faint">·</span>')}${f.pages && f.pages.length > 1 ? `<span class="faint">·</span>${f.pages.length} pages` : ''}</div></div>
+    <div style="min-width:0"><div class="file-name">${f.url ? `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name)}</a>` : esc(f.name)}${f.source === 'drive' ? ' <span class="pill acc">Drive</span>' : ''}${f.missing ? ' <span class="pill crit">Not found in Drive</span>' : ''}</div><div class="file-meta">${meta.filter(Boolean).join('<span class="faint">·</span>')}${f.pages && f.pages.length > 1 ? `<span class="faint">·</span>${f.pages.length} pages` : ''}</div></div>
     <button class="icon-btn" data-act="rm-file" data-id="${f.id}" aria-label="Remove ${esc(f.name)}">${ICON.x}</button></div>`;
 }
 
@@ -92,12 +92,16 @@ function viewInputs() {
     <section class="panel"><div class="panel-h"><h2>Client documents</h2>
       <select class="select" id="resp-type" style="width:auto" aria-label="Response type">${RESPONSE_TYPES.map(t => `<option value="${t.id}" ${p.type === t.id ? 'selected' : ''}>${t.label}</option>`).join('')}</select></div>
       <div class="panel-b stack-s">
-        <div class="drop" data-drop="rfp" tabindex="0" role="button"><strong>Drop the client's files here or click to choose</strong>Instructions, scope, requirements, questionnaires, forms, addenda. PDF, Word, Excel, CSV or text.</div>
+        <div class="row"><button class="btn primary" data-act="drive-pick" data-role="rfp" ${KN.state !== 'on' ? 'disabled' : ''}>${ICON.drive} Add from Google Drive</button><span class="hint">Pick files or the whole RFP folder.</span></div>
+        <div class="drop" data-drop="rfp" tabindex="0" role="button" style="padding:12px"><span>Or upload files from this computer</span></div>
         <div class="files">${rfp.map(fileRow).join('') || '<p class="hint">No client files yet.</p>'}</div>
       </div></section>
     <section class="panel"><div class="panel-h"><h2>Content library</h2><span class="hint">${p.library.length} passages · ${internal.length} from internal tools${pinnedN ? ` · ${pinnedN} pinned team passages` : ''}</span></div>
       <div class="panel-b stack-s">
-        <div class="drop" data-drop="library" tabindex="0" role="button"><strong>Upload library files</strong>Capability write-ups, case studies, past answers, bios. Set each file's trust level after upload.</div>
+        <div class="row"><button class="btn primary" data-act="drive-pick" data-role="library" ${KN.state !== 'on' ? 'disabled' : ''}>${ICON.drive} Add from Google Drive</button>
+          <button class="btn" data-act="drive-refresh" ${KN.state !== 'on' || !p.files.some(f => f.source === 'drive') ? 'disabled' : ''}>Check Drive for updates</button></div>
+        <p class="hint">Capability write-ups, case studies, past answers, bios. Pick a folder to add everything in it, then set each file's trust level.</p>
+        <div class="drop" data-drop="library" tabindex="0" role="button" style="padding:12px"><span>Or upload files from this computer</span></div>
         <div class="files">${lib.map(fileRow).join('')}</div>
         <p class="label" style="margin-top:6px">Also look through</p>
         <label class="row" style="flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" data-plan="glean" ${plan.glean ? 'checked' : ''}><span><b>Company search</b> <span class="hint">Drive, Confluence, Slack, email and meeting notes, through Glean</span></span></label>
@@ -117,12 +121,14 @@ function viewInputs() {
         <div class="row"><button class="btn sm primary" data-act="fig-sync" ${FIG.state !== 'on' || !plan.figma ? 'disabled' : ''}>Sync from Figma</button>
           ${FIG.state !== 'on' ? `<span class="hint">${FIG.state === 'connecting' ? 'Connecting…' : 'Available when this page is open on claude.ai with Figma connected.'}</span>` : ''}</div>
         ${figAssets.length ? `<div class="thumbs">${figAssets.slice(0, 12).map(a => `<div class="thumb">${a.thumb ? `<img src="${a.thumb}" alt="">` : '<img alt="">'}<div title="${esc(a.name)}">${a.stale ? '⚠ ' : ''}${esc(a.name)}</div></div>`).join('')}</div>` : ''}
-        ${upAssets.length ? `<p class="hint">${plural(upAssets.length, 'other image')} from uploads or the example (non-product use only).</p>` : ''}
+        <p class="label" style="margin-top:6px">Other images</p><p class="hint">Team photos, maps, org charts. Not for product visuals.${upAssets.length ? ' ' + plural(upAssets.length, 'image') + ' added.' : ''}</p>
+        <div class="row"><button class="btn sm" data-act="drive-pick" data-role="image" ${KN.state !== 'on' ? 'disabled' : ''}>${ICON.drive} Add from Google Drive</button><button class="btn sm ghost" data-act="upload-img">Upload</button></div>
       </div></section>
     <section class="panel"><div class="panel-h"><h2>Bid context</h2>
       <button class="btn sm primary" data-act="pull-context" ${!kn || AI.state !== 'on' || (!plan.glean && !plan.salesforce) ? 'disabled' : ''}>${ICON.spark} Pull from Salesforce and notes</button></div>
       <div class="panel-b stack-s">
-        <div class="field"><label for="ctx-client">Client</label><input class="input" id="ctx-client" data-ctx="client" value="${esc(ctx.client)}"></div>
+        <label class="row" style="flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" id="auto-start" ${p.autoStart !== false ? 'checked' : ''}><span><b>Start when client documents are uploaded</b> <span class="hint">Reads the documents, fills in the client and scope, then pulls Salesforce and meeting notes for you to review.</span></span></label>
+        <div class="field"><label for="ctx-client">Client</label><input class="input" id="ctx-client" data-ctx="client" value="${esc(ctx.client)}">${(ctx.autoFilled || {}).client ? '<span class="hint">From the client\'s documents</span>' : ''}</div>
         <div class="field"><label for="ctx-bidding">What we are bidding on</label><textarea class="textarea" id="ctx-bidding" data-ctx="bidding">${esc(ctx.bidding)}</textarea></div>
         <div class="field"><label for="ctx-win">Win themes</label><textarea class="textarea" id="ctx-win" data-ctx="winThemes">${esc(ctx.winThemes)}</textarea></div>
         <div class="field"><label for="ctx-notes">Notes on the client</label><textarea class="textarea" id="ctx-notes" data-ctx="notes" rows="5">${esc(ctx.notes)}</textarea><span class="hint">Internal only. Drafts use these for context and never quote them.</span></div>
@@ -145,8 +151,8 @@ function viewStyleGuide() {
   const g = sg(), ro = wsEditable() ? '' : 'readonly';
   const field = (k, label, rows, hint) => `<div class="field"><label for="sg-${k}">${label}</label><textarea class="textarea" id="sg-${k}" data-sg="${k}" rows="${rows}" ${ro}>${esc(g[k])}</textarea>${hint ? `<span class="hint">${hint}</span>` : ''}</div>`;
   return `${wsBanner()}
-  <div class="head"><div><h1>Style guide</h1><p>Sent with every drafting request and checked before export. Import an existing guide or edit the fields directly.</p></div>
-    <div class="actions"><button class="btn" data-act="sg-import-file" ${!wsEditable() || AI.state !== 'on' ? 'disabled' : ''}>Import from a file</button><button class="btn" data-act="sg-import-url" ${!wsEditable() || AI.state !== 'on' || KN.state !== 'on' ? 'disabled' : ''}>Import from a link</button><button class="btn ghost" data-act="style-reset" ${!wsEditable() ? 'disabled' : ''}>Reset to defaults</button></div></div>
+  <div class="head"><div><h1>Style guide</h1><p>Sent with every drafting request and checked before export. Import your existing guide from Google Drive or edit the fields directly.${sg().sourceUrl ? ` Imported from <a href="${esc(sg().sourceUrl)}" target="_blank" rel="noopener">this document</a>.` : ''}</p></div>
+    <div class="actions"><button class="btn primary" data-act="drive-pick" data-role="styleguide" ${!wsEditable() || AI.state !== 'on' || KN.state !== 'on' ? 'disabled' : ''}>${ICON.drive} Import from Google Drive</button><button class="btn" data-act="sg-import-file" ${!wsEditable() || AI.state !== 'on' ? 'disabled' : ''}>Upload a file</button><button class="btn" data-act="sg-import-url" ${!wsEditable() || AI.state !== 'on' || KN.state !== 'on' ? 'disabled' : ''}>Import from a link</button><button class="btn ghost" data-act="style-reset" ${!wsEditable() ? 'disabled' : ''}>Reset to defaults</button></div></div>
   <div class="grid2">
     <section class="panel"><div class="panel-h"><h2>Voice</h2></div><div class="panel-b stack-s">
       ${field('tone', 'Tone', 3)}
@@ -167,12 +173,12 @@ function viewSources() {
   <div class="head"><div><h1>Knowledge sources</h1><p>Where the engine looks for content, and how far to trust each source. Pinned documents are read in full and searched first. Company search fills in the rest.</p></div>
     <div class="actions"><button class="btn primary" data-act="sync-pinned" ${KN.state !== 'on' || !src.pinned.length || ro ? 'disabled' : ''}>Sync pinned sources</button></div></div>
   <div class="grid-main">
-    <section class="panel"><div class="panel-h"><h2>Pinned documents</h2><button class="btn sm" data-act="pin-add" ${ro ? 'disabled' : ''}>${ICON.plus} Add</button></div>
+    <section class="panel"><div class="panel-h"><h2>Pinned documents</h2><div class="row"><button class="btn sm primary" data-act="drive-pick" data-role="pin" ${ro || KN.state !== 'on' ? 'disabled' : ''}>${ICON.drive} Add from Google Drive</button><button class="btn sm" data-act="pin-add" ${ro ? 'disabled' : ''}>${ICON.plus} Add a link</button></div></div>
       <div class="panel-b">${src.pinned.map((x, i) => `<div class="blockref" style="flex-wrap:wrap">
         <input class="input" data-pin-url="${i}" value="${esc(x.url)}" placeholder="Link to a Drive doc, Confluence page or folder" style="flex:1;min-width:220px" ${ro ? 'readonly' : ''}>
         ${tierSelect('data-pin-tier', i, x.tier)}
         <button class="icon-btn" data-act="pin-rm" data-i="${i}" aria-label="Remove" ${ro ? 'disabled' : ''}>${ICON.x}</button>
-        <div class="hint" style="flex-basis:100%">${x.title ? esc(x.title) + ' · ' : ''}${x.syncedAt ? 'synced ' + new Date(x.syncedAt).toLocaleDateString() : 'not synced yet'}${x.updated ? ' · source updated ' + esc(String(x.updated).slice(0, 10)) : ''}</div></div>`).join('') || '<p class="hint">Pin your RFP library, approved boilerplate, product roadmap and positioning docs here.</p>'}
+        <div class="hint" style="flex-basis:100%">${x.driveId ? (x.folder ? 'Drive folder · ' : 'Drive · ') : ''}${x.title ? esc(x.title) + ' · ' : ''}${x.syncedAt ? 'synced ' + new Date(x.syncedAt).toLocaleDateString() : 'not synced yet'}${x.updated ? ' · source updated ' + esc(String(x.updated).slice(0, 10)) : ''}</div></div>`).join('') || '<p class="hint">Pin your RFP library folder, approved boilerplate, product roadmap and positioning docs from Google Drive. Folders bring in every file inside.</p>'}
         <p class="hint" style="margin-top:8px">${plural((WS.pinnedBlocks || []).length, "passage")} cached from pinned documents.</p></div></section>
     <div class="stack">
       <section class="panel"><div class="panel-h"><h2>Company search</h2></div><div class="panel-b stack-s">
